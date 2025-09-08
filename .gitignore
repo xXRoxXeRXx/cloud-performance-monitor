@@ -1,0 +1,9 @@
+# Go binaries
+agent
+*.exe
+
+# Go build cache
+*.test
+
+# Env file
+.env

@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  monitor-agent:
+    build: .
+    image: nextcloud-monitor-agent:latest
+    container_name: monitor-agent
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - monitor-net
+
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - monitor-net
+
+  grafana:
+    build:
+      context: .
+      dockerfile: deploy/grafana/Dockerfile
+    image: nextcloud-grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3003:3000"
+    restart: unless-stopped
+    networks:
+      - monitor-net
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  monitor-net:

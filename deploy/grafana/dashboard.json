@@ -1,0 +1,117 @@
+{
+  "id": null,
+  "uid": "nextcloud-perf-monitor",
+  "title": "Nextcloud Performance Monitor",
+  "tags": ["nextcloud", "performance"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 2,
+  "refresh": "1m",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Upload Duration (s)",
+      "targets": [
+        {
+          "expr": "avg_over_time(nextcloud_test_duration_seconds{service=~\"$service\",type=\"upload\"}[5m])",
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
+      "id": 1
+    },
+    {
+      "type": "stat",
+      "title": "Download Duration (s)",
+      "targets": [
+        {
+          "expr": "avg_over_time(nextcloud_test_duration_seconds{service=~\"$service\",type=\"download\"}[5m])",
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
+      "id": 2
+    },
+    {
+      "type": "stat",
+      "title": "Upload Speed (MB/s)",
+      "targets": [
+        {
+          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[5m])",
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "MB/s" } },
+      "gridPos": { "x": 0, "y": 6, "w": 6, "h": 6 },
+      "id": 3
+    },
+    {
+      "type": "stat",
+      "title": "Download Speed (MB/s)",
+      "targets": [
+        {
+          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[5m])",
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "MB/s" } },
+      "gridPos": { "x": 6, "y": 6, "w": 6, "h": 6 },
+      "id": 4
+    },
+    {
+      "type": "stat",
+      "title": "Success Rate (%)",
+      "targets": [
+        {
+          "expr": "avg_over_time(nextcloud_test_success{service=~\"$service\",type=~\"upload|download\"}[5m]) * 100",
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "id": 5
+    },
+    {
+      "type": "timeseries",
+      "title": "Performance Over Time (Upload/Download Speed)",
+      "targets": [
+        {
+          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[1m])",
+          "legendFormat": "upload",
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        },
+        {
+          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[1m])",
+          "legendFormat": "download",
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "MB/s" } },
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 10 },
+      "id": 6
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(nextcloud_test_duration_seconds,service)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "annotations": { "list": [] }
+}
