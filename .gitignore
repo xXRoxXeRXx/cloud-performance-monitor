@@ -1,3 +1,4 @@
+
 # Go binaries
 agent
 *.exe
@@ -7,3 +8,21 @@ agent
 
 # Env file
 .env
+
+# Editor/IDE
+.vscode/
+.idea/
+*.code-workspace
+*~
+*.swp
+*.swo
+
+# System
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+logs/
+*.log
+*.tmp
+tmp/
