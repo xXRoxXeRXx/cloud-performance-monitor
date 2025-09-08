@@ -35,13 +35,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # Schritt 4: Abhängigkeiten laden
+      # Schritt 4: Abhängigkeiten laden (mit privatem Modulzugriff)
       - name: Tidy and download dependencies
-        run: go mod tidy
+        env:
+          GOPRIVATE: github.com/MarcelWMeyer/nextcloud-performance-monitor
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_TERMINAL_PROMPT: 1
+        run: |
+          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+          go mod tidy
 
-      # Schritt 5: Unit-Tests mit Coverage ausführen
+      # Schritt 5: Unit-Tests mit Coverage ausführen (mit privatem Modulzugriff)
       - name: Run unit tests with coverage
-        run: go test -v -cover ./...
+        env:
+          GOPRIVATE: github.com/MarcelWMeyer/nextcloud-performance-monitor
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_TERMINAL_PROMPT: 1
+        run: |
+          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+          go test -v -cover ./...
 
   # Job 2: Baut das Docker-Image und lädt es hoch
   build-and-push:

@@ -1,6 +1,6 @@
 
 # Go binaries
-agent
+/agent
 *.exe
 
 # Go build cache
