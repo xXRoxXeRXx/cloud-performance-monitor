@@ -5,6 +5,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+RUN ls -lR /app
 RUN CGO_ENABLED=0 GOOS=linux go build -o /agent ./cmd/agent
 
 # Runtime stage
