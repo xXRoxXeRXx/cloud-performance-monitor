@@ -1,9 +1,11 @@
 name: CI/CD Pipeline
 
-# Löst den Workflow bei Push oder Pull Request zum main-Branch aus
+
+# Löst den Workflow bei Push oder Pull Request zum main-Branch ODER bei jedem Tag aus
 on:
   push:
     branches: [ "main" ]
+    tags: [ "*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -43,12 +45,10 @@ jobs:
 
   # Job 2: Baut das Docker-Image und lädt es hoch
   build-and-push:
-    # Dieser Job läuft NUR, wenn ein neuer Git-Tag erstellt wird (z.B. v1.0.0)
-    if: startsWith(github.ref, 'refs/tags/')
-    # Dieser Job wartet, bis der 'test'-Job erfolgreich war
+    # Dieser Job läuft bei jedem Tag oder main-Push
+    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
     needs: test
     runs-on: ubuntu-latest
-    # Benötigt spezielle Berechtigungen, um in die GitHub Container Registry zu schreiben
     permissions:
       contents: read
       packages: write
