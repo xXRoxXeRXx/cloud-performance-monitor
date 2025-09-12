@@ -132,10 +132,13 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 			if err != nil {
 				return fmt.Errorf("PUT request for chunk %d failed: %w", i, err)
 			}
-			defer resp.Body.Close()
+			
+			// Immediately close response body to avoid resource leaks
 			if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+				resp.Body.Close()
 				return fmt.Errorf("upload of chunk %d failed with status %s", i, resp.Status)
 			}
+			resp.Body.Close()
 		}
 		if readErr == io.EOF {
 			break

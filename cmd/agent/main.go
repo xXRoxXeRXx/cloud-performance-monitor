@@ -27,48 +27,95 @@ func main() {
 		}
 	}()
 
-	// Start a monitoring goroutine for each configured instance
-	for _, cfg := range allConfigs {
-		go startMonitoringInstance(cfg)
-	}
-
-	// Keep the main process alive
-	select {}
+	// Start sequential monitoring
+	startSequentialMonitoring(allConfigs)
 }
 
-func startMonitoringInstance(cfg *agent.Config) {
-	log.Printf("Agent starting for instance %s (%s). Tests will run every %d seconds.", cfg.InstanceName, cfg.ServiceType, cfg.TestIntervalSec)
-	ticker := time.NewTicker(time.Duration(cfg.TestIntervalSec) * time.Second)
+// startSequentialMonitoring runs tests for all instances sequentially - one after another
+func startSequentialMonitoring(configs []*agent.Config) {
+	log.Printf("Starting sequential monitoring for %d instances", len(configs))
+	
+	if len(configs) == 0 {
+		log.Println("No instances configured, exiting")
+		return
+	}
+	
+	// Use the first config's interval as base interval
+	baseInterval := time.Duration(configs[0].TestIntervalSec) * time.Second
+	log.Printf("Test cycle interval: %v", baseInterval)
+	
+	// Create clients for all instances
+	clients := make(map[*agent.Config]interface{})
+	for _, cfg := range configs {
+		switch cfg.ServiceType {
+		case "nextcloud":
+			clients[cfg] = nextcloud.NewClient(cfg.URL, cfg.Username, cfg.Password)
+		case "hidrive":
+			clients[cfg] = cfg // HiDrive client is created in the test function
+		}
+	}
+	
+	// Run initial test cycle immediately
+	log.Println("=== Starting initial test cycle ===")
+	runTestCycle(configs, clients)
+	
+	// Start the periodic testing loop
+	ticker := time.NewTicker(baseInterval)
 	defer ticker.Stop()
+	
+	for range ticker.C {
+		log.Println("=== Starting new test cycle ===")
+		runTestCycle(configs, clients)
+	}
+}
 
+// runTestCycle runs tests for all instances sequentially - one after another
+func runTestCycle(configs []*agent.Config, clients map[*agent.Config]interface{}) {
+	cycleStart := time.Now()
+	log.Printf("Starting test cycle with %d instances", len(configs))
+	
+	for i, cfg := range configs {
+		log.Printf("[%d/%d] Starting test for instance %s (%s)", 
+			i+1, len(configs), cfg.InstanceName, cfg.ServiceType)
+		
+		testStart := time.Now()
+		runTestForInstance(cfg, clients[cfg])
+		testDuration := time.Since(testStart)
+		
+		log.Printf("[%d/%d] Completed test for instance %s (%s) in %v", 
+			i+1, len(configs), cfg.InstanceName, cfg.ServiceType, testDuration)
+	}
+	
+	cycleDuration := time.Since(cycleStart)
+	log.Printf("=== Test cycle completed in %v ===", cycleDuration)
+}
+
+// runTestForInstance runs a single test for the given instance
+func runTestForInstance(cfg *agent.Config, client interface{}) {
+	startTime := time.Now()
+	
 	switch cfg.ServiceType {
 	case "nextcloud":
-		ncClient := nextcloud.NewClient(cfg.URL, cfg.Username, cfg.Password)
-		agent.RunTest(cfg, ncClient)
-		for range ticker.C {
+		if ncClient, ok := client.(*nextcloud.Client); ok {
 			agent.RunTest(cfg, ncClient)
+		} else {
+			log.Printf("ERROR: Invalid client type for Nextcloud instance %s", cfg.InstanceName)
 		}
-       case "hidrive":
-	       defer func() {
-		       if r := recover(); r != nil {
-			       log.Printf("[HiDrive] PANIC in Goroutine für %s: %v", cfg.URL, r)
-		       }
-	       }()
-	       log.Printf("[HiDrive] Goroutine gestartet für %s", cfg.URL)
-	       log.Printf("[HiDrive] Vor erstem Test für %s", cfg.URL)
-			   ctx := context.Background()
-			   if err := agent.RunHiDriveTest(ctx, cfg); err != nil {
-		       log.Printf("[HiDrive] Test error: %v", err)
-	       }
-	       log.Printf("[HiDrive] Nach erstem Test für %s", cfg.URL)
-	       for range ticker.C {
-		       log.Printf("[HiDrive] Vor periodischem Test für %s", cfg.URL)
-		       if err := agent.RunHiDriveTest(ctx, cfg); err != nil {
-			       log.Printf("[HiDrive] Test error: %v", err)
-		       }
-		       log.Printf("[HiDrive] Nach periodischem Test für %s", cfg.URL)
-	       }
+	case "hidrive":
+		ctx := context.Background()
+		if err := agent.RunHiDriveTest(ctx, cfg); err != nil {
+			log.Printf("[HiDrive] Test error for %s: %v", cfg.URL, err)
+		}
 	default:
 		log.Printf("Unknown service type: %s", cfg.ServiceType)
 	}
+	
+	duration := time.Since(startTime)
+	log.Printf("Test completed for %s (%s) in %v", cfg.InstanceName, cfg.ServiceType, duration)
+}
+
+// Legacy function - removed parallel execution
+func startMonitoringInstance(cfg *agent.Config) {
+	// This function is no longer used but kept for backward compatibility
+	log.Printf("WARNING: startMonitoringInstance called for %s - this should not happen in sequential mode", cfg.InstanceName)
 }

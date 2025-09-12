@@ -33,8 +33,11 @@ func TestLoadConfigs(t *testing.T) {
 	}
 
 	cfg := configs[0]
-	if cfg.NextcloudURL != "https://test.com" {
-		t.Errorf("Unexpected URL: %s", cfg.NextcloudURL)
+	if cfg.URL != "https://test.com" {
+		t.Errorf("Unexpected URL: %s", cfg.URL)
+	}
+	if cfg.ServiceType != "nextcloud" {
+		t.Errorf("Unexpected service type: %s", cfg.ServiceType)
 	}
 	if cfg.TestFileSizeMB != 5 {
 		t.Errorf("Unexpected file size: %d", cfg.TestFileSizeMB)
