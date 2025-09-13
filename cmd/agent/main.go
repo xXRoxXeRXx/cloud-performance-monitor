@@ -51,6 +51,15 @@ func main() {
 		defer wg.Done()
 		startSequentialMonitoring(ctx, allConfigs)
 	}()
+	
+	// Start network latency monitoring for all instances
+	for _, cfg := range allConfigs {
+		wg.Add(1)
+		go func(config *agent.Config) {
+			defer wg.Done()
+			agent.UpdateNetworkLatencyMetrics(ctx, config, config.ServiceType)
+		}(cfg)
+	}
 
 	// Wait for shutdown signal
 	sig := <-sigChan
