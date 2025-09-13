@@ -1,0 +1,165 @@
+global:
+  smtp_smarthost: '${SMTP_SMARTHOST}'
+  smtp_from: '${SMTP_FROM}'
+  smtp_auth_username: '${SMTP_AUTH_USERNAME}'
+  smtp_auth_password: '${SMTP_AUTH_PASSWORD}'
+  smtp_require_tls: ${SMTP_REQUIRE_TLS}
+
+# Routing configuration
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'default'
+  routes:
+    # Critical alerts -> immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 5m
+    
+    # Performance alerts -> batched notification
+    - match:
+        category: performance
+      receiver: 'performance-alerts'
+      group_interval: 10m
+      repeat_interval: 4h
+    
+    # Network alerts -> network team
+    - match:
+        category: network
+      receiver: 'network-alerts'
+      group_interval: 15m
+      repeat_interval: 6h
+    
+    # SLA violations -> management notification
+    - match:
+        category: sla
+      receiver: 'sla-alerts'
+      group_wait: 5m
+      repeat_interval: 2h
+
+# Inhibition rules - suppress redundant alerts
+inhibit_rules:
+  # Suppress warning if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+  
+  # Suppress individual alerts if circuit breaker is open
+  - source_match:
+      alertname: 'CircuitBreakerOpen'
+    target_match_re:
+      alertname: '(HighUploadDuration|SlowUploadSpeed|TestFailures)'
+    equal: ['instance']
+
+# Alert receivers/notification channels
+receivers:
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook'
+        send_resolved: true
+
+  - name: 'critical-alerts'
+    # E-Mail-Benachrichtigung für kritische Alerts
+    email_configs:
+      - to: '${EMAIL_ADMIN}'
+        headers:
+          Subject: '🚨 CRITICAL Alert - Nextcloud Performance Monitor'
+        text: |
+          🚨 CRITICAL ALERT DETECTED 🚨
+          
+          {{ range .Alerts -}}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          Service: {{ .Labels.service }}
+          Severity: {{ .Labels.severity }}
+          
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          
+          {{ if .Annotations.runbook_url }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+          
+          ---
+          {{ end }}
+          
+          Please take immediate action to resolve this issue.
+    
+    # Webhook für kritische Alerts
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook/critical'
+        send_resolved: true
+
+  - name: 'performance-alerts'
+    email_configs:
+      - to: '${EMAIL_DEVOPS}'
+        headers:
+          Subject: '⚠️ Performance Alert - Nextcloud Performance Monitor'
+        text: |
+          ⚠️ PERFORMANCE ALERT ⚠️
+          
+          {{ range .Alerts -}}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          Service: {{ .Labels.service }}
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          
+          {{ end }}
+    
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook'
+        send_resolved: true
+
+  - name: 'network-alerts'
+    email_configs:
+      - to: '${EMAIL_NETWORK}'
+        headers:
+          Subject: '🌐 Network Alert - Nextcloud Performance Monitor'
+        text: |
+          🌐 NETWORK ALERT 🌐
+          
+          {{ range .Alerts -}}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          
+          {{ if .Labels.latency }}
+          Current Latency: {{ .Labels.latency }}ms
+          {{ end }}
+          
+          {{ end }}
+    
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook'
+        send_resolved: true
+
+  - name: 'sla-alerts'
+    email_configs:
+      - to: '${EMAIL_MANAGEMENT},${EMAIL_DEVOPS}'
+        headers:
+          Subject: '📊 SLA Violation - Nextcloud Performance Monitor'
+        text: |
+          📊 SLA VIOLATION DETECTED 📊
+          
+          {{ range .Alerts -}}
+          SLA Violation for Service: {{ .Labels.service }}
+          
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          
+          Please review the service performance and take corrective action.
+          {{ end }}
+    
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook'
+        send_resolved: true

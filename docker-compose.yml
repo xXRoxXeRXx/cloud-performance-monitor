@@ -16,11 +16,47 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
     ports:
       - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - monitor-net
+
+  alertmanager:
+    build:
+      context: ./alertmanager
+      dockerfile: Dockerfile
+    image: nextcloud-alertmanager:latest
+    container_name: alertmanager
+    env_file:
+      - .env
+    environment:
+      - SMTP_REQUIRE_TLS=true
+    volumes:
+      - alertmanager-data:/alertmanager
+    ports:
+      - "9093:9093"
+    restart: unless-stopped
+    networks:
+      - monitor-net
+
+  webhook-logger:
+    build:
+      context: .
+      dockerfile: deploy/webhook-logger/Dockerfile
+    image: nextcloud-webhook-logger:latest
+    container_name: webhook-logger
+    ports:
+      - "8081:8080"
     restart: unless-stopped
     networks:
       - monitor-net
@@ -42,6 +78,7 @@ services:
 volumes:
   prometheus-data:
   grafana-data:
+  alertmanager-data:
 
 networks:
   monitor-net:

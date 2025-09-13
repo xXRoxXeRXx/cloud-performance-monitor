@@ -1,0 +1,198 @@
+groups:
+  - name: nextcloud_performance_alerts
+    rules:
+      # ==== SERVICE AVAILABILITY ALERTS ====
+      - alert: ServiceDown
+        expr: up{job="monitor-agent"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Nextcloud Performance Monitor is down"
+          description: "The monitor agent has been down for more than 1 minute."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-ServiceDown"
+
+      # ==== PERFORMANCE ALERTS ====
+      - alert: HighUploadDuration
+        expr: nextcloud_test_duration_seconds{type="upload"} > 300
+        for: 2m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High upload duration detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Upload took {{ $value }}s, which is above the 5-minute threshold."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-HighUploadDuration"
+
+      - alert: CriticalUploadDuration
+        expr: nextcloud_test_duration_seconds{type="upload"} > 600
+        for: 1m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "Critical upload duration detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Upload took {{ $value }}s, which is above the 10-minute critical threshold."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-CriticalUploadDuration"
+
+      - alert: SlowUploadSpeed
+        expr: nextcloud_test_speed_mbytes_per_sec{type="upload"} < 1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Slow upload speed detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Upload speed is {{ $value }} MB/s, below 1 MB/s threshold."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-SlowUploadSpeed"
+
+      # ==== ERROR RATE ALERTS ====
+      - alert: HighErrorRate
+        expr: rate(nextcloud_test_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "High error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-HighErrorRate"
+
+      - alert: CriticalErrorRate
+        expr: rate(nextcloud_test_errors_total[5m]) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          category: reliability
+        annotations:
+          summary: "Critical error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-CriticalErrorRate"
+
+      - alert: TestFailures
+        expr: nextcloud_test_success < 1
+        for: 1m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "Test failure detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Test failed with error code: {{ $labels.error_code }}"
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-TestFailures"
+
+      # ==== NETWORK ALERTS ====
+      - alert: HighNetworkLatency
+        expr: nextcloud_network_latency_ms > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "High network latency to {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Network latency is {{ $value }}ms, above 100ms threshold."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-HighNetworkLatency"
+
+      - alert: CriticalNetworkLatency
+        expr: nextcloud_network_latency_ms > 500
+        for: 2m
+        labels:
+          severity: critical
+          category: network
+        annotations:
+          summary: "Critical network latency to {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Network latency is {{ $value }}ms, above 500ms critical threshold."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-CriticalNetworkLatency"
+
+      - alert: ConnectionTimeouts
+        expr: rate(nextcloud_connection_timeouts_total[10m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "Connection timeouts detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Connection timeout rate is {{ $value | humanizePercentage }} over the last 10 minutes."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-ConnectionTimeouts"
+
+      # ==== CHUNK UPLOAD ALERTS ====
+      - alert: SlowChunkUploads
+        expr: avg_over_time(nextcloud_chunk_upload_duration_seconds[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Slow chunk uploads detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Average chunk upload time is {{ $value }}s over the last 5 minutes."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-SlowChunkUploads"
+
+      - alert: HighChunkRetryRate
+        expr: rate(nextcloud_chunk_retries_total[10m]) / rate(nextcloud_chunks_uploaded_total[10m]) > 0.15
+        for: 5m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "High chunk retry rate for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Chunk retry rate is {{ $value | humanizePercentage }} over the last 10 minutes."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-HighChunkRetryRate"
+
+      # ==== CIRCUIT BREAKER ALERTS ====
+      - alert: CircuitBreakerOpen
+        expr: nextcloud_circuit_breaker_state > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: reliability
+        annotations:
+          summary: "Circuit breaker open for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Circuit breaker state is {{ $value }} (0=closed, 1=open, 2=half-open)."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-CircuitBreakerOpen"
+
+  - name: nextcloud_sla_alerts
+    rules:
+      # ==== SLA TRACKING ALERTS ====
+      - alert: SLAViolation99Percent
+        expr: |
+          (
+            sum(rate(nextcloud_test_success[24h])) / 
+            sum(rate(nextcloud_test_duration_seconds_count[24h]))
+          ) < 0.99
+        for: 5m
+        labels:
+          severity: warning
+          category: sla
+        annotations:
+          summary: "SLA violation: 99% uptime not met"
+          description: "24h success rate is {{ $value | humanizePercentage }}, below 99% SLA."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-SLAViolation"
+
+      - alert: SLAViolation95Percent
+        expr: |
+          (
+            sum(rate(nextcloud_test_success[24h])) / 
+            sum(rate(nextcloud_test_duration_seconds_count[24h]))
+          ) < 0.95
+        for: 2m
+        labels:
+          severity: critical
+          category: sla
+        annotations:
+          summary: "Critical SLA violation: 95% uptime not met"
+          description: "24h success rate is {{ $value | humanizePercentage }}, below 95% critical SLA."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-CriticalSLAViolation"
+
+  - name: nextcloud_meta_alerts
+    rules:
+      # ==== META MONITORING ALERTS ====
+      - alert: TooManyAlerts
+        expr: count(ALERTS{alertstate="firing"}) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: meta
+        annotations:
+          summary: "Too many active alerts"
+          description: "{{ $value }} alerts are currently firing. This might indicate a widespread issue."
+          runbook_url: "https://github.com/MarcelWMeyer/nextcloud-performance-monitor/wiki/Runbook-TooManyAlerts"

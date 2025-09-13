@@ -1,0 +1,82 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@nextcloud-monitor.local'
+
+# Routing configuration
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'default'
+  routes:
+    # Critical alerts -> immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 5m
+    
+    # Performance alerts -> batched notification
+    - match:
+        category: performance
+      receiver: 'performance-alerts'
+      group_interval: 10m
+      repeat_interval: 4h
+    
+    # Network alerts -> network team
+    - match:
+        category: network
+      receiver: 'network-alerts'
+      group_interval: 15m
+      repeat_interval: 6h
+    
+    # SLA violations -> management notification
+    - match:
+        category: sla
+      receiver: 'sla-alerts'
+      group_wait: 5m
+      repeat_interval: 2h
+
+# Inhibition rules - suppress redundant alerts
+inhibit_rules:
+  # Suppress warning if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+  
+  # Suppress individual alerts if circuit breaker is open
+  - source_match:
+      alertname: 'CircuitBreakerOpen'
+    target_match_re:
+      alertname: '(HighUploadDuration|SlowUploadSpeed|TestFailures)'
+    equal: ['instance']
+
+# Alert receivers/notification channels
+receivers:
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook'
+        send_resolved: true
+
+  - name: 'critical-alerts'
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook/critical'
+        send_resolved: true
+
+  - name: 'performance-alerts'
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook'
+        send_resolved: true
+
+  - name: 'network-alerts'
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook'
+        send_resolved: true
+
+  - name: 'sla-alerts'
+    webhook_configs:
+      - url: 'http://webhook-logger:8080/webhook'
+        send_resolved: true
