@@ -4,6 +4,10 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/MarcelWMeyer/nextcloud-performance-monitor/internal/agent"
@@ -18,21 +22,61 @@ func main() {
 		log.Fatalf("ERROR: Could not load configuration: %v", err)
 	}
 
+	// Create context for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Setup signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
 	// Start the Prometheus metrics server
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: nil,
+	}
+	
+	http.Handle("/metrics", promhttp.Handler())
 	go func() {
-		http.Handle("/metrics", promhttp.Handler())
 		log.Println("Metrics server starting on :8080")
-		if err := http.ListenAndServe(":8080", nil); err != nil {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("ERROR: Metrics server failed: %v", err)
 		}
 	}()
 
-	// Start sequential monitoring
-	startSequentialMonitoring(allConfigs)
+	// Start sequential monitoring in goroutine
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		startSequentialMonitoring(ctx, allConfigs)
+	}()
+
+	// Wait for shutdown signal
+	sig := <-sigChan
+	log.Printf("Received signal %s, initiating graceful shutdown...", sig)
+
+	// Cancel context to signal shutdown
+	cancel()
+
+	// Shutdown metrics server gracefully
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+	
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Metrics server shutdown error: %v", err)
+	} else {
+		log.Println("Metrics server shut down gracefully")
+	}
+
+	// Wait for monitoring to finish current tests
+	log.Println("Waiting for running tests to complete...")
+	wg.Wait()
+	log.Println("Graceful shutdown completed")
 }
 
 // startSequentialMonitoring runs tests for all instances sequentially - one after another
-func startSequentialMonitoring(configs []*agent.Config) {
+func startSequentialMonitoring(ctx context.Context, configs []*agent.Config) {
 	log.Printf("Starting sequential monitoring for %d instances", len(configs))
 	
 	if len(configs) == 0 {
@@ -57,29 +101,48 @@ func startSequentialMonitoring(configs []*agent.Config) {
 	
 	// Run initial test cycle immediately
 	log.Println("=== Starting initial test cycle ===")
-	runTestCycle(configs, clients)
+	if !runTestCycle(ctx, configs, clients) {
+		return // Shutdown signal received
+	}
 	
 	// Start the periodic testing loop
 	ticker := time.NewTicker(baseInterval)
 	defer ticker.Stop()
 	
-	for range ticker.C {
-		log.Println("=== Starting new test cycle ===")
-		runTestCycle(configs, clients)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Shutdown signal received, stopping monitoring...")
+			return
+		case <-ticker.C:
+			log.Println("=== Starting new test cycle ===")
+			if !runTestCycle(ctx, configs, clients) {
+				return // Shutdown signal received during test
+			}
+		}
 	}
 }
 
 // runTestCycle runs tests for all instances sequentially - one after another
-func runTestCycle(configs []*agent.Config, clients map[*agent.Config]interface{}) {
+// Returns false if shutdown signal received, true if completed normally
+func runTestCycle(ctx context.Context, configs []*agent.Config, clients map[*agent.Config]interface{}) bool {
 	cycleStart := time.Now()
 	log.Printf("Starting test cycle with %d instances", len(configs))
 	
 	for i, cfg := range configs {
+		// Check for shutdown signal before each test
+		select {
+		case <-ctx.Done():
+			log.Printf("Shutdown signal received during test cycle, stopping after %d/%d tests", i, len(configs))
+			return false
+		default:
+		}
+		
 		log.Printf("[%d/%d] Starting test for instance %s (%s)", 
 			i+1, len(configs), cfg.InstanceName, cfg.ServiceType)
 		
 		testStart := time.Now()
-		runTestForInstance(cfg, clients[cfg])
+		runTestForInstance(ctx, cfg, clients[cfg])
 		testDuration := time.Since(testStart)
 		
 		log.Printf("[%d/%d] Completed test for instance %s (%s) in %v", 
@@ -88,10 +151,11 @@ func runTestCycle(configs []*agent.Config, clients map[*agent.Config]interface{}
 	
 	cycleDuration := time.Since(cycleStart)
 	log.Printf("=== Test cycle completed in %v ===", cycleDuration)
+	return true
 }
 
 // runTestForInstance runs a single test for the given instance
-func runTestForInstance(cfg *agent.Config, client interface{}) {
+func runTestForInstance(ctx context.Context, cfg *agent.Config, client interface{}) {
 	startTime := time.Now()
 	
 	switch cfg.ServiceType {
@@ -102,7 +166,6 @@ func runTestForInstance(cfg *agent.Config, client interface{}) {
 			log.Printf("ERROR: Invalid client type for Nextcloud instance %s", cfg.InstanceName)
 		}
 	case "hidrive":
-		ctx := context.Background()
 		if err := agent.RunHiDriveTest(ctx, cfg); err != nil {
 			log.Printf("[HiDrive] Test error for %s: %v", cfg.URL, err)
 		}

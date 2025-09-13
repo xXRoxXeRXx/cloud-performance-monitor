@@ -9,7 +9,7 @@ func TestLoadConfigs(t *testing.T) {
 	// Set environment variables
 	os.Setenv("NC_INSTANCE_1_URL", "https://test.com")
 	os.Setenv("NC_INSTANCE_1_USER", "user")
-	os.Setenv("NC_INSTANCE_1_PASS", "pass")
+	os.Setenv("NC_INSTANCE_1_PASS", "validpassword123") // At least 8 characters
 	os.Setenv("TEST_FILE_SIZE_MB", "5")
 	os.Setenv("TEST_INTERVAL_SECONDS", "600")
 	os.Setenv("TEST_CHUNK_SIZE_MB", "5")
@@ -54,7 +54,7 @@ func TestLoadConfigsInvalid(t *testing.T) {
 	// Invalid file size
 	os.Setenv("NC_INSTANCE_1_URL", "https://test.com")
 	os.Setenv("NC_INSTANCE_1_USER", "user")
-	os.Setenv("NC_INSTANCE_1_PASS", "pass")
+	os.Setenv("NC_INSTANCE_1_PASS", "validpassword123") // Valid password
 	os.Setenv("TEST_FILE_SIZE_MB", "-1")
 
 	defer func() {

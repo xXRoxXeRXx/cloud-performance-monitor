@@ -21,7 +21,7 @@ type Config struct {
 const (
 	DefaultFileSizeMB  = 10
 	DefaultIntervalSec = 300
-	DefaultChunkSizeMB = 10
+	DefaultChunkSizeMB = 5  // Kleinere Chunks für HiDrive (5MB statt 10MB)
 )
 
 // LoadConfigs loads configurations for all specified Nextcloud and HiDrive Next instances
@@ -139,9 +139,17 @@ func LoadConfigs() ([]*Config, error) {
 	       return nil, fmt.Errorf("error: no instances configured. Please set NC_INSTANCE_1_... or HIDRIVE_INSTANCE_1_... variables")
        }
 
-	       // Debug: Log all loaded configs
-	       for _, c := range configs {
-		       fmt.Printf("[Config] Loaded instance: %s, ServiceType: %s, URL: %s\n", c.InstanceName, c.ServiceType, c.URL)
+       // Validate all configurations
+       for i, cfg := range configs {
+	       if err := ValidateConfig(cfg); err != nil {
+		       return nil, fmt.Errorf("configuration validation failed for instance %d: %w", i+1, err)
 	       }
-	       return configs, nil
+	       fmt.Printf("[Config] Validated instance: %s, ServiceType: %s, URL: %s\n", cfg.InstanceName, cfg.ServiceType, cfg.URL)
+       }
+
+       // Debug: Log all loaded configs
+       for _, c := range configs {
+	       fmt.Printf("[Config] Loaded instance: %s, ServiceType: %s, URL: %s\n", c.InstanceName, c.ServiceType, c.URL)
+       }
+       return configs, nil
 }
