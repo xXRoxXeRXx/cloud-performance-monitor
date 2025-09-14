@@ -1,128 +1,262 @@
 
-# Nextcloud & HiDrive Performance Monitor
+# 📊 Nextcloud & HiDrive Performance Monitor
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/MarcelWMeyer/nextcloud-performance-monitor/docker-image.yml?branch=main)](https://github.com/MarcelWMeyer/nextcloud-performance-monitor/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
+[![Go](https://img.shields.io/badge/Go-1.22+-00ADD8)](https://golang.org/)
 
+Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Überwachung der Performance von Nextcloud- und HiDrive-Instanzen mit vollständigem Alerting, E-Mail-Benachrichtigungen und erweiterten Dashboards.
 
-Ein einfacher, containerisierter Agent zur Überwachung der Upload- und Download-Leistung von Nextcloud- und HiDrive-Instanzen über WebDAV, mit Visualisierung in Grafana.
+## ✨ Features
 
-## Features
-- Überwache mehrere Nextcloud- und HiDrive-Instanzen mit einem einzigen Agenten.
-- Messe reale Leistung durch synthetische Upload- (mit Chunking) und Download-Tests.
-- Biete Metriken im Prometheus-Format (Geschwindigkeit in MB/s, Dauer, Erfolgsrate) – jetzt mit `service`-Label (z.B. nextcloud/hidrive).
-- Starte den gesamten Stack (Agent, Prometheus, Grafana) einfach über Docker Compose.
-- Enthält ein vorkonfiguriertes, anpassbares Grafana-Dashboard mit Service-Selector für sofortige Visualisierung.
+### 🎯 **Core Monitoring**
+- **Multi-Instance Support**: Überwache beliebig viele Nextcloud- und HiDrive-Instanzen gleichzeitig
+- **Real Performance Testing**: Synthetische Upload/Download-Tests mit Chunked-Upload-Support
+- **Advanced Metrics**: 9+ detaillierte Metriken inkl. Chunk-Statistiken, Netzwerk-Latenz, Circuit Breaker
+- **Service Labeling**: Automatische Unterscheidung zwischen nextcloud/hidrive Services
 
+### 📈 **Complete Monitoring Stack**
+- **Prometheus**: Metriken-Sammlung mit umfassenden Alert-Regeln (15+ Alerts)
+- **Grafana**: Enhanced Dashboard mit 4 Monitoring-Bereichen und Service-Selector
+- **Alertmanager**: Intelligente Alert-Weiterleitung mit E-Mail-Benachrichtigungen
+- **Webhook Logger**: Alert-Testing und Debugging-Service
 
+### 🔔 **Intelligent Alerting**
+- **Email Notifications**: SMTP-basierte Benachrichtigungen mit Template-System
+- **Smart Routing**: Verschiedene Empfänger für Critical, Performance, Network und SLA Alerts
+- **Alert Suppression**: Intelligente Unterdrückung redundanter Alerts
+- **SLA Monitoring**: Service Level Agreement Überwachung und Violation Alerts
 
-## Tests & Continuous Integration
-Das Projekt enthält Go-Unit-Tests (z.B. für die Konfiguration). Tests können lokal ausgeführt werden mit:
+### 🛠️ **Developer Experience**
+- **One-Command Deployment**: Kompletter Stack mit `docker compose up -d`
+- **Environment Configuration**: Flexible .env-basierte Konfiguration
+- **Comprehensive Documentation**: Vollständige Setup- und Konfigurationsanleitungen
+- **Makefile Automation**: 20+ Entwicklungskommandos für efizientes Arbeiten
+
+## 🚀 Quick Start
+
+### Automatischer Setup (Empfohlen)
 ```bash
-go test -v -cover ./...
-```
-Die GitHub Actions Pipeline nutzt Caching für Go-Module und Docker-Layer, Coverage-Report und baut/pusht Images automatisch bei neuen Tags.
-
-## Voraussetzungen
-Bevor Sie beginnen, stellen Sie sicher, dass Folgendes vorhanden ist:
-- Ein Server mit Shell-Zugang (SSH), auf dem Sie den Monitoring-Stack ausführen können.
-- **Docker** und **Docker Compose** müssen auf diesem Server installiert sein.
-- Ein dedizierter **Nextcloud-Benutzer** für jede zu testende Instanz mit Lese-/Schreibberechtigungen. Es wird dringend empfohlen, ein "App-Passwort" für diesen Benutzer zu erstellen und zu verwenden.
-
-## Schnellstart-Anleitung
-
-### Schritt 1: Projekt herunterladen
-Klonen Sie das Projekt-Repository von GitHub auf Ihren Server und navigieren Sie in das Verzeichnis.
-```bash
+# Repository klonen
 git clone https://github.com/MarcelWMeyer/nextcloud-performance-monitor.git
 cd nextcloud-performance-monitor
+
+# Automatischer Quick Start (alles in einem)
+make quick-start
 ```
 
-### Schritt 2: Prometheus-Konfiguration erstellen
-Prometheus benötigt eine Konfigurationsdatei, um zu wissen, wo Metriken zu finden sind.
-
-Erstellen Sie das Verzeichnis:
+### Manueller Setup
 ```bash
-mkdir -p prometheus
-```
-
-Erstellen Sie die Konfigurationsdatei `prometheus/prometheus.yml` mit folgendem Inhalt:
-```yaml
-global:
-  scrape_interval: 15s
-
-scrape_configs:
-  - job_name: 'nextcloud-monitor-agent'
-    static_configs:
-      - targets: ['monitor-agent:8080']
-```
-
-### Schritt 3: Instanzen konfigurieren
-Kopieren Sie die Beispiel-Konfigurationsdatei. Diese Datei wird verwendet, um Ihre Instanz-Anmeldedaten an den Agenten zu übergeben.
-```bash
+# 1. Konfiguration erstellen
 cp .env.example .env
+
+# 2. .env-Datei mit deinen Credentials anpassen
+nano .env
+
+# 3. Stack bauen und starten  
+make build
+make run
+
+# 4. Test-Alert senden
+make test-alert
 ```
 
+## ⚙️ Konfiguration
 
-Öffnen Sie die `.env`-Datei mit einem Texteditor (z.B. `nano .env`). Fügen Sie einen nummerierten Block für jede Instanz hinzu, die Sie überwachen möchten:
-
-Beispiel `.env`-Datei für Nextcloud und HiDrive:
+### `.env` Datei Beispiel
 ```bash
-# Nextcloud Instanz 1
-NC_INSTANCE_1_URL=https://cloud.company-a.com
-NC_INSTANCE_1_USER=monitor_user_a
-NC_INSTANCE_1_PASS=super-secret-password-a
+# Test-Konfiguration
+TEST_FILE_SIZE_MB=100
+TEST_INTERVAL_SECONDS=300
+TEST_CHUNK_SIZE_MB=10
 
-# HiDrive Instanz 1
+# E-Mail-Benachrichtigungen
+SMTP_SMARTHOST=smtp.gmail.com:587
+SMTP_FROM=alerts@your-domain.com
+SMTP_AUTH_USERNAME=alerts@your-domain.com
+SMTP_AUTH_PASSWORD=your-app-password
+SMTP_REQUIRE_TLS=true
+
+# E-Mail-Empfänger
+EMAIL_ADMIN=admin@your-domain.com
+EMAIL_DEVOPS=devops@your-domain.com
+EMAIL_NETWORK=network@your-domain.com
+EMAIL_MANAGEMENT=management@your-domain.com
+
+# Nextcloud Instanzen
+NC_INSTANCE_1_URL=https://cloud.example.com
+NC_INSTANCE_1_USER=monitor_user
+NC_INSTANCE_1_PASS=app-password
+
+# HiDrive Instanzen
 HIDRIVE_INSTANCE_1_URL=https://storage.ionos.fr
-HIDRIVE_INSTANCE_1_USER=monitor_user_hidrive
-HIDRIVE_INSTANCE_1_PASS=super-secret-password-hidrive
+HIDRIVE_INSTANCE_1_USER=your-username
+HIDRIVE_INSTANCE_1_PASS=your-password
 ```
 
-### Schritt 4: Monitoring-Stack starten
-Starten Sie den gesamten Stack (Agent, Prometheus, Grafana) mit einem einzigen Befehl:
+### E-Mail Provider Konfiguration
+Unterstützte Provider: **Gmail**, **Outlook**, **Yahoo**, **Strato**, und andere SMTP-Server.
+
+📧 Detaillierte Anleitung: [docs/EMAIL_CONFIGURATION.md](docs/EMAIL_CONFIGURATION.md)
+
+## 📊 Monitoring Dashboards
+
+Nach dem Start stehen folgende Interfaces zur Verfügung:
+
+| Service | URL | Beschreibung |
+|---------|-----|--------------|
+| **Grafana** | http://localhost:3003 | Haupt-Dashboard mit Performance-Metriken |
+| **Prometheus** | http://localhost:9090 | Metriken-Browser und Alert-Status |
+| **Alertmanager** | http://localhost:9093 | Alert-Management und E-Mail-Konfiguration |
+
+### Grafana Dashboard Features
+- **Performance Overview**: Upload/Download Geschwindigkeiten und Latenz
+- **Error Analysis**: Fehlerquoten und Service-Verfügbarkeit
+- **Chunk Statistics**: Detaillierte Upload-Chunk-Metriken
+- **Network Analysis**: Netzwerk-Performance und Verbindungsqualität
+
+## 🛠️ Development Commands
+
 ```bash
-docker compose up -d
+# 🏗️ Building
+make build              # Alle Docker Images bauen
+make build-agent        # Nur Agent bauen
+
+# 🚀 Running  
+make run                # Stack starten
+make stop               # Stack stoppen
+make restart            # Stack neustarten
+make status             # Service-Status anzeigen
+
+# 📊 Monitoring
+make dashboards         # Grafana öffnen
+make metrics            # Prometheus öffnen
+make alerts             # Alertmanager öffnen
+make logs               # Logs aller Services
+
+# 🧪 Testing
+make test               # Go Tests ausführen
+make test-alert         # Test-Alert senden
+make lint               # Code-Qualität prüfen
+
+# 🧹 Maintenance
+make clean              # Container und Volumes entfernen
+make clean-all          # Komplette Bereinigung
 ```
 
-Sie können den Status der Container mit `docker compose ps` überprüfen.
+## 📈 Metrics & Alerts
 
-### Schritt 5: Grafana einrichten
-**Anmelden:** Öffnen Sie Ihren Webbrowser und navigieren Sie zu `http://<ihre-server-ip>:3000`. Melden Sie sich mit den Standard-Grafana-Anmeldedaten an (Benutzer: `admin`, Passwort: `admin`). Sie werden aufgefordert, das Passwort zu ändern.
+### Available Metrics
+```prometheus
+# Performance Metrics
+nextcloud_test_duration_seconds{service="nextcloud|hidrive",type="upload|download"}
+nextcloud_test_speed_mbps{service="nextcloud|hidrive",type="upload|download"}
+nextcloud_test_success_total{service="nextcloud|hidrive"}
+nextcloud_test_errors_total{service="nextcloud|hidrive"}
 
-**Datenquelle hinzufügen:** Gehen Sie im Menü zu **Connections > Data sources > Add new data source**.
-
-Wählen Sie **Prometheus**.
-
-Geben Sie für die "Prometheus server URL" `http://prometheus:9090` ein.
-
-Klicken Sie auf **Save & Test**. Sie sollten eine Erfolgsmeldung sehen.
-
-**Dashboard importieren:** Gehen Sie zu **Dashboards > New > Import**.
-
-Laden Sie die Datei `deploy/grafana/dashboard.json` aus dem Projektverzeichnis hoch.
-
-Wählen Sie im nächsten Schritt die Prometheus-Datenquelle aus, die Sie gerade erstellt haben.
-
-Klicken Sie auf **Import**.
-
-### Schritt 6: Ergebnisse anzeigen
-
-Ihr Dashboard ist jetzt live! Nach einigen Minuten sollten die ersten Datenpunkte erscheinen. Verwenden Sie das Dropdown-Menü "service" oben, um zwischen Nextcloud- und HiDrive-Instanzen zu filtern.
-## Prometheus-Metriken (Beispiel)
-
-Die wichtigsten Metriken enthalten jetzt das Label `service`:
-
-```
-nextcloud_test_duration_seconds{service="nextcloud",instance="https://cloud.company-a.com",type="upload"} 2.5
-nextcloud_test_duration_seconds{service="hidrive",instance="https://storage.ionos.fr",type="upload"} 12.3
+# Advanced Metrics  
+nextcloud_chunks_uploaded_total{service="nextcloud|hidrive"}
+nextcloud_chunk_retries_total{service="nextcloud|hidrive"}
+nextcloud_network_latency_ms{service="nextcloud|hidrive"}
+nextcloud_circuit_breaker_state{service="nextcloud|hidrive"}
 ```
 
+### Alert Categories
+- **🚨 Critical Alerts**: Service outages, authentication failures
+- **⚠️ Performance Alerts**: Slow uploads/downloads, high latency
+- **🌐 Network Alerts**: Connection timeouts, DNS issues
+- **📊 SLA Alerts**: Service level agreement violations
 
-## Fehlerbehebung
-- **Fehler bei `docker compose up`:** Stellen Sie sicher, dass die Dateien `prometheus/prometheus.yml` und `.env` vor dem Ausführen des Befehls existieren.
-- **Keine Daten in Grafana?** Überprüfen Sie die Agent-Logs mit `docker compose logs monitor-agent`. Suchen Sie nach Verbindungs- oder Authentifizierungsfehlern im Zusammenhang mit Ihrer Nextcloud-Instanz.
-- **"Data source error" in Grafana?** Stellen Sie sicher, dass alle Container laufen (`docker compose ps`) und dass Sie die korrekte URL (`http://prometheus:9090`) beim Einrichten der Datenquelle in Schritt 5 verwendet haben.
+## 🏗️ Architecture
 
-## Lizenz
-Dieses Projekt ist unter der MIT-Lizenz lizenziert.
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Monitor Agent │───▶│   Prometheus    │───▶│     Grafana     │
+│                 │    │                 │    │                 │
+│ • Upload Tests  │    │ • Metrics Store │    │ • Dashboards    │
+│ • Download Tests│    │ • Alert Rules   │    │ • Visualisation│
+│ • Chunked Upload│    │ • Scraping      │    │ • Service Filter│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       
+         │              ┌─────────────────┐              
+         │              │  Alertmanager   │              
+         │              │                 │              
+         │              │ • Email Alerts  │              
+         └──────────────▶│ • Smart Routing │              
+                        │ • Suppression   │              
+                        └─────────────────┘              
+```
+
+## 📚 Documentation
+
+- 📋 [Project Structure](docs/PROJECT_STRUCTURE.md) - Complete directory layout and component overview
+- 📧 [Email Configuration](docs/EMAIL_CONFIGURATION.md) - Detailed SMTP setup guide
+- 🚀 [Quick Start Guide](#-quick-start) - Get up and running in minutes
+- 🔧 [Development Guide](#-development-commands) - Commands for developers
+
+## 🔧 Requirements
+
+- **Docker** & **Docker Compose**
+- **Go 1.22+** (for development)
+- **Nextcloud/HiDrive** instances with WebDAV access
+- **SMTP Server** access (for email notifications)
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Services not starting?**
+```bash
+make status              # Check service status
+make logs               # View logs
+docker system prune     # Clean up Docker
+```
+
+**No metrics in Grafana?**
+```bash
+make logs-agent         # Check agent logs
+curl http://localhost:8080/metrics  # Test metrics endpoint
+```
+
+**Email notifications not working?**
+```bash
+make logs-alerts        # Check alertmanager logs
+make test-alert         # Send test alert
+# Check docs/EMAIL_CONFIGURATION.md for provider-specific settings
+```
+
+### Performance Tuning
+
+**Adjust test frequency:**
+```bash
+# In .env file
+TEST_INTERVAL_SECONDS=600    # Test every 10 minutes instead of 5
+TEST_FILE_SIZE_MB=50         # Smaller test files
+```
+
+**Scale for high volume:**
+```bash
+# Monitor many instances
+NC_INSTANCE_1_URL=...
+NC_INSTANCE_2_URL=...
+# ... up to NC_INSTANCE_N_URL
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## ⭐ Support
+
+If this project helps you, please consider giving it a star! ⭐
+
+For issues and feature requests, please use the [GitHub Issues](https://github.com/MarcelWMeyer/nextcloud-performance-monitor/issues) page.
