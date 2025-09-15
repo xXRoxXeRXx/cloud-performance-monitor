@@ -311,7 +311,7 @@
           },
           "editorMode": "code",
           "expr": "sum(nextcloud_daily_test_count{service=~\"$service\"})",
-          "legendFormat": "",
+          "legendFormat": "Total Tests",
           "range": true,
           "refId": "A"
         }

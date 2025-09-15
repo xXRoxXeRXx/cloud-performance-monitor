@@ -84,13 +84,13 @@
       "targets": [
         {
           "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[1m])",
-          "legendFormat": "upload",
+          "legendFormat": "Upload - {{exported_instance}}",
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "prometheus" }
         },
         {
           "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[1m])",
-          "legendFormat": "download",
+          "legendFormat": "Download - {{exported_instance}}",
           "refId": "B",
           "datasource": { "type": "prometheus", "uid": "prometheus" }
         }
