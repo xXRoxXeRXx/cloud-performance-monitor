@@ -28,11 +28,20 @@ cloud-performance-monitor/
 │   │   ├── config.go      # Configuration management
 │   │   ├── metrics.go     # Prometheus metrics
 │   │   ├── tester.go      # Test orchestration
-│   │   └── hidrive_tester.go  # HiDrive-specific tests
+│   │   ├── hidrive_tester.go      # HiDrive-specific tests
+│   │   ├── magentacloud_tester.go # MagentaCLOUD-specific tests
+│   │   ├── hidrive_legacy_tester.go # HiDrive Legacy tests
+│   │   └── dropbox_tester.go      # Dropbox-specific tests
 │   ├── nextcloud/         # Nextcloud WebDAV client
 │   │   └── client.go      # Nextcloud API implementation
-│   └── hidrive/           # HiDrive WebDAV client
-│       └── client.go      # HiDrive API implementation
+│   ├── hidrive/           # HiDrive WebDAV client
+│   │   └── client.go      # HiDrive API implementation
+│   ├── magentacloud/      # MagentaCLOUD WebDAV client
+│   │   └── client.go      # MagentaCLOUD API with ANID support
+│   ├── hidrive_legacy/    # HiDrive Legacy OAuth2 client
+│   │   └── client.go      # HiDrive Legacy API implementation
+│   └── dropbox/           # Dropbox REST API client
+│       └── client.go      # Dropbox API implementation
 ├── prometheus/            # Prometheus configuration
 │   ├── prometheus.yml     # Prometheus config with alerting
 │   └── alert_rules.yml    # Comprehensive alert rules

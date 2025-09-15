@@ -6,15 +6,15 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8)](https://golang.org/)
 
-Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Überwachung der Performance von Nextcloud- und HiDrive-Instanzen mit vollständigem Alerting, E-Mail-Benachrichtigungen und erweiterten Dashboards.
+Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Überwachung der Performance von Nextcloud-, HiDrive-, MagentaCLOUD- und Dropbox-Instanzen mit vollständigem Alerting, E-Mail-Benachrichtigungen und erweiterten Dashboards.
 
 ## ✨ Features
 
 ### 🎯 **Core Monitoring**
-- **Multi-Instance Support**: Überwache beliebig viele Nextcloud- und HiDrive und weitere Cloud Instanzen gleichzeitig
+- **Multi-Instance Support**: Überwache beliebig viele Nextcloud-, HiDrive-, MagentaCLOUD- und Dropbox-Instanzen gleichzeitig
 - **Real Performance Testing**: Synthetische Upload/Download-Tests mit Chunked-Upload-Support
 - **Advanced Metrics**: 9+ detaillierte Metriken inkl. Chunk-Statistiken, Netzwerk-Latenz, Circuit Breaker
-- **Service Labeling**: Automatische Unterscheidung zwischen nextcloud/hidrive Services
+- **Service Labeling**: Automatische Unterscheidung zwischen nextcloud/hidrive/magentacloud/dropbox Services
 
 ### 📈 **Complete Monitoring Stack**
 - **Prometheus**: Metriken-Sammlung mit umfassenden Alert-Regeln (15+ Alerts)
@@ -101,6 +101,12 @@ HIDRIVE_INSTANCE_1_URL=https://storage.ionos.fr
 HIDRIVE_INSTANCE_1_USER=your-username
 HIDRIVE_INSTANCE_1_PASS=your-password
 
+# MagentaCLOUD Instanzen (WebDAV mit ANID)
+MAGENTACLOUD_INSTANCE_1_URL=https://magentacloud.de
+MAGENTACLOUD_INSTANCE_1_USER=your-email@t-online.de
+MAGENTACLOUD_INSTANCE_1_ANID=120049010000000114279134
+MAGENTACLOUD_INSTANCE_1_PASS=your-app-password
+
 # HiDrive Legacy (OAuth2)
 HIDRIVE_LEGACY_INSTANCE_1_URL=https://api.hidrive.strato.com/2.1
 HIDRIVE_LEGACY_INSTANCE_1_CLIENT_ID=your-oauth2-client-id
@@ -119,6 +125,7 @@ DROPBOX_INSTANCE_1_NAME=dropbox-main
 |---------|-----------|---------------|------------------|
 | **Nextcloud** | WebDAV | Username/Password | Standard WebDAV-Konfiguration |
 | **HiDrive Next** | WebDAV | Username/Password | Optimiert für IONOS HiDrive |
+| **MagentaCLOUD** | WebDAV | Username/Password/ANID | [📖 MagentaCLOUD Setup Guide](docs/MAGENTACLOUD_SETUP.md) |
 | **HiDrive Legacy** | OAuth2 REST API | Refresh Token | [📖 HiDrive OAuth2 Setup Guide](docs/HIDRIVE_OAUTH2_SETUP.md) |
 | **Dropbox** | REST API v2 | Access Token | [📖 Dropbox Setup Guide](docs/DROPBOX_SETUP.md) |
 
