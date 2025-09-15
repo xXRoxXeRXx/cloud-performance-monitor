@@ -185,7 +185,6 @@ func (c *Client) RefreshAccessToken() error {
 	}
 
 	log.Printf("HiDrive Legacy: Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn)
-	log.Printf("HiDrive Legacy: DEBUG TOKEN FOR API PLAYGROUND: %s", c.AccessToken)
 	return nil
 }
 
@@ -290,13 +289,10 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 	}
 	
 	// Remove root prefix from home path - API returns "root/users/myserver" but we need "/users/myserver"
-	log.Printf("HiDrive Legacy: DEBUG - homePath before TrimPrefix: %q", homePath)
 	cleanHomePath := strings.TrimPrefix(homePath, "root")
-	log.Printf("HiDrive Legacy: DEBUG - cleanHomePath after TrimPrefix: %q", cleanHomePath)
 	if !strings.HasPrefix(cleanHomePath, "/") {
 		cleanHomePath = "/" + cleanHomePath
 	}
-	log.Printf("HiDrive Legacy: DEBUG - cleanHomePath final: %q", cleanHomePath)
 	fullPath := cleanHomePath + "/" + dirPath
 	
 	log.Printf("HiDrive Legacy: Creating directory %s (home: %s, cleanHome: %s, dirPath: %s)", fullPath, homePath, cleanHomePath, dirPath)
@@ -359,13 +355,10 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	}
 	
 	// Remove root prefix from home path and build full path
-	log.Printf("HiDrive Legacy: DEBUG UploadFile - homePath before TrimPrefix: %q", homePath)
 	cleanHomePath := strings.TrimPrefix(homePath, "root")
-	log.Printf("HiDrive Legacy: DEBUG UploadFile - cleanHomePath after TrimPrefix: %q", cleanHomePath)
 	if !strings.HasPrefix(cleanHomePath, "/") {
 		cleanHomePath = "/" + cleanHomePath
 	}
-	log.Printf("HiDrive Legacy: DEBUG UploadFile - cleanHomePath final: %q", cleanHomePath)
 	fullPath := cleanHomePath + "/" + filePath
 	log.Printf("HiDrive Legacy: Uploading file to %s (home: %s, cleanHome: %s)", fullPath, homePath, cleanHomePath)
 	
@@ -412,25 +405,6 @@ func (c *Client) uploadSimple(filePath string, reader io.Reader, size int64) err
 		return fmt.Errorf("failed to create upload request: %v", err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// LOG COMPLETE REQUEST FOR DEBUGGING
-	log.Printf("HiDrive Legacy: === DEBUG REQUEST ===")
-	log.Printf("HiDrive Legacy: Method: %s", req.Method)
-	log.Printf("HiDrive Legacy: URL: %s", req.URL.String())
-	log.Printf("HiDrive Legacy: Headers:")
-	for name, values := range req.Header {
-		for _, value := range values {
-			log.Printf("HiDrive Legacy:   %s: %s", name, value)
-		}
-	}
-	log.Printf("HiDrive Legacy: Body size: %d bytes", requestBody.Len())
-	bodyPreview := requestBody.Bytes()
-	previewLen := 500
-	if len(bodyPreview) < previewLen {
-		previewLen = len(bodyPreview)
-	}
-	log.Printf("HiDrive Legacy: Body preview (first %d chars): %s", previewLen, string(bodyPreview[:previewLen]))
-	log.Printf("HiDrive Legacy: === END DEBUG REQUEST ===")
 
 	// Execute request
 	resp, err := c.doRequestWithRetry(req)
