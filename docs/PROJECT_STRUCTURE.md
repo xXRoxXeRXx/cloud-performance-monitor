@@ -3,7 +3,7 @@
 ## Directory Layout
 
 ```
-nextcloud-performance-monitor/
+cloud-performance-monitor/
 ├── .github/                    # GitHub workflows and templates
 ├── alertmanager/              # Alertmanager configuration
 │   ├── Dockerfile            # Custom alertmanager with email support

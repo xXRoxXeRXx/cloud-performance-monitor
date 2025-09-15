@@ -38,7 +38,7 @@ jobs:
       # Schritt 4: Abhängigkeiten laden (mit privatem Modulzugriff)
       - name: Tidy and download dependencies
         env:
-          GOPRIVATE: github.com/MarcelWMeyer/nextcloud-performance-monitor
+          GOPRIVATE: github.com/MarcelWMeyer/cloud-performance-monitor
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_TERMINAL_PROMPT: 1
         run: |
@@ -48,7 +48,7 @@ jobs:
       # Schritt 5: Unit-Tests mit Coverage ausführen (mit privatem Modulzugriff)
       - name: Run unit tests with coverage
         env:
-          GOPRIVATE: github.com/MarcelWMeyer/nextcloud-performance-monitor
+          GOPRIVATE: github.com/MarcelWMeyer/cloud-performance-monitor
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_TERMINAL_PROMPT: 1
         run: |

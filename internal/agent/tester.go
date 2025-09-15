@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/MarcelWMeyer/nextcloud-performance-monitor/internal/nextcloud"
+	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/nextcloud"
 )
 
 // randomReader generates random data on-the-fly to avoid large memory allocations

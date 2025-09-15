@@ -1,4 +1,4 @@
-module github.com/MarcelWMeyer/nextcloud-performance-monitor
+module github.com/MarcelWMeyer/cloud-performance-monitor
 
 go 1.22
 

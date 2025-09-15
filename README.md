@@ -1,7 +1,7 @@
 
-# 📊 Nextcloud & HiDrive Performance Monitor
+# 📊 Cloud Performance Monitor
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/MarcelWMeyer/nextcloud-performance-monitor/docker-image.yml?branch=main)](https://github.com/MarcelWMeyer/nextcloud-performance-monitor/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/MarcelWMeyer/cloud-performance-monitor/docker-image.yml?branch=main)](https://github.com/MarcelWMeyer/cloud-performance-monitor/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8)](https://golang.org/)
@@ -11,7 +11,7 @@ Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Ü
 ## ✨ Features
 
 ### 🎯 **Core Monitoring**
-- **Multi-Instance Support**: Überwache beliebig viele Nextcloud- und HiDrive-Instanzen gleichzeitig
+- **Multi-Instance Support**: Überwache beliebig viele Nextcloud- und HiDrive und weitere Cloud Instanzen gleichzeitig
 - **Real Performance Testing**: Synthetische Upload/Download-Tests mit Chunked-Upload-Support
 - **Advanced Metrics**: 9+ detaillierte Metriken inkl. Chunk-Statistiken, Netzwerk-Latenz, Circuit Breaker
 - **Service Labeling**: Automatische Unterscheidung zwischen nextcloud/hidrive Services
@@ -39,8 +39,8 @@ Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Ü
 ### Automatischer Setup (Empfohlen)
 ```bash
 # Repository klonen
-git clone https://github.com/MarcelWMeyer/nextcloud-performance-monitor.git
-cd nextcloud-performance-monitor
+git clone https://github.com/MarcelWMeyer/cloud-performance-monitor.git
+cd cloud-performance-monitor
 
 # Automatischer Quick Start (alles in einem)
 make quick-start
@@ -279,4 +279,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If this project helps you, please consider giving it a star! ⭐
 
-For issues and feature requests, please use the [GitHub Issues](https://github.com/MarcelWMeyer/nextcloud-performance-monitor/issues) page.
+For issues and feature requests, please use the [GitHub Issues](https://github.com/MarcelWMeyer/cloud-performance-monitor/issues) page.

@@ -9,7 +9,7 @@
 3. Wähle die folgenden Einstellungen:
    - **Choose an API**: Dropbox API
    - **Choose the type of access**: Full Dropbox (für vollständigen Zugriff)
-   - **Name your app**: `nextcloud-performance-monitor` (oder ein anderer Name)
+   - **Name your app**: `cloud-performance-monitor` (oder ein anderer Name)
 
 ### 2. Access Token generieren
 

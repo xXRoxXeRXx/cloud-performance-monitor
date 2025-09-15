@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/MarcelWMeyer/nextcloud-performance-monitor/internal/agent"
-	"github.com/MarcelWMeyer/nextcloud-performance-monitor/internal/nextcloud"
+	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/agent"
+	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/nextcloud"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 

@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	dropbox "github.com/MarcelWMeyer/nextcloud-performance-monitor/internal/dropbox"
+	dropbox "github.com/MarcelWMeyer/cloud-performance-monitor/internal/dropbox"
 )
 
 // RunDropboxTest führt einen Upload/Download-Test für Dropbox durch
