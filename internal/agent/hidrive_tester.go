@@ -27,7 +27,7 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        err := client.EnsureDirectory(testDir)
        if err != nil {
               log.Printf("[HiDrive] ERROR: Could not create test directory for %s: %v", cfg.URL, err)
-              TestErrors.WithLabelValues(serviceLabel, cfg.URL, "upload", "directory_creation").Inc()
+              TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()
               return err
        }
 
@@ -37,9 +37,9 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        chunkSize := int64(cfg.TestChunkSizeMB) * 1024 * 1024
        
        // Record chunk size for monitoring
-       ChunkSize.WithLabelValues(serviceLabel, cfg.URL).Set(float64(chunkSize))
+       ChunkSize.WithLabelValues(serviceLabel, cfg.InstanceName).Set(float64(chunkSize))
        // Initialize circuit breaker state (0 = closed)
-       CircuitBreakerState.WithLabelValues(serviceLabel, cfg.URL).Set(0)
+       CircuitBreakerState.WithLabelValues(serviceLabel, cfg.InstanceName).Set(0)
 
        // 2. Upload test with enhanced metrics
        startUpload := time.Now()
@@ -48,23 +48,23 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
        
        // Record histogram data
-       TestDurationHistogram.WithLabelValues(serviceLabel, cfg.URL, "upload").Observe(uploadDuration.Seconds())
+       TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Observe(uploadDuration.Seconds())
        
        if err != nil {
               log.Printf("[HiDrive] ERROR: upload failed for %s: %v", cfg.URL, err)
               uploadErrCode = "upload_error"
-              TestErrors.WithLabelValues(serviceLabel, cfg.URL, "upload", "upload_failed").Inc()
-              TestSuccess.WithLabelValues(serviceLabel, cfg.URL, "upload", uploadErrCode).Set(0)
+              TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "upload_failed").Inc()
+              TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
               return err
        }
        
        // Calculate expected chunks for monitoring
        expectedChunks := (fileSize + chunkSize - 1) / chunkSize // Ceiling division
-       ChunksUploaded.WithLabelValues(serviceLabel, cfg.URL).Add(float64(expectedChunks))
+       ChunksUploaded.WithLabelValues(serviceLabel, cfg.InstanceName).Add(float64(expectedChunks))
        
-       TestDuration.WithLabelValues(serviceLabel, cfg.URL, "upload").Set(uploadDuration.Seconds())
-       TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.URL, "upload").Set(uploadSpeed)
-       TestSuccess.WithLabelValues(serviceLabel, cfg.URL, "upload", uploadErrCode).Set(1)
+       TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
+       TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
+       TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(1)
        log.Printf("[HiDrive] Upload finished in %v (%.2f MB/s)", uploadDuration, uploadSpeed)
 
        // 3. Download test with enhanced metrics
@@ -74,8 +74,8 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        if err != nil {
               log.Printf("[HiDrive] ERROR: download failed for %s: %v", cfg.URL, err)
               downloadErrCode = "download_error"
-              TestErrors.WithLabelValues(serviceLabel, cfg.URL, "download", "download_failed").Inc()
-              TestSuccess.WithLabelValues(serviceLabel, cfg.URL, "download", downloadErrCode).Set(0)
+              TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "download_failed").Inc()
+              TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
               return err
        }
        bytesDownloaded, _ := io.Copy(io.Discard, body)
@@ -84,17 +84,17 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        downloadSpeed := float64(fileSize) / (1024 * 1024) / downloadDuration.Seconds()
        
        // Record histogram data for download
-       TestDurationHistogram.WithLabelValues(serviceLabel, cfg.URL, "download").Observe(downloadDuration.Seconds())
+       TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
        
        if bytesDownloaded == fileSize {
-              TestDuration.WithLabelValues(serviceLabel, cfg.URL, "download").Set(downloadDuration.Seconds())
-              TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.URL, "download").Set(downloadSpeed)
-              TestSuccess.WithLabelValues(serviceLabel, cfg.URL, "download", downloadErrCode).Set(1)
+              TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
+              TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
+              TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(1)
               log.Printf("[HiDrive] Download finished in %v (%.2f MB/s)", downloadDuration, downloadSpeed)
        } else {
               downloadErrCode = "incomplete_download"
-              TestErrors.WithLabelValues(serviceLabel, cfg.URL, "download", "incomplete_download").Inc()
-              TestSuccess.WithLabelValues(serviceLabel, cfg.URL, "download", downloadErrCode).Set(0)
+              TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "incomplete_download").Inc()
+              TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
               log.Printf("[HiDrive] ERROR: Download incomplete for %s: expected %d bytes, got %d", cfg.URL, fileSize, bytesDownloaded)
        }
 

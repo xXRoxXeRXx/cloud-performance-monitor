@@ -2,6 +2,7 @@ package hidrive_legacy
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/utils"
 )
 
 // Client for interacting with the HiDrive HTTP REST API (Legacy)
@@ -121,71 +124,104 @@ func NewClientWithOAuth2(refreshToken, clientID, clientSecret string) (*Client, 
 	return client, nil
 }
 
-// GetAccessTokenFromCredentials exchanges client credentials for access token using OAuth2
+// GetAccessTokenFromCredentials exchanges client credentials for access token using OAuth2 with retry logic
 func GetAccessTokenFromCredentials(clientID, clientSecret, authCode string) (*OAuth2TokenResponse, error) {
-	data := url.Values{}
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("grant_type", "authorization_code")
-	data.Set("code", authCode)
-
-	resp, err := http.PostForm(HiDriveOAuthURL, data)
-	if err != nil {
-		return nil, fmt.Errorf("OAuth2 request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("OAuth2 failed with status %d: %s", resp.StatusCode, string(body))
-	}
+	retryConfig := utils.DefaultRetryConfig()
+	retryConfig.MaxRetries = 2
+	retryConfig.RetryableErrors = append(retryConfig.RetryableErrors, 
+		"connection refused", "timeout", "temporary failure", "502", "503", "504")
 
 	var tokenResp OAuth2TokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return nil, fmt.Errorf("failed to decode OAuth2 response: %v", err)
+	err := retryConfig.WithRetry(context.Background(), "hidrive_legacy_oauth_initial", func(ctx context.Context) error {
+		data := url.Values{}
+		data.Set("client_id", clientID)
+		data.Set("client_secret", clientSecret)
+		data.Set("grant_type", "authorization_code")
+		data.Set("code", authCode)
+
+		req, err := http.NewRequestWithContext(ctx, "POST", HiDriveOAuthURL, bytes.NewBufferString(data.Encode()))
+		if err != nil {
+			return fmt.Errorf("failed to create OAuth2 request: %v", err)
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		client := &http.Client{Timeout: DefaultTimeout}
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("OAuth2 request failed: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("OAuth2 failed with status %d: %s", resp.StatusCode, string(body))
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+			return fmt.Errorf("failed to decode OAuth2 response: %v", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &tokenResp, nil
 }
 
-// RefreshAccessToken refreshes the access token using the refresh token
+// RefreshAccessToken refreshes the access token using the refresh token with retry logic
 func (c *Client) RefreshAccessToken() error {
 	if c.RefreshToken == "" || c.ClientID == "" || c.ClientSecret == "" {
 		return fmt.Errorf("refresh token, client ID, and client secret are required for token refresh")
 	}
 
-	data := url.Values{}
-	data.Set("grant_type", "refresh_token")
-	data.Set("refresh_token", c.RefreshToken)
-	data.Set("client_id", c.ClientID)
-	data.Set("client_secret", c.ClientSecret)
+	retryConfig := utils.DefaultRetryConfig()
+	retryConfig.MaxRetries = 2 // Fewer retries for OAuth2 operations
+	retryConfig.RetryableErrors = append(retryConfig.RetryableErrors, 
+		"connection refused", "timeout", "temporary failure", "502", "503", "504")
 
-	resp, err := http.PostForm(HiDriveOAuthURL, data)
-	if err != nil {
-		return fmt.Errorf("refresh token request failed: %v", err)
-	}
-	defer resp.Body.Close()
+	return retryConfig.WithRetry(context.Background(), "hidrive_legacy_oauth_refresh", func(ctx context.Context) error {
+		data := url.Values{}
+		data.Set("grant_type", "refresh_token")
+		data.Set("refresh_token", c.RefreshToken)
+		data.Set("client_id", c.ClientID)
+		data.Set("client_secret", c.ClientSecret)
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("refresh token failed with status %d: %s", resp.StatusCode, string(body))
-	}
+		req, err := http.NewRequestWithContext(ctx, "POST", HiDriveOAuthURL, bytes.NewBufferString(data.Encode()))
+		if err != nil {
+			return fmt.Errorf("failed to create refresh request: %v", err)
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	var tokenResp OAuth2TokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return fmt.Errorf("failed to decode refresh token response: %v", err)
-	}
+		resp, err := c.HTTPClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("refresh token request failed: %v", err)
+		}
+		defer resp.Body.Close()
 
-	// Update access token
-	c.AccessToken = tokenResp.AccessToken
-	
-	// Update refresh token if a new one was provided
-	if tokenResp.RefreshToken != "" {
-		c.RefreshToken = tokenResp.RefreshToken
-	}
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("refresh token failed with status %d: %s", resp.StatusCode, string(body))
+		}
 
-	log.Printf("HiDrive Legacy: Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn)
-	return nil
+		var tokenResp OAuth2TokenResponse
+		if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+			return fmt.Errorf("failed to decode refresh token response: %v", err)
+		}
+
+		// Update access token
+		c.AccessToken = tokenResp.AccessToken
+		
+		// Update refresh token if a new one was provided
+		if tokenResp.RefreshToken != "" {
+			c.RefreshToken = tokenResp.RefreshToken
+		}
+
+		log.Printf("HiDrive Legacy: Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn)
+		return nil
+	})
 }
 
 // newAPIRequest creates a new authenticated API request

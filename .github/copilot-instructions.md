@@ -46,8 +46,12 @@ A containerized Go application that benchmarks Nextcloud, HiDrive, MagentaCLOUD,
 - **Metrics**: All metrics labeled by `service` (nextcloud/hidrive/magentacloud/hidrive_legacy/dropbox), `instance` (URL) and `type` (upload/download). Errors are logged and surfaced via Prometheus labels.
 - **Prometheus metric example**:
 	```
-	nextcloud_test_duration_seconds{service="nextcloud",instance="https://cloud.company-a.com",type="upload"} 2.5
-	nextcloud_test_duration_seconds{service="hidrive",instance="https://storage.ionos.fr",type="upload"} 12.3
+	cloud_test_duration_seconds{service="nextcloud",instance="https://cloud.company-a.com",type="upload"} 2.5
+	cloud_test_duration_seconds{service="hidrive",instance="https://storage.ionos.fr",type="upload"} 12.3
+	cloud_test_duration_seconds{service="magentacloud",instance="https://magentacloud.de",type="upload"} 3.9
+	cloud_test_duration_seconds{service="hidrive_legacy",instance="hidrive-legacy-main",type="upload"} 1.8
+	cloud_test_duration_seconds{service="dropbox",instance="user@example.com",type="upload"} 3.2
+	```
 	nextcloud_test_duration_seconds{service="magentacloud",instance="https://magentacloud.de",type="upload"} 3.9
 	nextcloud_test_duration_seconds{service="hidrive_legacy",instance="hidrive-legacy-main",type="upload"} 1.8
 	nextcloud_test_duration_seconds{service="dropbox",instance="user@example.com",type="upload"} 3.2

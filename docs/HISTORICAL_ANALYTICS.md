@@ -16,24 +16,24 @@ Das Enhanced Analytics System bietet umfassende historische Performance-Analyse 
 
 #### Tägliche Performance (24h)
 ```prometheus
-nextcloud_daily_average_upload_speed_mbytes_per_sec{service="nextcloud",instance="cloud.example.com"}
-nextcloud_daily_average_download_speed_mbytes_per_sec{service="hidrive_legacy",instance="hidrive-legacy-main"}
-nextcloud_daily_success_rate_percent{service="dropbox",instance="user@example.com"}
-nextcloud_daily_test_count{service="hidrive",instance="storage.ionos.fr",type="upload"}
+cloud_daily_average_upload_speed_mbytes_per_sec{service="nextcloud",instance="cloud.example.com"}
+cloud_daily_average_download_speed_mbytes_per_sec{service="hidrive_legacy",instance="hidrive-legacy-main"}
+cloud_daily_success_rate_percent{service="dropbox",instance="user@example.com"}
+cloud_daily_test_count{service="hidrive",instance="storage.ionos.fr",type="upload"}
 ```
 
 #### Monatliche Trends (30d)
 ```prometheus
-nextcloud_monthly_average_upload_speed_mbytes_per_sec{service="nextcloud",instance="cloud.example.com"}
-nextcloud_monthly_average_download_speed_mbytes_per_sec{service="hidrive_legacy",instance="hidrive-legacy-main"}
-nextcloud_monthly_success_rate_percent{service="dropbox",instance="user@example.com"}
+cloud_monthly_average_upload_speed_mbytes_per_sec{service="nextcloud",instance="cloud.example.com"}
+cloud_monthly_average_download_speed_mbytes_per_sec{service="hidrive_legacy",instance="hidrive-legacy-main"}
+cloud_monthly_success_rate_percent{service="dropbox",instance="user@example.com"}
 ```
 
 #### Performance-Ranking
 ```prometheus
-nextcloud_service_upload_speed_ranking
-nextcloud_service_download_speed_ranking
-nextcloud_best_performing_service
+cloud_service_upload_speed_ranking
+cloud_service_download_speed_ranking
+cloud_best_performing_service
 ```
 
 ## 🎛️ Enhanced Grafana Dashboard

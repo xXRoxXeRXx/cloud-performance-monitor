@@ -27,6 +27,8 @@ help:
 	@echo ""
 	@echo "🧪 Testing:"
 	@echo "  make test          - Run Go tests"
+	@echo "  make test-integration - Run integration tests"
+	@echo "  make test-coverage - Run tests with coverage"
 	@echo "  make test-alert    - Send test alert"
 	@echo ""
 	@echo "🧹 Maintenance:"
@@ -79,6 +81,14 @@ dashboards:
 # Testing
 test:
 	go test -v -cover ./...
+
+test-integration:
+	go test -tags=integration -v ./internal/agent/
+
+test-coverage:
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
 
 test-alert:
 	@echo "Sending test alert..."

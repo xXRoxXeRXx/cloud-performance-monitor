@@ -31,295 +31,78 @@ const (
 	DefaultChunkSizeMB = 5 // Kleinere Chunks für HiDrive (5MB statt 10MB)
 )
 
+// ServiceConfig defines the configuration pattern for a service type
+type ServiceConfig struct {
+	ServiceType     string
+	Prefix          string
+	URLKey          string
+	UserKey         string
+	PassKey         string
+	ANIDKey         string // For MagentaCLOUD
+	RefreshTokenKey string // For OAuth2 services
+	ClientIDKey     string // For OAuth2 services
+	ClientSecretKey string // For OAuth2 services
+	AppKeyKey       string // For Dropbox
+	AppSecretKey    string // For Dropbox
+	NameKey         string // For named instances
+	DefaultURL      string // For services with fixed URLs
+}
+
 // LoadConfigs loads configurations for all specified Nextcloud, HiDrive, HiDrive Legacy, Dropbox, and MagentaCLOUD instances
 func LoadConfigs() ([]*Config, error) {
 	var configs []*Config
 
-	// Nextcloud Instanzen
-	i := 1
-	for {
-		urlKey := fmt.Sprintf("NC_INSTANCE_%d_URL", i)
-		userKey := fmt.Sprintf("NC_INSTANCE_%d_USER", i)
-		passKey := fmt.Sprintf("NC_INSTANCE_%d_PASS", i)
-		url := os.Getenv(urlKey)
-		if i == 1 && url == "" {
-			// Noch nicht zwingend Fehler, andere Services könnten konfiguriert sein
-			break
-		}
-		if url == "" {
-			break
-		}
-		user := os.Getenv(userKey)
-		pass := os.Getenv(passKey)
-		if user == "" || pass == "" {
-			return nil, fmt.Errorf("error: %s and %s must be set for instance %d", userKey, passKey, i)
-		}
-		fileSize, _ := strconv.Atoi(os.Getenv("TEST_FILE_SIZE_MB"))
-		if fileSize == 0 {
-			fileSize = DefaultFileSizeMB
-		}
-		if fileSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_FILE_SIZE_MB must be positive, got %d", fileSize)
-		}
-		interval, _ := strconv.Atoi(os.Getenv("TEST_INTERVAL_SECONDS"))
-		if interval == 0 {
-			interval = DefaultIntervalSec
-		}
-		if interval <= 0 {
-			return nil, fmt.Errorf("error: TEST_INTERVAL_SECONDS must be positive, got %d", interval)
-		}
-		chunkSize, _ := strconv.Atoi(os.Getenv("TEST_CHUNK_SIZE_MB"))
-		if chunkSize == 0 {
-			chunkSize = DefaultChunkSizeMB
-		}
-		if chunkSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_CHUNK_SIZE_MB must be positive, got %d", chunkSize)
-		}
-		config := &Config{
-			InstanceName:    url,
-			ServiceType:     "nextcloud",
-			URL:             url,
-			Username:        user,
-			Password:        pass,
-			TestFileSizeMB:  fileSize,
-			TestIntervalSec: interval,
-			TestChunkSizeMB: chunkSize,
-		}
-		configs = append(configs, config)
-		i++
-	}
-
-	// HiDrive Instanzen (WebDAV)
-	j := 1
-	for {
-		urlKey := fmt.Sprintf("HIDRIVE_INSTANCE_%d_URL", j)
-		userKey := fmt.Sprintf("HIDRIVE_INSTANCE_%d_USER", j)
-		passKey := fmt.Sprintf("HIDRIVE_INSTANCE_%d_PASS", j)
-		url := os.Getenv(urlKey)
-		if j == 1 && url == "" {
-			// No HiDrive instances configured, continue to next service type
-			break
-		}
-		if url == "" {
-			break
-		}
-		user := os.Getenv(userKey)
-		pass := os.Getenv(passKey)
-		if user == "" || pass == "" {
-			return nil, fmt.Errorf("error: %s and %s must be set for instance %d", userKey, passKey, j)
-		}
-		fileSize, _ := strconv.Atoi(os.Getenv("TEST_FILE_SIZE_MB"))
-		if fileSize == 0 {
-			fileSize = DefaultFileSizeMB
-		}
-		if fileSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_FILE_SIZE_MB must be positive, got %d", fileSize)
-		}
-		interval, _ := strconv.Atoi(os.Getenv("TEST_INTERVAL_SECONDS"))
-		if interval == 0 {
-			interval = DefaultIntervalSec
-		}
-		if interval <= 0 {
-			return nil, fmt.Errorf("error: TEST_INTERVAL_SECONDS must be positive, got %d", interval)
-		}
-		chunkSize, _ := strconv.Atoi(os.Getenv("TEST_CHUNK_SIZE_MB"))
-		if chunkSize == 0 {
-			chunkSize = DefaultChunkSizeMB
-		}
-		if chunkSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_CHUNK_SIZE_MB must be positive, got %d", chunkSize)
-		}
-		config := &Config{
-			InstanceName:    url,
-			ServiceType:     "hidrive",
-			URL:             url,
-			Username:        user,
-			Password:        pass,
-			TestFileSizeMB:  fileSize,
-			TestIntervalSec: interval,
-			TestChunkSizeMB: chunkSize,
-		}
-		configs = append(configs, config)
-		j++
-	}
-
-	// HiDrive Legacy Instanzen (HTTP REST API)
-	l := 1
-	for {
-		refreshTokenKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_REFRESH_TOKEN", l)
-		clientIDKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_CLIENT_ID", l)
-		clientSecretKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_CLIENT_SECRET", l)
-		nameKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_NAME", l)
-
-		refreshToken := os.Getenv(refreshTokenKey)
-		clientID := os.Getenv(clientIDKey)
-		clientSecret := os.Getenv(clientSecretKey)
-
-		if l == 1 && (refreshToken == "" || clientID == "" || clientSecret == "") {
-			// No HiDrive Legacy instances configured, continue to next service type
-			break
-		}
-		if refreshToken == "" || clientID == "" || clientSecret == "" {
-			break
-		}
-
-		instanceName := os.Getenv(nameKey)
-		if instanceName == "" {
-			instanceName = fmt.Sprintf("hidrive-legacy-instance-%d", l)
-		}
-
-		fileSize, _ := strconv.Atoi(os.Getenv("TEST_FILE_SIZE_MB"))
-		if fileSize == 0 {
-			fileSize = DefaultFileSizeMB
-		}
-		if fileSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_FILE_SIZE_MB must be positive, got %d", fileSize)
-		}
-		interval, _ := strconv.Atoi(os.Getenv("TEST_INTERVAL_SECONDS"))
-		if interval == 0 {
-			interval = DefaultIntervalSec
-		}
-		if interval <= 0 {
-			return nil, fmt.Errorf("error: TEST_INTERVAL_SECONDS must be positive, got %d", interval)
-		}
-		chunkSize, _ := strconv.Atoi(os.Getenv("TEST_CHUNK_SIZE_MB"))
-		if chunkSize == 0 {
-			chunkSize = DefaultChunkSizeMB
-		}
-		if chunkSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_CHUNK_SIZE_MB must be positive, got %d", chunkSize)
-		}
-
-		config := &Config{
-			InstanceName:    instanceName,
+	// Define service configurations
+	serviceConfigs := []ServiceConfig{
+		{
+			ServiceType: "nextcloud",
+			Prefix:      "NC_INSTANCE",
+			URLKey:      "URL",
+			UserKey:     "USER",
+			PassKey:     "PASS",
+		},
+		{
+			ServiceType: "hidrive",
+			Prefix:      "HIDRIVE_INSTANCE",
+			URLKey:      "URL",
+			UserKey:     "USER",
+			PassKey:     "PASS",
+		},
+		{
 			ServiceType:     "hidrive_legacy",
-			URL:             "https://api.hidrive.strato.com",
-			RefreshToken:    refreshToken,
-			ClientID:        clientID,
-			ClientSecret:    clientSecret,
-			TestFileSizeMB:  fileSize,
-			TestIntervalSec: interval,
-			TestChunkSizeMB: chunkSize,
-		}
-		configs = append(configs, config)
-		l++
-	}
-
-	// Dropbox Instanzen (OAuth2 only)
-	k := 1
-	for {
-		refreshTokenKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_REFRESH_TOKEN", k)
-		appKeyKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_APP_KEY", k)
-		appSecretKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_APP_SECRET", k)
-		nameKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_NAME", k)
-		
-		refreshToken := os.Getenv(refreshTokenKey)
-		appKey := os.Getenv(appKeyKey)
-		appSecret := os.Getenv(appSecretKey)
-		
-		if k == 1 && (refreshToken == "" || appKey == "" || appSecret == "") {
-			// Check if we need to continue with other service types
-			break
-		}
-		if refreshToken == "" || appKey == "" || appSecret == "" {
-			break
-		}
-		instanceName := os.Getenv(nameKey)
-		if instanceName == "" {
-			instanceName = fmt.Sprintf("dropbox-instance-%d", k)
-		}
-		fileSize, _ := strconv.Atoi(os.Getenv("TEST_FILE_SIZE_MB"))
-		if fileSize == 0 {
-			fileSize = DefaultFileSizeMB
-		}
-		if fileSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_FILE_SIZE_MB must be positive, got %d", fileSize)
-		}
-		interval, _ := strconv.Atoi(os.Getenv("TEST_INTERVAL_SECONDS"))
-		if interval == 0 {
-			interval = DefaultIntervalSec
-		}
-		if interval <= 0 {
-			return nil, fmt.Errorf("error: TEST_INTERVAL_SECONDS must be positive, got %d", interval)
-		}
-		chunkSize, _ := strconv.Atoi(os.Getenv("TEST_CHUNK_SIZE_MB"))
-		if chunkSize == 0 {
-			chunkSize = DefaultChunkSizeMB
-		}
-		if chunkSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_CHUNK_SIZE_MB must be positive, got %d", chunkSize)
-		}
-		config := &Config{
-			InstanceName:    instanceName,
+			Prefix:          "HIDRIVE_LEGACY_INSTANCE",
+			RefreshTokenKey: "REFRESH_TOKEN",
+			ClientIDKey:     "CLIENT_ID",
+			ClientSecretKey: "CLIENT_SECRET",
+			NameKey:         "NAME",
+			DefaultURL:      "https://api.hidrive.strato.com",
+		},
+		{
 			ServiceType:     "dropbox",
-			URL:             "https://api.dropboxapi.com",
-			RefreshToken:    refreshToken,
-			AppKey:          appKey,
-			AppSecret:       appSecret,
-			TestFileSizeMB:  fileSize,
-			TestIntervalSec: interval,
-			TestChunkSizeMB: chunkSize,
-		}
-		configs = append(configs, config)
-		k++
+			Prefix:          "DROPBOX_INSTANCE",
+			RefreshTokenKey: "REFRESH_TOKEN",
+			AppKeyKey:       "APP_KEY",
+			AppSecretKey:    "APP_SECRET",
+			NameKey:         "NAME",
+			DefaultURL:      "https://api.dropboxapi.com",
+		},
+		{
+			ServiceType: "magentacloud",
+			Prefix:      "MAGENTACLOUD_INSTANCE",
+			URLKey:      "URL",
+			UserKey:     "USER",
+			PassKey:     "PASS",
+			ANIDKey:     "ANID",
+		},
 	}
 
-	// MagentaCLOUD Instanzen (WebDAV mit ANID)
-	m := 1
-	for {
-		urlKey := fmt.Sprintf("MAGENTACLOUD_INSTANCE_%d_URL", m)
-		userKey := fmt.Sprintf("MAGENTACLOUD_INSTANCE_%d_USER", m)
-		passKey := fmt.Sprintf("MAGENTACLOUD_INSTANCE_%d_PASS", m)
-		anidKey := fmt.Sprintf("MAGENTACLOUD_INSTANCE_%d_ANID", m)
-		
-		url := os.Getenv(urlKey)
-		user := os.Getenv(userKey)
-		pass := os.Getenv(passKey)
-		anid := os.Getenv(anidKey)
-		
-		if m == 1 && (url == "" || user == "" || pass == "" || anid == "") {
-			// No MagentaCLOUD instances configured, continue
-			break
+	// Load configurations for each service type
+	for _, svc := range serviceConfigs {
+		serviceConfigs, err := loadServiceConfigs(svc)
+		if err != nil {
+			return nil, err
 		}
-		if url == "" || user == "" || pass == "" || anid == "" {
-			break
-		}
-		
-		fileSize, _ := strconv.Atoi(os.Getenv("TEST_FILE_SIZE_MB"))
-		if fileSize == 0 {
-			fileSize = DefaultFileSizeMB
-		}
-		if fileSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_FILE_SIZE_MB must be positive, got %d", fileSize)
-		}
-		interval, _ := strconv.Atoi(os.Getenv("TEST_INTERVAL_SECONDS"))
-		if interval == 0 {
-			interval = DefaultIntervalSec
-		}
-		if interval <= 0 {
-			return nil, fmt.Errorf("error: TEST_INTERVAL_SECONDS must be positive, got %d", interval)
-		}
-		chunkSize, _ := strconv.Atoi(os.Getenv("TEST_CHUNK_SIZE_MB"))
-		if chunkSize == 0 {
-			chunkSize = DefaultChunkSizeMB
-		}
-		if chunkSize <= 0 {
-			return nil, fmt.Errorf("error: TEST_CHUNK_SIZE_MB must be positive, got %d", chunkSize)
-		}
-		
-		config := &Config{
-			InstanceName:    url,
-			ServiceType:     "magentacloud",
-			URL:             url,
-			Username:        user,
-			Password:        pass,
-			ANID:            anid,
-			TestFileSizeMB:  fileSize,
-			TestIntervalSec: interval,
-			TestChunkSizeMB: chunkSize,
-		}
-		configs = append(configs, config)
-		m++
+		configs = append(configs, serviceConfigs...)
 	}
 
 	if len(configs) == 0 {
@@ -331,14 +114,211 @@ func LoadConfigs() ([]*Config, error) {
 		if err := validateConfig(cfg); err != nil {
 			return nil, fmt.Errorf("configuration validation failed for instance %d: %w", i+1, err)
 		}
-		fmt.Printf("[Config] Validated instance: %s, ServiceType: %s, URL: %s\n", cfg.InstanceName, cfg.ServiceType, cfg.URL)
-	}
-
-	// Debug: Log all loaded configs
-	for _, c := range configs {
-		fmt.Printf("[Config] Loaded instance: %s, ServiceType: %s, URL: %s\n", c.InstanceName, c.ServiceType, c.URL)
 	}
 	return configs, nil
+}
+
+// loadServiceConfigs loads configurations for a specific service type
+func loadServiceConfigs(svc ServiceConfig) ([]*Config, error) {
+	var configs []*Config
+
+	i := 1
+	for {
+		config, found, err := loadSingleServiceConfig(svc, i)
+		if err != nil {
+			return nil, err
+		}
+		if !found {
+			break
+		}
+		configs = append(configs, config)
+		i++
+	}
+
+	return configs, nil
+}
+
+// loadSingleServiceConfig loads a single configuration instance for a service
+func loadSingleServiceConfig(svc ServiceConfig, index int) (*Config, bool, error) {
+	// Load common test parameters
+	fileSize, _ := strconv.Atoi(os.Getenv("TEST_FILE_SIZE_MB"))
+	if fileSize == 0 {
+		fileSize = DefaultFileSizeMB
+	}
+	if fileSize <= 0 {
+		return nil, false, fmt.Errorf("error: TEST_FILE_SIZE_MB must be positive, got %d", fileSize)
+	}
+
+	interval, _ := strconv.Atoi(os.Getenv("TEST_INTERVAL_SECONDS"))
+	if interval == 0 {
+		interval = DefaultIntervalSec
+	}
+	if interval <= 0 {
+		return nil, false, fmt.Errorf("error: TEST_INTERVAL_SECONDS must be positive, got %d", interval)
+	}
+
+	chunkSize, _ := strconv.Atoi(os.Getenv("TEST_CHUNK_SIZE_MB"))
+	if chunkSize == 0 {
+		chunkSize = DefaultChunkSizeMB
+	}
+	if chunkSize <= 0 {
+		return nil, false, fmt.Errorf("error: TEST_CHUNK_SIZE_MB must be positive, got %d", chunkSize)
+	}
+
+	// Load service-specific parameters
+	switch svc.ServiceType {
+	case "nextcloud", "hidrive":
+		return loadWebDAVConfig(svc, index, fileSize, interval, chunkSize)
+	case "hidrive_legacy":
+		return loadHiDriveLegacyConfig(svc, index, fileSize, interval, chunkSize)
+	case "dropbox":
+		return loadDropboxConfig(svc, index, fileSize, interval, chunkSize)
+	case "magentacloud":
+		return loadMagentaCloudConfig(svc, index, fileSize, interval, chunkSize)
+	default:
+		return nil, false, fmt.Errorf("unknown service type: %s", svc.ServiceType)
+	}
+}
+
+// loadWebDAVConfig loads configuration for WebDAV-based services (Nextcloud, HiDrive)
+func loadWebDAVConfig(svc ServiceConfig, index, fileSize, interval, chunkSize int) (*Config, bool, error) {
+	urlKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.URLKey)
+	userKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.UserKey)
+	passKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.PassKey)
+
+	url := os.Getenv(urlKey)
+	if index == 1 && url == "" {
+		// First instance not configured, continue to next service type
+		return nil, false, nil
+	}
+	if url == "" {
+		return nil, false, nil
+	}
+
+	user := os.Getenv(userKey)
+	pass := os.Getenv(passKey)
+	if user == "" || pass == "" {
+		return nil, false, fmt.Errorf("error: %s and %s must be set for instance %d", userKey, passKey, index)
+	}
+
+	config := &Config{
+		InstanceName:    url,
+		ServiceType:     svc.ServiceType,
+		URL:             url,
+		Username:        user,
+		Password:        pass,
+		TestFileSizeMB:  fileSize,
+		TestIntervalSec: interval,
+		TestChunkSizeMB: chunkSize,
+	}
+	return config, true, nil
+}
+
+// loadHiDriveLegacyConfig loads configuration for HiDrive Legacy (OAuth2)
+func loadHiDriveLegacyConfig(svc ServiceConfig, index, fileSize, interval, chunkSize int) (*Config, bool, error) {
+	refreshTokenKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.RefreshTokenKey)
+	clientIDKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.ClientIDKey)
+	clientSecretKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.ClientSecretKey)
+	nameKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.NameKey)
+
+	refreshToken := os.Getenv(refreshTokenKey)
+	clientID := os.Getenv(clientIDKey)
+	clientSecret := os.Getenv(clientSecretKey)
+
+	if index == 1 && (refreshToken == "" || clientID == "" || clientSecret == "") {
+		return nil, false, nil
+	}
+	if refreshToken == "" || clientID == "" || clientSecret == "" {
+		return nil, false, nil
+	}
+
+	instanceName := os.Getenv(nameKey)
+	if instanceName == "" {
+		instanceName = fmt.Sprintf("hidrive-legacy-instance-%d", index)
+	}
+
+	config := &Config{
+		InstanceName:    instanceName,
+		ServiceType:     svc.ServiceType,
+		URL:             svc.DefaultURL,
+		RefreshToken:    refreshToken,
+		ClientID:        clientID,
+		ClientSecret:    clientSecret,
+		TestFileSizeMB:  fileSize,
+		TestIntervalSec: interval,
+		TestChunkSizeMB: chunkSize,
+	}
+	return config, true, nil
+}
+
+// loadDropboxConfig loads configuration for Dropbox (OAuth2)
+func loadDropboxConfig(svc ServiceConfig, index, fileSize, interval, chunkSize int) (*Config, bool, error) {
+	refreshTokenKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.RefreshTokenKey)
+	appKeyKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.AppKeyKey)
+	appSecretKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.AppSecretKey)
+	nameKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.NameKey)
+
+	refreshToken := os.Getenv(refreshTokenKey)
+	appKey := os.Getenv(appKeyKey)
+	appSecret := os.Getenv(appSecretKey)
+
+	if index == 1 && (refreshToken == "" || appKey == "" || appSecret == "") {
+		return nil, false, nil
+	}
+	if refreshToken == "" || appKey == "" || appSecret == "" {
+		return nil, false, nil
+	}
+
+	instanceName := os.Getenv(nameKey)
+	if instanceName == "" {
+		instanceName = fmt.Sprintf("dropbox-instance-%d", index)
+	}
+
+	config := &Config{
+		InstanceName:    instanceName,
+		ServiceType:     svc.ServiceType,
+		URL:             svc.DefaultURL,
+		RefreshToken:    refreshToken,
+		AppKey:          appKey,
+		AppSecret:       appSecret,
+		TestFileSizeMB:  fileSize,
+		TestIntervalSec: interval,
+		TestChunkSizeMB: chunkSize,
+	}
+	return config, true, nil
+}
+
+// loadMagentaCloudConfig loads configuration for MagentaCLOUD (WebDAV with ANID)
+func loadMagentaCloudConfig(svc ServiceConfig, index, fileSize, interval, chunkSize int) (*Config, bool, error) {
+	urlKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.URLKey)
+	userKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.UserKey)
+	passKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.PassKey)
+	anidKey := fmt.Sprintf("%s_%d_%s", svc.Prefix, index, svc.ANIDKey)
+
+	url := os.Getenv(urlKey)
+	user := os.Getenv(userKey)
+	pass := os.Getenv(passKey)
+	anid := os.Getenv(anidKey)
+
+	if index == 1 && (url == "" || user == "" || pass == "" || anid == "") {
+		return nil, false, nil
+	}
+	if url == "" || user == "" || pass == "" || anid == "" {
+		return nil, false, nil
+	}
+
+	config := &Config{
+		InstanceName:    url,
+		ServiceType:     svc.ServiceType,
+		URL:             url,
+		Username:        user,
+		Password:        pass,
+		ANID:            anid,
+		TestFileSizeMB:  fileSize,
+		TestIntervalSec: interval,
+		TestChunkSizeMB: chunkSize,
+	}
+	return config, true, nil
 }
 
 // validateConfig validates a single configuration instance

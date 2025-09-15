@@ -2,6 +2,7 @@ package dropbox
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,8 @@ import (
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/utils"
 )
 
 // Client for interacting with the Dropbox API v2
@@ -113,7 +116,7 @@ func NewClientWithOAuth2(accessToken, refreshToken, appKey, appSecret string) *C
 	return NewClient(accessToken, refreshToken, appKey, appSecret)
 }
 
-// RefreshAccessToken refreshes the access token using the refresh token
+// RefreshAccessToken refreshes the access token using the refresh token with retry logic
 func (c *Client) RefreshAccessToken() error {
 	if c.RefreshToken == "" || c.AppKey == "" || c.AppSecret == "" {
 		return fmt.Errorf("refresh token, app key, or app secret not available")
@@ -122,44 +125,51 @@ func (c *Client) RefreshAccessToken() error {
 	c.tokenMutex.Lock()
 	defer c.tokenMutex.Unlock()
 
-	data := url.Values{}
-	data.Set("grant_type", "refresh_token")
-	data.Set("refresh_token", c.RefreshToken)
+	retryConfig := utils.DefaultRetryConfig()
+	retryConfig.MaxRetries = 2 // Fewer retries for OAuth2 operations
+	retryConfig.RetryableErrors = append(retryConfig.RetryableErrors, 
+		"connection refused", "timeout", "temporary failure", "502", "503", "504")
 
-	req, err := http.NewRequest("POST", DropboxOAuthURL, bytes.NewBufferString(data.Encode()))
-	if err != nil {
-		return fmt.Errorf("failed to create refresh request: %v", err)
-	}
+	return retryConfig.WithRetry(context.Background(), "dropbox_oauth_refresh", func(ctx context.Context) error {
+		data := url.Values{}
+		data.Set("grant_type", "refresh_token")
+		data.Set("refresh_token", c.RefreshToken)
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(c.AppKey, c.AppSecret)
+		req, err := http.NewRequestWithContext(ctx, "POST", DropboxOAuthURL, bytes.NewBufferString(data.Encode()))
+		if err != nil {
+			return fmt.Errorf("failed to create refresh request: %v", err)
+		}
 
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("refresh request failed: %v", err)
-	}
-	defer resp.Body.Close()
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.SetBasicAuth(c.AppKey, c.AppSecret)
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("refresh failed with status %d: %s", resp.StatusCode, string(body))
-	}
+		resp, err := c.HTTPClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("refresh request failed: %v", err)
+		}
+		defer resp.Body.Close()
 
-	var tokenResp OAuth2TokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return fmt.Errorf("failed to decode refresh response: %v", err)
-	}
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("refresh failed with status %d: %s", resp.StatusCode, string(body))
+		}
 
-	// Update access token
-	c.AccessToken = tokenResp.AccessToken
-	
-	// Update refresh token if provided (some providers rotate refresh tokens)
-	if tokenResp.RefreshToken != "" {
-		c.RefreshToken = tokenResp.RefreshToken
-	}
+		var tokenResp OAuth2TokenResponse
+		if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+			return fmt.Errorf("failed to decode refresh response: %v", err)
+		}
 
-	log.Printf("Dropbox: Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn)
-	return nil
+		// Update access token
+		c.AccessToken = tokenResp.AccessToken
+		
+		// Update refresh token if provided (some providers rotate refresh tokens)
+		if tokenResp.RefreshToken != "" {
+			c.RefreshToken = tokenResp.RefreshToken
+		}
+
+		log.Printf("Dropbox: Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn)
+		return nil
+	})
 }
 
 // newAPIRequest creates a new authenticated API request

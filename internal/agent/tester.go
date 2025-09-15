@@ -27,8 +27,8 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	// 0. Ensure directory exists
 	if err := ncClient.EnsureDirectory(testDir); err != nil {
 		log.Printf("ERROR: Could not create test directory for %s: %v", cfg.URL, err)
-		TestErrors.WithLabelValues("nextcloud", cfg.URL, "upload", "directory_creation").Inc()
-		TestSuccess.WithLabelValues("nextcloud", cfg.URL, "setup", "mkdir_error").Set(0)
+		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "directory_creation").Inc()
+		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "setup", "mkdir_error").Set(0)
 		return
 	}
 
@@ -38,8 +38,8 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	chunkSizeBytes := int64(cfg.TestChunkSizeMB) * 1024 * 1024
 	
 	// Record chunk size and initialize circuit breaker state for monitoring
-	ChunkSize.WithLabelValues("nextcloud", cfg.URL).Set(float64(chunkSizeBytes))
-	CircuitBreakerState.WithLabelValues("nextcloud", cfg.URL).Set(0)
+	ChunkSize.WithLabelValues(cfg.ServiceType, cfg.InstanceName).Set(float64(chunkSizeBytes))
+	CircuitBreakerState.WithLabelValues(cfg.ServiceType, cfg.InstanceName).Set(0)
 
 	// 2. Upload test with enhanced metrics
 	startUpload := time.Now()
@@ -47,12 +47,12 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	uploadDuration := time.Since(startUpload)
 	
 	// Record histogram data
-	TestDurationHistogram.WithLabelValues("nextcloud", cfg.URL, "upload").Observe(uploadDuration.Seconds())
+	TestDurationHistogram.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload").Observe(uploadDuration.Seconds())
 
 	if err != nil {
 		log.Printf("ERROR: Upload failed for %s: %v", cfg.URL, err)
-		TestErrors.WithLabelValues("nextcloud", cfg.URL, "upload", "upload_failed").Inc()
-		TestSuccess.WithLabelValues("nextcloud", cfg.URL, "upload", "upload_error").Set(0)
+		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "upload_failed").Inc()
+		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "upload_error").Set(0)
 		// Try to clean up the failed chunking directory
 		_ = ncClient.DeleteFile(fullPath)
 		return
@@ -60,12 +60,12 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	
 	// Calculate expected chunks for monitoring
 	expectedChunks := (fileSize + chunkSizeBytes - 1) / chunkSizeBytes // Ceiling division
-	ChunksUploaded.WithLabelValues("nextcloud", cfg.URL).Add(float64(expectedChunks))
+	ChunksUploaded.WithLabelValues(cfg.ServiceType, cfg.InstanceName).Add(float64(expectedChunks))
 
 	uploadSpeedMBs := (float64(fileSize) / (1024 * 1024)) / uploadDuration.Seconds()
-	TestDuration.WithLabelValues("nextcloud", cfg.URL, "upload").Set(uploadDuration.Seconds())
-	TestSpeedMbytesPerSec.WithLabelValues("nextcloud", cfg.URL, "upload").Set(uploadSpeedMBs)
-	TestSuccess.WithLabelValues("nextcloud", cfg.URL, "upload", "none").Set(1)
+	TestDuration.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
+	TestSpeedMbytesPerSec.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload").Set(uploadSpeedMBs)
+	TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "none").Set(1)
 	log.Printf("Upload finished in %v (%.2f MB/s)", uploadDuration, uploadSpeedMBs)
 
 	// 3. Download test with enhanced metrics
@@ -73,8 +73,8 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	body, err := ncClient.DownloadFile(fullPath)
 	if err != nil {
 		log.Printf("ERROR: Download failed for %s: %v", cfg.URL, err)
-		TestErrors.WithLabelValues("nextcloud", cfg.URL, "download", "download_failed").Inc()
-		TestSuccess.WithLabelValues("nextcloud", cfg.URL, "download", "download_error").Set(0)
+		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", "download_failed").Inc()
+		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", "download_error").Set(0)
 	} else {
 		// We need to read the body to get an accurate time measurement
 		bytesDownloaded, _ := io.Copy(io.Discard, body)
@@ -82,17 +82,17 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 		downloadDuration := time.Since(startDownload)
 		
 		// Record histogram data for download
-		TestDurationHistogram.WithLabelValues("nextcloud", cfg.URL, "download").Observe(downloadDuration.Seconds())
+		TestDurationHistogram.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
 
 		if bytesDownloaded == fileSize {
 			downloadSpeedMBs := (float64(fileSize) / (1024 * 1024)) / downloadDuration.Seconds()
-			TestDuration.WithLabelValues("nextcloud", cfg.URL, "download").Set(downloadDuration.Seconds())
-			TestSpeedMbytesPerSec.WithLabelValues("nextcloud", cfg.URL, "download").Set(downloadSpeedMBs)
-			TestSuccess.WithLabelValues("nextcloud", cfg.URL, "download", "none").Set(1)
+			TestDuration.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
+			TestSpeedMbytesPerSec.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Set(downloadSpeedMBs)
+			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", "none").Set(1)
 		       log.Printf("Download finished in %v (%.2f MB/s)", downloadDuration, downloadSpeedMBs)
 	       } else {
 		       log.Printf("ERROR: Download incomplete for %s: expected %d bytes, got %d", cfg.URL, fileSize, bytesDownloaded)
-			  TestSuccess.WithLabelValues("nextcloud", cfg.URL, "download", "incomplete_download").Set(0)
+			  TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", "incomplete_download").Set(0)
 	       }
 	}
 

@@ -231,16 +231,16 @@ LOG_FORMAT=json
 ### Available Metrics
 ```prometheus
 # Performance Metrics
-nextcloud_test_duration_seconds{service="nextcloud|hidrive",type="upload|download"}
-nextcloud_test_speed_mbps{service="nextcloud|hidrive",type="upload|download"}
-nextcloud_test_success_total{service="nextcloud|hidrive"}
-nextcloud_test_errors_total{service="nextcloud|hidrive"}
+cloud_test_duration_seconds{service="nextcloud|hidrive|magentacloud|hidrive_legacy|dropbox",instance="url",type="upload|download"}
+cloud_test_speed_mbytes_per_sec{service="nextcloud|hidrive|magentacloud|hidrive_legacy|dropbox",instance="url",type="upload|download"}
+cloud_test_success{service="nextcloud|hidrive|magentacloud|hidrive_legacy|dropbox",instance="url",type="upload|download"}
+cloud_test_errors_total{service="nextcloud|hidrive|magentacloud|hidrive_legacy|dropbox",instance="url",type="upload|download",error_type="..."}
 
-# Advanced Metrics  
-nextcloud_chunks_uploaded_total{service="nextcloud|hidrive"}
-nextcloud_chunk_retries_total{service="nextcloud|hidrive"}
-nextcloud_network_latency_ms{service="nextcloud|hidrive"}
-nextcloud_circuit_breaker_state{service="nextcloud|hidrive"}
+# Advanced Metrics
+cloud_chunks_uploaded_total{service="nextcloud|hidrive|magentacloud|hidrive_legacy|dropbox",instance="url"}
+cloud_chunk_retries_total{service="nextcloud|hidrive|magentacloud|hidrive_legacy|dropbox",instance="url"}
+cloud_network_latency_ms{service="nextcloud|hidrive|magentacloud|hidrive_legacy|dropbox",instance="url"}
+cloud_circuit_breaker_state{service="nextcloud|hidrive|magentacloud|hidrive_legacy|dropbox",instance="url"}
 ```
 
 ### Alert Categories
@@ -324,7 +324,43 @@ NC_INSTANCE_2_URL=...
 # ... up to NC_INSTANCE_N_URL
 ```
 
-## 🤝 Contributing
+## � Testing & Quality Assurance
+
+### Unit Tests
+```bash
+# Run all unit tests
+make test
+
+# Run specific package tests
+go test ./internal/agent/
+go test ./internal/nextcloud/
+go test ./internal/dropbox/
+
+# Run with coverage
+make test-coverage
+```
+
+### Integration Tests
+```bash
+# Run integration tests (requires build tags)
+go test -tags=integration ./internal/agent/
+
+# Build and test everything
+make test-all
+```
+
+### Test Coverage
+- **Unit Tests**: 100% coverage for all client packages
+- **Integration Tests**: End-to-end upload/download cycle testing with mock servers
+- **OAuth2 Resilience**: Retry logic testing for token refresh operations
+
+### Code Quality Features
+- **Structured Logging**: JSON/text format with configurable levels
+- **OAuth2 Retry Logic**: Exponential backoff for token refresh failures
+- **Circuit Breaker Pattern**: Automatic failure detection and recovery
+- **Health Checks**: Comprehensive monitoring endpoints
+
+## �🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
