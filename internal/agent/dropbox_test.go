@@ -6,15 +6,19 @@ import (
 )
 
 func TestDropboxConfig(t *testing.T) {
-	// Set environment variables for Dropbox
-	os.Setenv("DROPBOX_INSTANCE_1_TOKEN", "test-token-123")
+	// Set environment variables for Dropbox with proper refresh token setup
+	os.Setenv("DROPBOX_INSTANCE_1_REFRESH_TOKEN", "test-refresh-token-123")
+	os.Setenv("DROPBOX_INSTANCE_1_APP_KEY", "test-app-key")
+	os.Setenv("DROPBOX_INSTANCE_1_APP_SECRET", "test-app-secret")
 	os.Setenv("DROPBOX_INSTANCE_1_NAME", "test-dropbox")
 	os.Setenv("TEST_FILE_SIZE_MB", "5")
 	os.Setenv("TEST_INTERVAL_SECONDS", "600")
 	os.Setenv("TEST_CHUNK_SIZE_MB", "2")
 
 	defer func() {
-		os.Unsetenv("DROPBOX_INSTANCE_1_TOKEN")
+		os.Unsetenv("DROPBOX_INSTANCE_1_REFRESH_TOKEN")
+		os.Unsetenv("DROPBOX_INSTANCE_1_APP_KEY")
+		os.Unsetenv("DROPBOX_INSTANCE_1_APP_SECRET")
 		os.Unsetenv("DROPBOX_INSTANCE_1_NAME")
 		os.Unsetenv("TEST_FILE_SIZE_MB")
 		os.Unsetenv("TEST_INTERVAL_SECONDS")
@@ -24,18 +28,20 @@ func TestDropboxConfig(t *testing.T) {
 	configs, err := LoadConfigs()
 	if err != nil {
 		t.Errorf("LoadConfigs failed: %v", err)
+		return
 	}
 
 	if len(configs) != 1 {
 		t.Errorf("Expected 1 config, got %d", len(configs))
+		return
 	}
 
 	cfg := configs[0]
 	if cfg.ServiceType != "dropbox" {
 		t.Errorf("Expected service type 'dropbox', got %s", cfg.ServiceType)
 	}
-	if cfg.AccessToken != "test-token-123" {
-		t.Errorf("Expected access token 'test-token-123', got %s", cfg.AccessToken)
+	if cfg.RefreshToken != "test-refresh-token-123" {
+		t.Errorf("Expected refresh token 'test-refresh-token-123', got %s", cfg.RefreshToken)
 	}
 	if cfg.InstanceName != "test-dropbox" {
 		t.Errorf("Expected instance name 'test-dropbox', got %s", cfg.InstanceName)
@@ -56,7 +62,9 @@ func TestDropboxConfigValidation(t *testing.T) {
 			config: &Config{
 				InstanceName:    "test-dropbox",
 				ServiceType:     "dropbox",
-				AccessToken:     "test-token",
+				RefreshToken:    "test-refresh-token",
+				AppKey:          "test-app-key",
+				AppSecret:       "test-app-secret",
 				TestFileSizeMB:  10,
 				TestIntervalSec: 300,
 				TestChunkSizeMB: 5,
@@ -64,11 +72,13 @@ func TestDropboxConfigValidation(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "Missing access token",
+			name: "Missing refresh token",
 			config: &Config{
 				InstanceName:    "test-dropbox",
 				ServiceType:     "dropbox",
-				AccessToken:     "",
+				RefreshToken:    "",
+				AppKey:          "test-app-key",
+				AppSecret:       "test-app-secret",
 				TestFileSizeMB:  10,
 				TestIntervalSec: 300,
 				TestChunkSizeMB: 5,
@@ -103,20 +113,26 @@ func TestDropboxConfigValidation(t *testing.T) {
 }
 
 func TestDropboxConfigDefault(t *testing.T) {
-	// Test with minimal configuration (only token)
-	os.Setenv("DROPBOX_INSTANCE_1_TOKEN", "test-token-minimal")
+	// Test with minimal configuration (refresh token + app credentials)
+	os.Setenv("DROPBOX_INSTANCE_1_REFRESH_TOKEN", "test-refresh-token-minimal")
+	os.Setenv("DROPBOX_INSTANCE_1_APP_KEY", "test-app-key")
+	os.Setenv("DROPBOX_INSTANCE_1_APP_SECRET", "test-app-secret")
 
 	defer func() {
-		os.Unsetenv("DROPBOX_INSTANCE_1_TOKEN")
+		os.Unsetenv("DROPBOX_INSTANCE_1_REFRESH_TOKEN")
+		os.Unsetenv("DROPBOX_INSTANCE_1_APP_KEY")
+		os.Unsetenv("DROPBOX_INSTANCE_1_APP_SECRET")
 	}()
 
 	configs, err := LoadConfigs()
 	if err != nil {
 		t.Errorf("LoadConfigs failed: %v", err)
+		return
 	}
 
 	if len(configs) != 1 {
 		t.Errorf("Expected 1 config, got %d", len(configs))
+		return
 	}
 
 	cfg := configs[0]
