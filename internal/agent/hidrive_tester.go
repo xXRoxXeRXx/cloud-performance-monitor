@@ -68,7 +68,6 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        log.Printf("[HiDrive] Upload finished in %v (%.2f MB/s)", uploadDuration, uploadSpeed)
 
        // 3. Download test with enhanced metrics
-       startDownload := time.Now()
        body, err := client.DownloadFile(fullPath)
        downloadErrCode := "none"
        if err != nil {
@@ -78,10 +77,15 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
               return err
        }
+       // Measure actual download time (only the data transfer)
+       transferStart := time.Now()
        bytesDownloaded, _ := io.Copy(io.Discard, body)
+       transferDuration := time.Since(transferStart)
        body.Close()
-       downloadDuration := time.Since(startDownload)
-       downloadSpeed := float64(fileSize) / (1024 * 1024) / downloadDuration.Seconds()
+       downloadDuration := transferDuration // Use transfer time for metrics too
+       
+       // Calculate speed based on actually downloaded bytes
+       downloadSpeed := float64(bytesDownloaded) / (1024 * 1024) / transferDuration.Seconds()
        
        // Record histogram data for download
        TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())

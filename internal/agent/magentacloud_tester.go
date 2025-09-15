@@ -74,11 +74,13 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 			TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
 			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
 		} else {
-			// Read and validate file size
+			// Read and validate file size - measure only actual transfer time
+			transferStart := time.Now()
 			downloadedBytes, readErr := io.Copy(io.Discard, downloadReader)
+			transferDuration := time.Since(transferStart)
 			downloadReader.Close()
-			downloadDuration := time.Since(startDownload)
-			downloadSpeed := float64(downloadedBytes) / (1024 * 1024) / downloadDuration.Seconds()
+			downloadDuration := time.Since(startDownload) // Total duration for metrics
+			downloadSpeed := float64(downloadedBytes) / (1024 * 1024) / transferDuration.Seconds()
 			
 			// Record histogram data
 			TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
