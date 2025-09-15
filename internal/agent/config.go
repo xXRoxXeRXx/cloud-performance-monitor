@@ -6,13 +6,14 @@ import (
 	"strconv"
 )
 
-// Config holds the configuration for a single storage instance (Nextcloud, HiDrive, HiDrive Legacy, or Dropbox)
+// Config holds the configuration for a single storage instance (Nextcloud, HiDrive, HiDrive Legacy, Dropbox, or MagentaCLOUD)
 type Config struct {
 	InstanceName    string
-	ServiceType     string // "nextcloud", "hidrive", "hidrive_legacy", or "dropbox"
+	ServiceType     string // "nextcloud", "hidrive", "hidrive_legacy", "dropbox", or "magentacloud"
 	URL             string
 	Username        string
 	Password        string
+	ANID            string // For MagentaCLOUD Account Number ID
 	AccessToken     string // For HiDrive Legacy API only
 	RefreshToken    string // For Dropbox OAuth2 and HiDrive Legacy OAuth2
 	AppKey          string // For Dropbox OAuth2 (App Key)
@@ -30,7 +31,7 @@ const (
 	DefaultChunkSizeMB = 5 // Kleinere Chunks für HiDrive (5MB statt 10MB)
 )
 
-// LoadConfigs loads configurations for all specified Nextcloud, HiDrive, HiDrive Legacy, and Dropbox instances
+// LoadConfigs loads configurations for all specified Nextcloud, HiDrive, HiDrive Legacy, Dropbox, and MagentaCLOUD instances
 func LoadConfigs() ([]*Config, error) {
 	var configs []*Config
 
@@ -95,8 +96,8 @@ func LoadConfigs() ([]*Config, error) {
 		userKey := fmt.Sprintf("HIDRIVE_INSTANCE_%d_USER", j)
 		passKey := fmt.Sprintf("HIDRIVE_INSTANCE_%d_PASS", j)
 		url := os.Getenv(urlKey)
-		if j == 1 && url == "" && len(configs) == 0 {
-			// Noch nicht zwingend Fehler, andere Services könnten konfiguriert sein
+		if j == 1 && url == "" {
+			// No HiDrive instances configured, continue to next service type
 			break
 		}
 		if url == "" {
@@ -154,8 +155,8 @@ func LoadConfigs() ([]*Config, error) {
 		clientID := os.Getenv(clientIDKey)
 		clientSecret := os.Getenv(clientSecretKey)
 
-		if l == 1 && (refreshToken == "" || clientID == "" || clientSecret == "") && len(configs) == 0 {
-			// Prüfe ob andere Services konfiguriert sind
+		if l == 1 && (refreshToken == "" || clientID == "" || clientSecret == "") {
+			// No HiDrive Legacy instances configured, continue to next service type
 			break
 		}
 		if refreshToken == "" || clientID == "" || clientSecret == "" {
@@ -216,8 +217,9 @@ func LoadConfigs() ([]*Config, error) {
 		appKey := os.Getenv(appKeyKey)
 		appSecret := os.Getenv(appSecretKey)
 		
-		if k == 1 && (refreshToken == "" || appKey == "" || appSecret == "") && len(configs) == 0 {
-			return nil, fmt.Errorf("error: at least NC_INSTANCE_1_URL, HIDRIVE_INSTANCE_1_URL, HIDRIVE_LEGACY_INSTANCE_1_TOKEN, or DROPBOX_INSTANCE_1_REFRESH_TOKEN (with APP_KEY/APP_SECRET) must be set")
+		if k == 1 && (refreshToken == "" || appKey == "" || appSecret == "") {
+			// Check if we need to continue with other service types
+			break
 		}
 		if refreshToken == "" || appKey == "" || appSecret == "" {
 			break
@@ -262,8 +264,66 @@ func LoadConfigs() ([]*Config, error) {
 		k++
 	}
 
+	// MagentaCLOUD Instanzen (WebDAV mit ANID)
+	m := 1
+	for {
+		urlKey := fmt.Sprintf("MAGENTACLOUD_INSTANCE_%d_URL", m)
+		userKey := fmt.Sprintf("MAGENTACLOUD_INSTANCE_%d_USER", m)
+		passKey := fmt.Sprintf("MAGENTACLOUD_INSTANCE_%d_PASS", m)
+		anidKey := fmt.Sprintf("MAGENTACLOUD_INSTANCE_%d_ANID", m)
+		
+		url := os.Getenv(urlKey)
+		user := os.Getenv(userKey)
+		pass := os.Getenv(passKey)
+		anid := os.Getenv(anidKey)
+		
+		if m == 1 && (url == "" || user == "" || pass == "" || anid == "") {
+			// No MagentaCLOUD instances configured, continue
+			break
+		}
+		if url == "" || user == "" || pass == "" || anid == "" {
+			break
+		}
+		
+		fileSize, _ := strconv.Atoi(os.Getenv("TEST_FILE_SIZE_MB"))
+		if fileSize == 0 {
+			fileSize = DefaultFileSizeMB
+		}
+		if fileSize <= 0 {
+			return nil, fmt.Errorf("error: TEST_FILE_SIZE_MB must be positive, got %d", fileSize)
+		}
+		interval, _ := strconv.Atoi(os.Getenv("TEST_INTERVAL_SECONDS"))
+		if interval == 0 {
+			interval = DefaultIntervalSec
+		}
+		if interval <= 0 {
+			return nil, fmt.Errorf("error: TEST_INTERVAL_SECONDS must be positive, got %d", interval)
+		}
+		chunkSize, _ := strconv.Atoi(os.Getenv("TEST_CHUNK_SIZE_MB"))
+		if chunkSize == 0 {
+			chunkSize = DefaultChunkSizeMB
+		}
+		if chunkSize <= 0 {
+			return nil, fmt.Errorf("error: TEST_CHUNK_SIZE_MB must be positive, got %d", chunkSize)
+		}
+		
+		config := &Config{
+			InstanceName:    url,
+			ServiceType:     "magentacloud",
+			URL:             url,
+			Username:        user,
+			Password:        pass,
+			ANID:            anid,
+			TestFileSizeMB:  fileSize,
+			TestIntervalSec: interval,
+			TestChunkSizeMB: chunkSize,
+		}
+		configs = append(configs, config)
+		m++
+	}
+
 	if len(configs) == 0 {
-		return nil, fmt.Errorf("error: no instances configured. Please set NC_INSTANCE_1_..., HIDRIVE_INSTANCE_1_..., HIDRIVE_LEGACY_INSTANCE_1_..., DROPBOX_INSTANCE_1_TOKEN, or DROPBOX_INSTANCE_1_REFRESH_TOKEN (with OAuth2 credentials)")
+		return nil, fmt.Errorf("error: no instances configured. Please set NC_INSTANCE_1_..., HIDRIVE_INSTANCE_1_..., HIDRIVE_LEGACY_INSTANCE_1_..., DROPBOX_INSTANCE_1_REFRESH_TOKEN (with OAuth2 credentials), or MAGENTACLOUD_INSTANCE_1_... (with ANID)")
 	}
 
 	// Validate all configurations
@@ -297,6 +357,19 @@ func validateConfig(cfg *Config) error {
 		}
 		if cfg.Password == "" {
 			return fmt.Errorf("password cannot be empty for %s", cfg.ServiceType)
+		}
+	case "magentacloud":
+		if cfg.URL == "" {
+			return fmt.Errorf("URL cannot be empty for MagentaCLOUD")
+		}
+		if cfg.Username == "" {
+			return fmt.Errorf("username cannot be empty for MagentaCLOUD")
+		}
+		if cfg.Password == "" {
+			return fmt.Errorf("password cannot be empty for MagentaCLOUD")
+		}
+		if cfg.ANID == "" {
+			return fmt.Errorf("ANID cannot be empty for MagentaCLOUD")
 		}
 	case "hidrive_legacy":
 		if cfg.RefreshToken == "" {

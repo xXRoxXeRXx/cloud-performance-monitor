@@ -1,4 +1,4 @@
-package nextcloud
+package magentacloud
 
 import (
 	"bytes"
@@ -11,27 +11,30 @@ import (
 	"github.com/google/uuid"
 )
 
-// Client for interacting with the Nextcloud WebDAV API
+// Client for interacting with the MagentaCLOUD WebDAV API
 type Client struct {
 	BaseURL    string
 	Username   string
 	Password   string
+	ANID       string // MagentaCLOUD-specific Account Number ID
 	HTTPClient *http.Client
 }
 
 const (
 	DefaultTimeout = 300 * time.Second
 	// User-Agent string that mimics the official Nextcloud desktop client
-	NextcloudUserAgent = "Mozilla/5.0 (Windows) mirall/3.15.3 (build 20250107) (Nextcloud, windows-10.0.20348 ClientArchitecture: x86_64 OsArchitecture: x86_64)"
+	// MagentaCLOUD uses Nextcloud backend so we use the same User-Agent
+	MagentaCloudUserAgent = "Mozilla/5.0 (Windows) mirall/3.15.3 (build 20250107) (Nextcloud, windows-10.0.20348 ClientArchitecture: x86_64 OsArchitecture: x86_64)"
 )
 
-// NewClient creates a new Nextcloud WebDAV client
-func NewClient(baseURL, username, password string) *Client {
+// NewClient creates a new MagentaCLOUD WebDAV client
+func NewClient(baseURL, username, password, anid string) *Client {
 	return &Client{
 		BaseURL:    baseURL,
 		Username:   username,
 		Password:   password,
-		HTTPClient: &http.Client{Timeout: DefaultTimeout}, // Generous timeout for large files
+		ANID:       anid,
+		HTTPClient: &http.Client{Timeout: DefaultTimeout},
 	}
 }
 
@@ -44,7 +47,7 @@ func (c *Client) newRequest(method, urlPath string, body io.Reader) (*http.Reque
 	}
 	req.SetBasicAuth(c.Username, c.Password)
 	// Set User-Agent to mimic official Nextcloud desktop client
-	req.Header.Set("User-Agent", NextcloudUserAgent)
+	req.Header.Set("User-Agent", MagentaCloudUserAgent)
 	// Add additional headers that Nextcloud desktop client sends
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
@@ -53,8 +56,9 @@ func (c *Client) newRequest(method, urlPath string, body io.Reader) (*http.Reque
 }
 
 // EnsureDirectory ensures the test directory exists
+// Uses ANID in path: /remote.php/dav/files/{ANID}/path
 func (c *Client) EnsureDirectory(dirPath string) error {
-	fullPath := path.Join("/remote.php/dav/files/", c.Username, dirPath)
+	fullPath := path.Join("/remote.php/dav/files/", c.ANID, dirPath)
 	req, err := c.newRequest("MKCOL", fullPath, nil)
 	if err != nil {
 		return err
@@ -73,11 +77,12 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 }
 
 // UploadFile uploads a file using the chunking API
+// Uses ANID in both upload and destination paths
 func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunkSize int64) error {
 	transferID := uuid.New().String()
-	chunkDir := path.Join("/remote.php/dav/uploads/", c.Username, transferID)
+	chunkDir := path.Join("/remote.php/dav/uploads/", c.ANID, transferID)
 	chunkDirURL := c.BaseURL + chunkDir
-	destinationURL := c.BaseURL + path.Join("/remote.php/dav/files/", c.Username, filePath)
+	destinationURL := c.BaseURL + path.Join("/remote.php/dav/files/", c.ANID, filePath)
 
 	// 1. Create temporary directory for chunks on the server
 	mkcolStart := time.Now()
@@ -87,7 +92,7 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 		return fmt.Errorf("could not create MKCOL request: %w", err)
 	}
 	req.SetBasicAuth(c.Username, c.Password)
-	req.Header.Set("User-Agent", NextcloudUserAgent)
+	req.Header.Set("User-Agent", MagentaCloudUserAgent)
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Connection", "keep-alive")
@@ -114,13 +119,12 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	// 3. Assemble chunks by moving the directory
 	moveSource := c.BaseURL + chunkDir + "/.file"
 	
-	fmt.Printf("[Nextcloud] Starting MOVE operation from %s to %s\n", moveSource, destinationURL)
 	req, err = http.NewRequest("MOVE", moveSource, nil)
 	if err != nil {
 		return fmt.Errorf("could not create MOVE request: %w", err)
 	}
 	req.SetBasicAuth(c.Username, c.Password)
-	req.Header.Set("User-Agent", NextcloudUserAgent)
+	req.Header.Set("User-Agent", MagentaCloudUserAgent)
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Connection", "keep-alive")
@@ -135,27 +139,21 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 		Transport: c.HTTPClient.Transport,
 	}
 	
-	fmt.Printf("[Nextcloud] Executing MOVE operation (this may take several minutes for large files)...\n")
 	moveStart := time.Now()
 	resp, err = moveClient.Do(req)
 	moveDuration := time.Since(moveStart)
 	
 	if err != nil {
-		fmt.Printf("[Nextcloud] MOVE operation failed after %v: %v\n", moveDuration, err)
 		return fmt.Errorf("MOVE request failed after %v: %w", moveDuration, err)
 	}
 	defer resp.Body.Close()
 
-	fmt.Printf("[Nextcloud] MOVE operation completed in %v with status %s\n", moveDuration, resp.Status)
-
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
 		// Read response body for more detailed error information
 		body, _ := io.ReadAll(resp.Body)
-		fmt.Printf("[Nextcloud] MOVE failed with status %s, response: %s\n", resp.Status, string(body))
-		return fmt.Errorf("final MOVE to assemble chunks failed with status %s", resp.Status)
+		return fmt.Errorf("final MOVE to assemble chunks failed with status %s, response: %s", resp.Status, string(body))
 	}
 
-	fmt.Printf("Chunked upload successful for %s\n", filePath)
 	return nil
 }
 
@@ -165,9 +163,7 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 	totalChunks := 0
 	successfulChunks := 0
 	
-	fmt.Printf("[Nextcloud] Starting chunk upload to %s (chunk size: %d bytes)\n", chunkDir, chunkSize)
-	
-	// CRITICAL: Start chunk numbering at 1, not 0! (Nextcloud requires 1-based indexing like HiDrive)
+	// CRITICAL: Start chunk numbering at 1, not 0! (like bash script: 00001, 00002, etc.)
 	chunkNumber := 1
 	for {
 		bytesRead, readErr := reader.Read(chunk)
@@ -177,9 +173,6 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 			chunkPath := fmt.Sprintf("%s/%05d", chunkDir, chunkNumber)
 			chunkURL := c.BaseURL + chunkPath
 
-			fmt.Printf("[Nextcloud] Uploading chunk %d: %d bytes to %s\n", chunkNumber, bytesRead, chunkPath)
-			chunkStart := time.Now()
-
 			// Retry logic for individual chunks
 			var resp *http.Response
 			var chunkErr error
@@ -187,14 +180,13 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 			for attempt := 1; attempt <= maxRetries; attempt++ {
 				req, err := http.NewRequest("PUT", chunkURL, bytes.NewReader(chunk[:bytesRead]))
 				if err != nil {
-					fmt.Printf("[Nextcloud] ERROR: Could not create PUT request for chunk %d (attempt %d): %v\n", chunkNumber, attempt, err)
 					if attempt == maxRetries {
 						return fmt.Errorf("could not create PUT request for chunk %d after %d attempts: %w", chunkNumber, maxRetries, err)
 					}
 					continue
 				}
 				req.SetBasicAuth(c.Username, c.Password)
-				req.Header.Set("User-Agent", NextcloudUserAgent)
+				req.Header.Set("User-Agent", MagentaCloudUserAgent)
 				req.Header.Set("Accept", "*/*")
 				req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 				req.Header.Set("Connection", "keep-alive")
@@ -205,7 +197,6 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 
 				resp, chunkErr = c.HTTPClient.Do(req)
 				if chunkErr != nil {
-					fmt.Printf("[Nextcloud] WARNING: PUT request for chunk %d failed (attempt %d/%d) after %v: %v\n", chunkNumber, attempt, maxRetries, time.Since(chunkStart), chunkErr)
 					if attempt < maxRetries {
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
 						continue
@@ -220,40 +211,34 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 					// Read response body for detailed error information
 					body, _ := io.ReadAll(resp.Body)
 					resp.Body.Close()
-					fmt.Printf("[Nextcloud] WARNING: Chunk %d upload failed (attempt %d/%d) with status %s after %v, response: %s\n", chunkNumber, attempt, maxRetries, resp.Status, time.Since(chunkStart), string(body))
 					if attempt < maxRetries {
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
 						continue
 					}
-					return fmt.Errorf("upload of chunk %d failed with status %s after %d attempts", chunkNumber, resp.Status, maxRetries)
+					return fmt.Errorf("upload of chunk %d failed with status %s after %d attempts, response: %s", chunkNumber, resp.Status, maxRetries, string(body))
 				}
 			}
-			
-			chunkDuration := time.Since(chunkStart)
 			
 			// Immediately close response body to avoid resource leaks
 			resp.Body.Close()
 			successfulChunks++
-			
-			fmt.Printf("[Nextcloud] SUCCESS: Chunk %d uploaded successfully in %v (status: %s)\n", chunkNumber, chunkDuration, resp.Status)
 			chunkNumber++ // Increment for next chunk
 		}
 		if readErr == io.EOF {
 			break
 		}
 		if readErr != nil {
-			fmt.Printf("[Nextcloud] ERROR: Failed to read chunk %d: %v\n", chunkNumber, readErr)
 			return fmt.Errorf("failed to read chunk %d: %w", chunkNumber, readErr)
 		}
 	}
 	
-	fmt.Printf("[Nextcloud] Chunk upload summary: %d/%d chunks uploaded successfully\n", successfulChunks, totalChunks)
 	return nil
 }
 
 // DownloadFile downloads a file
+// Uses ANID in path: /remote.php/dav/files/{ANID}/path
 func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
-	fullPath := path.Join("/remote.php/dav/files/", c.Username, filePath)
+	fullPath := path.Join("/remote.php/dav/files/", c.ANID, filePath)
 	req, err := c.newRequest("GET", fullPath, nil)
 	if err != nil {
 		return nil, err
@@ -270,8 +255,9 @@ func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 }
 
 // DeleteFile deletes a file or directory
+// Uses ANID in path: /remote.php/dav/files/{ANID}/path
 func (c *Client) DeleteFile(filePath string) error {
-	fullPath := path.Join("/remote.php/dav/files/", c.Username, filePath)
+	fullPath := path.Join("/remote.php/dav/files/", c.ANID, filePath)
 	req, err := c.newRequest("DELETE", fullPath, nil)
 	if err != nil {
 		return err

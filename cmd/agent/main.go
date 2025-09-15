@@ -10,6 +10,7 @@ import (
 
 	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/agent"
 	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/nextcloud"
+	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/magentacloud"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -130,6 +131,8 @@ func startSequentialMonitoring(ctx context.Context, configs []*agent.Config, hea
 			clients[cfg] = cfg // HiDrive Legacy client is created in the test function
 		case "dropbox":
 			clients[cfg] = cfg // Dropbox client is created in the test function
+		case "magentacloud":
+			clients[cfg] = magentacloud.NewClient(cfg.URL, cfg.Username, cfg.Password, cfg.ANID)
 		}
 	}
 	
@@ -217,6 +220,8 @@ func runTestForInstance(ctx context.Context, cfg *agent.Config, client interface
 		err = agent.RunHiDriveLegacyTest(ctx, cfg)
 	case "dropbox":
 		err = agent.RunDropboxTest(ctx, cfg)
+	case "magentacloud":
+		err = agent.RunMagentaCloudTest(ctx, cfg)
 	default:
 		err = fmt.Errorf("unknown service type: %s", cfg.ServiceType)
 	}
