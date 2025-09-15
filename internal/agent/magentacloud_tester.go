@@ -61,7 +61,7 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 		// Continue with cleanup attempt
 	} else {
 		log.Printf("[MagentaCLOUD] Upload completed for %s in %v (speed: %.2f MB/s)", cfg.URL, uploadDuration, uploadSpeed)
-		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "none").Set(1)
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(1)
 	}
 
 	// 3. Download test (only if upload was successful)

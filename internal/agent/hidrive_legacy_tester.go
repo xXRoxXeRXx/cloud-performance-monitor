@@ -81,7 +81,7 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	}
 
 	// Record successful upload metrics
-	TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "none").Set(1)
+	TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(1)
 	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
 	TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
 	
