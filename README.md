@@ -93,7 +93,27 @@ NC_INSTANCE_1_PASS=app-password
 HIDRIVE_INSTANCE_1_URL=https://storage.ionos.fr
 HIDRIVE_INSTANCE_1_USER=your-username
 HIDRIVE_INSTANCE_1_PASS=your-password
+
+# HiDrive Legacy (OAuth2)
+HIDRIVE_LEGACY_INSTANCE_1_URL=https://api.hidrive.strato.com/2.1
+HIDRIVE_LEGACY_INSTANCE_1_CLIENT_ID=your-oauth2-client-id
+HIDRIVE_LEGACY_INSTANCE_1_CLIENT_SECRET=your-oauth2-client-secret
+HIDRIVE_LEGACY_INSTANCE_1_REFRESH_TOKEN=your-refresh-token
+HIDRIVE_LEGACY_INSTANCE_1_NAME=hidrive-legacy-main
+
+# Dropbox Instanzen
+DROPBOX_INSTANCE_1_TOKEN=sl.your-dropbox-access-token
+DROPBOX_INSTANCE_1_NAME=dropbox-main
 ```
+
+### Unterstützte Cloud-Services
+
+| Service | Protokoll | Konfiguration | Setup-Anleitung |
+|---------|-----------|---------------|------------------|
+| **Nextcloud** | WebDAV | Username/Password | Standard WebDAV-Konfiguration |
+| **HiDrive Next** | WebDAV | Username/Password | Optimiert für IONOS HiDrive |
+| **HiDrive Legacy** | OAuth2 REST API | Refresh Token | [📖 HiDrive OAuth2 Setup Guide](docs/HIDRIVE_OAUTH2_SETUP.md) |
+| **Dropbox** | REST API v2 | Access Token | [📖 Dropbox Setup Guide](docs/DROPBOX_SETUP.md) |
 
 ### E-Mail Provider Konfiguration
 Unterstützte Provider: **Gmail**, **Outlook**, **Yahoo**, **Strato**, und andere SMTP-Server.

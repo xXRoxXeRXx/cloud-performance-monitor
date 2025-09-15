@@ -1,6 +1,20 @@
-package agent
-
-import (
+package // Config holds the configuration for a single storage instance (Nextcloud, HiDrive, HiDrive Legacy, or Dropbox)
+type Config struct {
+	InstanceName    string
+	ServiceType     string // "nextcloud", "hidrive", "hidrive_legacy", or "dropbox"
+	URL             string
+	Username        string
+	Password        string
+	AccessToken     string // For HiDrive Legacy API only
+	RefreshToken    string // For Dropbox OAuth2 and HiDrive Legacy OAuth2
+	AppKey          string // For Dropbox OAuth2 (App Key)
+	AppSecret       string // For Dropbox OAuth2 (App Secret)  
+	ClientID        string // For HiDrive Legacy OAuth2
+	ClientSecret    string // For HiDrive Legacy OAuth2
+	TestFileSizeMB  int
+	TestIntervalSec int
+	TestChunkSizeMB int
+}
 	"fmt"
 	"os"
 	"strconv"
@@ -13,7 +27,7 @@ type Config struct {
 	URL             string
 	Username        string
 	Password        string
-	AccessToken     string // For HiDrive Legacy API only
+	AccessToken     string // For Dropbox API and HiDrive Legacy API
 	RefreshToken    string // For Dropbox OAuth2 and HiDrive Legacy OAuth2
 	AppKey          string // For Dropbox OAuth2 (App Key)
 	AppSecret       string // For Dropbox OAuth2 (App Secret)  
@@ -145,20 +159,23 @@ func LoadConfigs() ([]*Config, error) {
 	// HiDrive Legacy Instanzen (HTTP REST API)
 	l := 1
 	for {
-		refreshTokenKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_REFRESH_TOKEN", l)
+		tokenKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_TOKEN", l)
 		clientIDKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_CLIENT_ID", l)
 		clientSecretKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_CLIENT_SECRET", l)
 		nameKey := fmt.Sprintf("HIDRIVE_LEGACY_INSTANCE_%d_NAME", l)
 
-		refreshToken := os.Getenv(refreshTokenKey)
+		token := os.Getenv(tokenKey)
 		clientID := os.Getenv(clientIDKey)
 		clientSecret := os.Getenv(clientSecretKey)
 
-		if l == 1 && (refreshToken == "" || clientID == "" || clientSecret == "") && len(configs) == 0 {
+		if l == 1 && token == "" && len(configs) == 0 {
 			// Prüfe ob andere Services konfiguriert sind
-			break
+			if os.Getenv("DROPBOX_INSTANCE_1_TOKEN") == "" {
+				// Noch nicht zwingend Fehler - könnte nur ein Service konfiguriert sein
+				break
+			}
 		}
-		if refreshToken == "" || clientID == "" || clientSecret == "" {
+		if token == "" {
 			break
 		}
 
@@ -193,7 +210,7 @@ func LoadConfigs() ([]*Config, error) {
 			InstanceName:    instanceName,
 			ServiceType:     "hidrive_legacy",
 			URL:             "https://api.hidrive.strato.com",
-			RefreshToken:    refreshToken,
+			AccessToken:     token,
 			ClientID:        clientID,
 			ClientSecret:    clientSecret,
 			TestFileSizeMB:  fileSize,
@@ -204,22 +221,28 @@ func LoadConfigs() ([]*Config, error) {
 		l++
 	}
 
-	// Dropbox Instanzen (OAuth2 only)
+	// Dropbox Instanzen
 	k := 1
 	for {
+		tokenKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_TOKEN", k)
+		nameKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_NAME", k)
 		refreshTokenKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_REFRESH_TOKEN", k)
 		appKeyKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_APP_KEY", k)
 		appSecretKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_APP_SECRET", k)
-		nameKey := fmt.Sprintf("DROPBOX_INSTANCE_%d_NAME", k)
 		
+		token := os.Getenv(tokenKey)
 		refreshToken := os.Getenv(refreshTokenKey)
 		appKey := os.Getenv(appKeyKey)
 		appSecret := os.Getenv(appSecretKey)
 		
-		if k == 1 && (refreshToken == "" || appKey == "" || appSecret == "") && len(configs) == 0 {
-			return nil, fmt.Errorf("error: at least NC_INSTANCE_1_URL, HIDRIVE_INSTANCE_1_URL, HIDRIVE_LEGACY_INSTANCE_1_TOKEN, or DROPBOX_INSTANCE_1_REFRESH_TOKEN (with APP_KEY/APP_SECRET) must be set")
+		// Check if either legacy token OR all OAuth2 credentials are provided
+		hasLegacyToken := token != ""
+		hasOAuth2Creds := refreshToken != "" && appKey != "" && appSecret != ""
+		
+		if k == 1 && !hasLegacyToken && !hasOAuth2Creds && len(configs) == 0 {
+			return nil, fmt.Errorf("error: at least NC_INSTANCE_1_URL, HIDRIVE_INSTANCE_1_URL, HIDRIVE_LEGACY_INSTANCE_1_TOKEN, DROPBOX_INSTANCE_1_TOKEN, or DROPBOX_INSTANCE_1_REFRESH_TOKEN (with APP_KEY/APP_SECRET) must be set")
 		}
-		if refreshToken == "" || appKey == "" || appSecret == "" {
+		if !hasLegacyToken && !hasOAuth2Creds {
 			break
 		}
 		instanceName := os.Getenv(nameKey)
@@ -251,6 +274,7 @@ func LoadConfigs() ([]*Config, error) {
 			InstanceName:    instanceName,
 			ServiceType:     "dropbox",
 			URL:             "https://api.dropboxapi.com",
+			AccessToken:     token,
 			RefreshToken:    refreshToken,
 			AppKey:          appKey,
 			AppSecret:       appSecret,
@@ -299,24 +323,13 @@ func validateConfig(cfg *Config) error {
 			return fmt.Errorf("password cannot be empty for %s", cfg.ServiceType)
 		}
 	case "hidrive_legacy":
-		if cfg.RefreshToken == "" {
-			return fmt.Errorf("refresh token cannot be empty for HiDrive Legacy")
+		if cfg.AccessToken == "" {
+			return fmt.Errorf("access token cannot be empty for HiDrive Legacy")
 		}
-		if cfg.ClientID == "" {
-			return fmt.Errorf("client ID cannot be empty for HiDrive Legacy")
-		}
-		if cfg.ClientSecret == "" {
-			return fmt.Errorf("client secret cannot be empty for HiDrive Legacy")
-		}
+		// ClientID und ClientSecret sind optional - werden nur für Token-Refresh benötigt
 	case "dropbox":
-		if cfg.RefreshToken == "" {
-			return fmt.Errorf("refresh token cannot be empty for Dropbox")
-		}
-		if cfg.AppKey == "" {
-			return fmt.Errorf("app key cannot be empty for Dropbox")
-		}
-		if cfg.AppSecret == "" {
-			return fmt.Errorf("app secret cannot be empty for Dropbox")
+		if cfg.AccessToken == "" {
+			return fmt.Errorf("access token cannot be empty for Dropbox")
 		}
 	default:
 		return fmt.Errorf("unsupported service type: %s", cfg.ServiceType)

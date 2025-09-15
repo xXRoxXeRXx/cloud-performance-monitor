@@ -116,4 +116,21 @@ var (
 		},
 		[]string{"service", "instance"},
 	)
+
+	// HiDrive Legacy specific metrics
+	hidriveLegacyTestDuration = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "hidrive_legacy_test_duration_seconds",
+			Help: "Duration of HiDrive Legacy performance test in seconds.",
+		},
+		[]string{"service", "instance", "type", "status"},
+	)
+
+	hidriveLegacyTestSpeed = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "hidrive_legacy_test_speed_mbytes_per_sec",
+			Help: "Speed of HiDrive Legacy performance test in MB/s.",
+		},
+		[]string{"service", "instance", "type", "status"},
+	)
 )

@@ -105,6 +105,10 @@ func startSequentialMonitoring(ctx context.Context, configs []*agent.Config) {
 			clients[cfg] = nextcloud.NewClient(cfg.URL, cfg.Username, cfg.Password)
 		case "hidrive":
 			clients[cfg] = cfg // HiDrive client is created in the test function
+		case "hidrive_legacy":
+			clients[cfg] = cfg // HiDrive Legacy client is created in the test function
+		case "dropbox":
+			clients[cfg] = cfg // Dropbox client is created in the test function
 		}
 	}
 	
@@ -177,6 +181,14 @@ func runTestForInstance(ctx context.Context, cfg *agent.Config, client interface
 	case "hidrive":
 		if err := agent.RunHiDriveTest(ctx, cfg); err != nil {
 			log.Printf("[HiDrive] Test error for %s: %v", cfg.URL, err)
+		}
+	case "hidrive_legacy":
+		if err := agent.RunHiDriveLegacyTest(ctx, cfg); err != nil {
+			log.Printf("[HiDrive Legacy] Test error for %s: %v", cfg.InstanceName, err)
+		}
+	case "dropbox":
+		if err := agent.RunDropboxTest(ctx, cfg); err != nil {
+			log.Printf("[Dropbox] Test error for %s: %v", cfg.InstanceName, err)
 		}
 	default:
 		log.Printf("Unknown service type: %s", cfg.ServiceType)
