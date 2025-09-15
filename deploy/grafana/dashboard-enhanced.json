@@ -1,338 +1,885 @@
 {
-  "id": null,
-  "uid": "nextcloud-perf-enhanced",
-  "title": "Nextcloud Performance Monitor - Enhanced Analytics",
-  "tags": ["nextcloud", "performance", "analytics", "history"],
-  "timezone": "browser",
-  "schemaVersion": 38,
-  "version": 3,
-  "refresh": "1m",
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
   "panels": [
     {
-      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
       "title": "📊 Current Performance",
-      "collapsed": false,
-      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
-      "id": 100
+      "type": "row"
     },
     {
-      "type": "stat",
-      "title": "Current Upload Speed",
-      "targets": [
-        {
-          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[5m])",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { 
-        "defaults": { 
-          "unit": "MB/s",
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "yellow", "value": 5 },
-              { "color": "green", "value": 10 }
-            ]
-          }
-        } 
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
       },
-      "gridPos": { "x": 0, "y": 1, "w": 6, "h": 6 },
-      "id": 1
-    },
-    {
-      "type": "stat",
-      "title": "Current Download Speed",
-      "targets": [
-        {
-          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[5m])",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { 
-        "defaults": { 
-          "unit": "MB/s",
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "yellow", "value": 8 },
-              { "color": "green", "value": 15 }
-            ]
-          }
-        } 
-      },
-      "gridPos": { "x": 6, "y": 1, "w": 6, "h": 6 },
-      "id": 2
-    },
-    {
-      "type": "stat",
-      "title": "Success Rate (24h)",
-      "targets": [
-        {
-          "expr": "nextcloud_daily_success_rate_percent{service=~\"$service\"}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { 
-        "defaults": { 
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "yellow", "value": 90 },
-              { "color": "green", "value": 95 }
-            ]
-          }
-        } 
-      },
-      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 6 },
-      "id": 3
-    },
-    {
-      "type": "stat",
-      "title": "Tests Today",
-      "targets": [
-        {
-          "expr": "sum(nextcloud_daily_test_count{service=~\"$service\"})",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "short" } },
-      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 6 },
-      "id": 4
-    },
-    {
-      "type": "row",
-      "title": "📈 Daily Averages (24 Hours)",
-      "collapsed": false,
-      "gridPos": { "x": 0, "y": 7, "w": 24, "h": 1 },
-      "id": 101
-    },
-    {
-      "type": "bargauge",
-      "title": "Daily Average Upload Speed by Service",
-      "targets": [
-        {
-          "expr": "nextcloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "{{service}} - {{instance}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { 
-        "defaults": { 
-          "unit": "MB/s",
-          "displayMode": "gradient",
-          "orientation": "horizontal"
-        } 
-      },
-      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
-      "id": 5
-    },
-    {
-      "type": "bargauge",
-      "title": "Daily Average Download Speed by Service",
-      "targets": [
-        {
-          "expr": "nextcloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "{{service}} - {{instance}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { 
-        "defaults": { 
-          "unit": "MB/s",
-          "displayMode": "gradient",
-          "orientation": "horizontal"
-        } 
-      },
-      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
-      "id": 6
-    },
-    {
-      "type": "row",
-      "title": "📅 Monthly Trends (30 Days)",
-      "collapsed": false,
-      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 1 },
-      "id": 102
-    },
-    {
-      "type": "stat",
-      "title": "Monthly Avg Upload",
-      "targets": [
-        {
-          "expr": "avg(nextcloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"})",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { 
-        "defaults": { 
-          "unit": "MB/s",
-          "color": { "mode": "palette-classic" }
-        } 
-      },
-      "gridPos": { "x": 0, "y": 17, "w": 6, "h": 4 },
-      "id": 7
-    },
-    {
-      "type": "stat",
-      "title": "Monthly Avg Download",
-      "targets": [
-        {
-          "expr": "avg(nextcloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"})",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { 
-        "defaults": { 
-          "unit": "MB/s",
-          "color": { "mode": "palette-classic" }
-        } 
-      },
-      "gridPos": { "x": 6, "y": 17, "w": 6, "h": 4 },
-      "id": 8
-    },
-    {
-      "type": "timeseries",
-      "title": "Monthly Performance Trend",
-      "targets": [
-        {
-          "expr": "nextcloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "Upload - {{service}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        },
-        {
-          "expr": "nextcloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "Download - {{service}}",
-          "refId": "B",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "MB/s" } },
-      "gridPos": { "x": 12, "y": 17, "w": 12, "h": 8 },
-      "id": 9
-    },
-    {
-      "type": "row",
-      "title": "🏆 Service Performance Ranking",
-      "collapsed": false,
-      "gridPos": { "x": 0, "y": 25, "w": 24, "h": 1 },
-      "id": 103
-    },
-    {
-      "type": "table",
-      "title": "Service Performance Rankings",
-      "targets": [
-        {
-          "expr": "sort_desc(avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[24h]))",
-          "format": "table",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        },
-        {
-          "expr": "sort_desc(avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[24h]))",
-          "format": "table",
-          "refId": "B",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        }
-      ],
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "displayMode": "color-background",
-            "align": "center"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Value" },
-            "properties": [
-              { "id": "unit", "value": "MB/s" },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
               {
-                "id": "thresholds",
-                "value": {
-                  "steps": [
-                    { "color": "red", "value": 0 },
-                    { "color": "yellow", "value": 5 },
-                    { "color": "green", "value": 10 }
-                  ]
-                }
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "green",
+                "value": 10
               }
             ]
-          }
-        ]
+          },
+          "unit": "MB/s"
+        },
+        "overrides": []
       },
-      "gridPos": { "x": 0, "y": 26, "w": 12, "h": 8 },
-      "id": 10
-    },
-    {
-      "type": "timeseries",
-      "title": "Real-time Performance vs Daily Average",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.0.0",
       "targets": [
         {
-          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[1m])",
-          "legendFormat": "Current Upload - {{service}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        },
-        {
-          "expr": "nextcloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "Daily Avg Upload - {{service}}",
-          "refId": "B",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        },
-        {
-          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[1m])",
-          "legendFormat": "Current Download - {{service}}",
-          "refId": "C",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
-        },
-        {
-          "expr": "nextcloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "Daily Avg Download - {{service}}",
-          "refId": "D",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[5m])",
+          "legendFormat": "{{exported_instance}}",
+          "range": true,
+          "refId": "A"
         }
       ],
-      "fieldConfig": { 
-        "defaults": { 
-          "unit": "MB/s",
-          "custom": {
-            "lineInterpolation": "smooth"
-          }
-        } 
+      "title": "Current Upload Speed",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
       },
-      "gridPos": { "x": 12, "y": 26, "w": 12, "h": 8 },
-      "id": 11
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 8
+              },
+              {
+                "color": "green",
+                "value": 15
+              }
+            ]
+          },
+          "unit": "MB/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[5m])",
+          "legendFormat": "{{exported_instance}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Current Download Speed",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "nextcloud_daily_success_rate_percent{service=~\"$service\"}",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "{{exported_instance}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Success Rate (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(nextcloud_daily_test_count{service=~\"$service\"})",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tests Today",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 101,
+      "title": "📈 Daily Averages (24 Hours)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "MB/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "displayMode": "gradient",
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nextcloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
+          "legendFormat": "{{exported_instance}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Average Upload Speed by Service",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "MB/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 6,
+      "options": {
+        "displayMode": "gradient",
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nextcloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
+          "legendFormat": "{{exported_instance}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Average Download Speed by Service",
+      "type": "bargauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 102,
+      "title": "📅 Monthly Trends (30 Days)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "MB/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "id": 106,
+      "options": {
+        "displayMode": "gradient",
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nextcloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
+          "legendFormat": "{{exported_instance}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Average Upload Speed by Service",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "MB/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "id": 107,
+      "options": {
+        "displayMode": "gradient",
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nextcloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
+          "legendFormat": "{{exported_instance}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Average Download Speed by Service",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "MB/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nextcloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
+          "legendFormat": "Upload - {{exported_instance}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nextcloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
+          "legendFormat": "Download - {{exported_instance}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Monthly Performance Trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "MB/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[1m])",
+          "legendFormat": "Current Upload - {{exported_instance}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nextcloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
+          "legendFormat": "Daily Avg Upload - {{exported_instance}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[1m])",
+          "legendFormat": "Current Download - {{exported_instance}}",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nextcloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
+          "legendFormat": "Daily Avg Download - {{exported_instance}}",
+          "range": true,
+          "refId": "D"
+        }
+      ],
+      "title": "Real-time Performance vs Daily Average",
+      "type": "timeseries"
     }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": [
+    "nextcloud",
+    "performance",
+    "analytics",
+    "history"
   ],
   "templating": {
     "list": [
       {
-        "name": "service",
-        "type": "query",
-        "datasource": "Prometheus",
-        "query": "label_values(nextcloud_test_duration_seconds,service)",
-        "refresh": 1,
-        "includeAll": true,
-        "multi": true,
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "All",
           "value": "$__all"
-        }
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "service",
+        "options": [],
+        "query": "label_values(nextcloud_test_duration_seconds,service)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
       }
     ]
   },
@@ -340,5 +887,11 @@
     "from": "now-24h",
     "to": "now"
   },
-  "annotations": { "list": [] }
+  "timeRangeUpdatedDuringEditOrView": false,
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Nextcloud Performance Monitor - Enhanced Analytics",
+  "uid": "nextcloud-perf-enhanced",
+  "version": 1,
+  "weekStart": ""
 }
