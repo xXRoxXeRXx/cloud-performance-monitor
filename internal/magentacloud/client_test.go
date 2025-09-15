@@ -30,7 +30,7 @@ func TestDownloadFile(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("test content"))
+			_, _ = w.Write([]byte("test content"))
 		}
 	}))
 	defer server.Close()

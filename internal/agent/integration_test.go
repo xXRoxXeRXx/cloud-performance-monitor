@@ -31,7 +31,7 @@ func mockNextcloudServer() *httptest.Server {
 			w.WriteHeader(http.StatusCreated)
 		case "GET":
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("mock file content"))
+			_, _ = w.Write([]byte("mock file content"))
 		case "DELETE":
 			w.WriteHeader(http.StatusNoContent)
 		default:
@@ -54,7 +54,7 @@ func mockDropboxServer() *httptest.Server {
 				"expires_in": 3600
 			}`
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response))
+			_, _ = w.Write([]byte(response))
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
@@ -72,7 +72,7 @@ func mockDropboxServer() *httptest.Server {
 				}
 			}`
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response))
+			_, _ = w.Write([]byte(response))
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
@@ -86,7 +86,7 @@ func mockDropboxServer() *httptest.Server {
 				"session_id": "mock_session_id"
 			}`
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response))
+			_, _ = w.Write([]byte(response))
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
@@ -112,7 +112,7 @@ func mockDropboxServer() *httptest.Server {
 				"size": 1048576
 			}`
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response))
+			_, _ = w.Write([]byte(response))
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
@@ -123,7 +123,7 @@ func mockDropboxServer() *httptest.Server {
 		if r.Method == "POST" {
 			w.Header().Set("Content-Type", "application/octet-stream")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("mock file content"))
+			_, _ = w.Write([]byte("mock file content"))
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
@@ -141,7 +141,7 @@ func mockDropboxServer() *httptest.Server {
 				}
 			}`
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response))
+			_, _ = w.Write([]byte(response))
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}

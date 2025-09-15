@@ -243,10 +243,3 @@ func runTestForInstance(ctx context.Context, cfg *agent.Config, client interface
 	
 	return err
 }
-
-// Legacy function - removed parallel execution
-func startMonitoringInstance(cfg *agent.Config) {
-	// This function is no longer used but kept for backward compatibility
-	agent.Logger.WarnWithFields("monitor-agent", cfg.InstanceName, 
-		"startMonitoringInstance called - this should not happen in sequential mode", "")
-}

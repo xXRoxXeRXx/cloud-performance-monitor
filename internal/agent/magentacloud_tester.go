@@ -55,6 +55,7 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 
 	if err != nil {
 		log.Printf("[MagentaCLOUD] ERROR: Upload failed for %s: %v", cfg.URL, err)
+		uploadErrCode = "upload_failed"
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Inc()
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
 		// Continue with cleanup attempt

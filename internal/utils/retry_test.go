@@ -96,7 +96,7 @@ func TestCircuitBreakerOpening(t *testing.T) {
 	cb := NewCircuitBreaker("test", config)
 	
 	// First failure
-	cb.Execute(context.Background(), func(ctx context.Context) error {
+	_ = cb.Execute(context.Background(), func(ctx context.Context) error {
 		return errors.New("failure 1")
 	})
 	
@@ -105,7 +105,7 @@ func TestCircuitBreakerOpening(t *testing.T) {
 	}
 	
 	// Second failure - should open circuit
-	cb.Execute(context.Background(), func(ctx context.Context) error {
+	_ = cb.Execute(context.Background(), func(ctx context.Context) error {
 		return errors.New("failure 2")
 	})
 	

@@ -52,8 +52,8 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        
        if err != nil {
               log.Printf("[HiDrive] ERROR: upload failed for %s: %v", cfg.URL, err)
-              uploadErrCode = "upload_error"
-              TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "upload_failed").Inc()
+              uploadErrCode = "upload_failed"
+              TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Inc()
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
               return err
        }
