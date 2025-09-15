@@ -133,4 +133,71 @@ var (
 		},
 		[]string{"service", "instance", "type", "status"},
 	)
+
+	// NEW: Historical Performance Averages
+	DailyAverageUploadSpeed = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nextcloud_daily_average_upload_speed_mbytes_per_sec",
+			Help: "Daily average upload speed in MB/s for the last 24 hours.",
+		},
+		[]string{"service", "instance"},
+	)
+
+	DailyAverageDownloadSpeed = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nextcloud_daily_average_download_speed_mbytes_per_sec",
+			Help: "Daily average download speed in MB/s for the last 24 hours.",
+		},
+		[]string{"service", "instance"},
+	)
+
+	MonthlyAverageUploadSpeed = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nextcloud_monthly_average_upload_speed_mbytes_per_sec",
+			Help: "Monthly average upload speed in MB/s for the last 30 days.",
+		},
+		[]string{"service", "instance"},
+	)
+
+	MonthlyAverageDownloadSpeed = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nextcloud_monthly_average_download_speed_mbytes_per_sec",
+			Help: "Monthly average download speed in MB/s for the last 30 days.",
+		},
+		[]string{"service", "instance"},
+	)
+
+	// Daily and Monthly Test Counts
+	DailyTestCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nextcloud_daily_test_count",
+			Help: "Number of tests completed in the last 24 hours.",
+		},
+		[]string{"service", "instance", "type"},
+	)
+
+	MonthlyTestCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nextcloud_monthly_test_count",
+			Help: "Number of tests completed in the last 30 days.",
+		},
+		[]string{"service", "instance", "type"},
+	)
+
+	// Success Rate Averages
+	DailySuccessRate = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nextcloud_daily_success_rate_percent",
+			Help: "Daily success rate percentage for the last 24 hours.",
+		},
+		[]string{"service", "instance"},
+	)
+
+	MonthlySuccessRate = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nextcloud_monthly_success_rate_percent",
+			Help: "Monthly success rate percentage for the last 30 days.",
+		},
+		[]string{"service", "instance"},
+	)
 )
