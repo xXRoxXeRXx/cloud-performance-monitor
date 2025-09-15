@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/agent"
@@ -15,41 +13,74 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	Version = "1.0.0"
+	DefaultShutdownTimeout = 30 * time.Second
+)
+
 func main() {
+	// Initialize structured logging
+	logLevel := agent.GetLogLevel()
+	logFormat := agent.GetLogFormat()
+	agent.InitLogger(logLevel, "monitor-agent", logFormat)
+	
+	agent.Logger.InfoWithFields("monitor-agent", Version, 
+		"Starting Cloud Performance Monitor", "", "")
+	
+	// Create shutdown manager
+	shutdownManager := agent.NewShutdownManager(DefaultShutdownTimeout)
+	
 	// Load all configurations
 	allConfigs, err := agent.LoadConfigs()
 	if err != nil {
-		log.Fatalf("ERROR: Could not load configuration: %v", err)
-	}
-
-	// Create context for graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Setup signal handling for graceful shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	// Start the Prometheus metrics server
-	server := &http.Server{
-		Addr:    ":8080",
-		Handler: nil,
+		agent.Logger.Error("Could not load configuration", err)
+		os.Exit(1)
 	}
 	
-	http.Handle("/metrics", promhttp.Handler())
+	agent.Logger.InfoWithFields("monitor-agent", "", 
+		fmt.Sprintf("Loaded %d service configurations", len(allConfigs)), "", "")
+	
+	// Create health checker
+	healthChecker := agent.NewHealthChecker(Version)
+	
+	// Register all services with health checker
+	for _, cfg := range allConfigs {
+		healthChecker.RegisterService(cfg.InstanceName)
+	}
+	
+	// Create test manager
+	testManager := agent.NewTestManager(shutdownManager)
+	
+	// Setup HTTP server with health endpoints
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/health", healthChecker.HealthHandler())
+	mux.HandleFunc("/health/live", healthChecker.LivenessHandler())
+	mux.HandleFunc("/health/ready", healthChecker.ReadinessHandler())
+	
+	// Create HTTP server manager
+	httpManager := agent.NewHTTPServerManager(":8080", mux)
+	
+	// Register HTTP server shutdown hook
+	shutdownManager.AddHook(httpManager.ShutdownHook())
+	
+	// Start HTTP server
 	go func() {
-		log.Println("Metrics server starting on :8080")
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("ERROR: Metrics server failed: %v", err)
+		if err := httpManager.Start(); err != nil {
+			agent.Logger.Error("HTTP server failed to start", err)
+			os.Exit(1)
 		}
 	}()
-
-	// Start sequential monitoring in goroutine
+	
+	agent.Logger.InfoWithFields("http-server", ":8080", 
+		"HTTP server started with endpoints: /metrics, /health, /health/live, /health/ready", "", "")
+	
+	// Start sequential monitoring
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		startSequentialMonitoring(ctx, allConfigs)
+		startSequentialMonitoring(shutdownManager.Context(), allConfigs, healthChecker, testManager)
 	}()
 	
 	// Start network latency monitoring for all instances
@@ -57,45 +88,35 @@ func main() {
 		wg.Add(1)
 		go func(config *agent.Config) {
 			defer wg.Done()
-			agent.UpdateNetworkLatencyMetrics(ctx, config, config.ServiceType)
+			agent.UpdateNetworkLatencyMetrics(shutdownManager.Context(), config, config.ServiceType)
 		}(cfg)
 	}
-
-	// Wait for shutdown signal
-	sig := <-sigChan
-	log.Printf("Received signal %s, initiating graceful shutdown...", sig)
-
-	// Cancel context to signal shutdown
-	cancel()
-
-	// Shutdown metrics server gracefully
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer shutdownCancel()
 	
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Metrics server shutdown error: %v", err)
-	} else {
-		log.Println("Metrics server shut down gracefully")
+	// Wait for shutdown signal and perform graceful shutdown
+	if err := shutdownManager.WaitForShutdown(); err != nil {
+		agent.Logger.Error("Shutdown completed with errors", err)
+		os.Exit(1)
 	}
-
-	// Wait for monitoring to finish current tests
-	log.Println("Waiting for running tests to complete...")
+	
+	// Wait for all goroutines to finish
 	wg.Wait()
-	log.Println("Graceful shutdown completed")
+	agent.Logger.Info("Application shutdown completed successfully")
 }
 
 // startSequentialMonitoring runs tests for all instances sequentially - one after another
-func startSequentialMonitoring(ctx context.Context, configs []*agent.Config) {
-	log.Printf("Starting sequential monitoring for %d instances", len(configs))
+func startSequentialMonitoring(ctx context.Context, configs []*agent.Config, healthChecker *agent.HealthChecker, testManager *agent.TestManager) {
+	agent.Logger.InfoWithFields("monitor-agent", "", 
+		fmt.Sprintf("Starting sequential monitoring for %d instances", len(configs)), "", "")
 	
 	if len(configs) == 0 {
-		log.Println("No instances configured, exiting")
+		agent.Logger.Warn("No instances configured, exiting")
 		return
 	}
 	
 	// Use the first config's interval as base interval
 	baseInterval := time.Duration(configs[0].TestIntervalSec) * time.Second
-	log.Printf("Test cycle interval: %v", baseInterval)
+	agent.Logger.InfoWithFields("monitor-agent", "", 
+		fmt.Sprintf("Test cycle interval: %v", baseInterval), "", "")
 	
 	// Create clients for all instances
 	clients := make(map[*agent.Config]interface{})
@@ -113,8 +134,8 @@ func startSequentialMonitoring(ctx context.Context, configs []*agent.Config) {
 	}
 	
 	// Run initial test cycle immediately
-	log.Println("=== Starting initial test cycle ===")
-	if !runTestCycle(ctx, configs, clients) {
+	agent.Logger.Info("Starting initial test cycle")
+	if !runTestCycle(ctx, configs, clients, healthChecker, testManager) {
 		return // Shutdown signal received
 	}
 	
@@ -125,11 +146,11 @@ func startSequentialMonitoring(ctx context.Context, configs []*agent.Config) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Shutdown signal received, stopping monitoring...")
+			agent.Logger.Info("Shutdown signal received, stopping monitoring...")
 			return
 		case <-ticker.C:
-			log.Println("=== Starting new test cycle ===")
-			if !runTestCycle(ctx, configs, clients) {
+			agent.Logger.Info("Starting new test cycle")
+			if !runTestCycle(ctx, configs, clients, healthChecker, testManager) {
 				return // Shutdown signal received during test
 			}
 		}
@@ -138,68 +159,89 @@ func startSequentialMonitoring(ctx context.Context, configs []*agent.Config) {
 
 // runTestCycle runs tests for all instances sequentially - one after another
 // Returns false if shutdown signal received, true if completed normally
-func runTestCycle(ctx context.Context, configs []*agent.Config, clients map[*agent.Config]interface{}) bool {
+func runTestCycle(ctx context.Context, configs []*agent.Config, clients map[*agent.Config]interface{}, healthChecker *agent.HealthChecker, testManager *agent.TestManager) bool {
 	cycleStart := time.Now()
-	log.Printf("Starting test cycle with %d instances", len(configs))
+	agent.Logger.InfoWithFields("monitor-agent", "", 
+		fmt.Sprintf("Starting test cycle with %d instances", len(configs)), "", "")
 	
 	for i, cfg := range configs {
 		// Check for shutdown signal before each test
 		select {
 		case <-ctx.Done():
-			log.Printf("Shutdown signal received during test cycle, stopping after %d/%d tests", i, len(configs))
+			agent.Logger.InfoWithFields("monitor-agent", "", 
+				fmt.Sprintf("Shutdown signal received during test cycle, stopping after %d/%d tests", i, len(configs)), "", "")
 			return false
 		default:
 		}
 		
-		log.Printf("[%d/%d] Starting test for instance %s (%s)", 
-			i+1, len(configs), cfg.InstanceName, cfg.ServiceType)
+		agent.Logger.InfoWithFields(cfg.ServiceType, cfg.InstanceName, 
+			fmt.Sprintf("Starting test [%d/%d]", i+1, len(configs)), "", "")
 		
 		testStart := time.Now()
-		runTestForInstance(ctx, cfg, clients[cfg])
+		
+		// Run test directly (synchronously) for sequential execution
+		err := runTestForInstance(ctx, cfg, clients[cfg], healthChecker)
+		if err != nil {
+			agent.Logger.ErrorWithFields(cfg.ServiceType, cfg.InstanceName, 
+				"Test failed", err)
+		}
+		
 		testDuration := time.Since(testStart)
 		
-		log.Printf("[%d/%d] Completed test for instance %s (%s) in %v", 
-			i+1, len(configs), cfg.InstanceName, cfg.ServiceType, testDuration)
+		agent.Logger.InfoWithFields(cfg.ServiceType, cfg.InstanceName, 
+			fmt.Sprintf("Completed test [%d/%d]", i+1, len(configs)), 
+			testDuration.String(), "")
 	}
 	
 	cycleDuration := time.Since(cycleStart)
-	log.Printf("=== Test cycle completed in %v ===", cycleDuration)
+	agent.Logger.InfoWithFields("monitor-agent", "", 
+		"Test cycle completed", cycleDuration.String(), "")
 	return true
 }
 
 // runTestForInstance runs a single test for the given instance
-func runTestForInstance(ctx context.Context, cfg *agent.Config, client interface{}) {
+func runTestForInstance(ctx context.Context, cfg *agent.Config, client interface{}, healthChecker *agent.HealthChecker) error {
 	startTime := time.Now()
+	var err error
 	
 	switch cfg.ServiceType {
 	case "nextcloud":
 		if ncClient, ok := client.(*nextcloud.Client); ok {
 			agent.RunTest(cfg, ncClient)
 		} else {
-			log.Printf("ERROR: Invalid client type for Nextcloud instance %s", cfg.InstanceName)
+			err = fmt.Errorf("invalid client type for Nextcloud instance %s", cfg.InstanceName)
 		}
 	case "hidrive":
-		if err := agent.RunHiDriveTest(ctx, cfg); err != nil {
-			log.Printf("[HiDrive] Test error for %s: %v", cfg.URL, err)
-		}
+		err = agent.RunHiDriveTest(ctx, cfg)
 	case "hidrive_legacy":
-		if err := agent.RunHiDriveLegacyTest(ctx, cfg); err != nil {
-			log.Printf("[HiDrive Legacy] Test error for %s: %v", cfg.InstanceName, err)
-		}
+		err = agent.RunHiDriveLegacyTest(ctx, cfg)
 	case "dropbox":
-		if err := agent.RunDropboxTest(ctx, cfg); err != nil {
-			log.Printf("[Dropbox] Test error for %s: %v", cfg.InstanceName, err)
-		}
+		err = agent.RunDropboxTest(ctx, cfg)
 	default:
-		log.Printf("Unknown service type: %s", cfg.ServiceType)
+		err = fmt.Errorf("unknown service type: %s", cfg.ServiceType)
 	}
 	
 	duration := time.Since(startTime)
-	log.Printf("Test completed for %s (%s) in %v", cfg.InstanceName, cfg.ServiceType, duration)
+	
+	// Update health status
+	status := "healthy"
+	if err != nil {
+		status = "unhealthy"
+		agent.Logger.ErrorWithFields(cfg.ServiceType, cfg.InstanceName, 
+			"Test failed", err)
+	} else {
+		agent.Logger.InfoWithFields(cfg.ServiceType, cfg.InstanceName, 
+			"Test completed successfully", duration.String(), "")
+	}
+	
+	healthChecker.UpdateServiceHealth(cfg.InstanceName, status, duration, err)
+	
+	return err
 }
 
 // Legacy function - removed parallel execution
 func startMonitoringInstance(cfg *agent.Config) {
 	// This function is no longer used but kept for backward compatibility
-	log.Printf("WARNING: startMonitoringInstance called for %s - this should not happen in sequential mode", cfg.InstanceName)
+	agent.Logger.WarnWithFields("monitor-agent", cfg.InstanceName, 
+		"startMonitoringInstance called - this should not happen in sequential mode", "")
 }

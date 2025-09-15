@@ -28,7 +28,14 @@ Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Ü
 - **Alert Suppression**: Intelligente Unterdrückung redundanter Alerts
 - **SLA Monitoring**: Service Level Agreement Überwachung und Violation Alerts
 
-### 🛠️ **Developer Experience**
+### � **Production-Ready Features**
+- **Health Checks**: Comprehensive health monitoring endpoints (/health, /health/live, /health/ready)
+- **Structured Logging**: JSON-based logging with configurable levels (DEBUG, INFO, WARN, ERROR)
+- **Graceful Shutdown**: Signal-based shutdown with proper cleanup and test cancellation
+- **Service Discovery**: Automatic service registration and health status tracking
+- **Docker Health Checks**: Built-in container health monitoring for all services
+
+### �🛠️ **Developer Experience**
 - **One-Command Deployment**: Kompletter Stack mit `docker compose up -d`
 - **Environment Configuration**: Flexible .env-basierte Konfiguration
 - **Comprehensive Documentation**: Vollständige Setup- und Konfigurationsanleitungen
@@ -165,7 +172,54 @@ make clean              # Container und Volumes entfernen
 make clean-all          # Komplette Bereinigung
 ```
 
-## 📈 Metrics & Alerts
+## � API Endpoints
+
+### Monitor Agent (Port 8080)
+```bash
+# Core Endpoints
+GET /metrics              # Prometheus metrics
+GET /health              # Complete health status with all services
+GET /health/live         # Liveness probe (simple alive check)
+GET /health/ready        # Readiness probe (ready to serve traffic)
+
+# Example Health Response
+{
+  "status": "healthy",
+  "timestamp": "2025-09-15T13:30:00Z",
+  "uptime_seconds": 3600,
+  "services": [
+    {
+      "name": "nextcloud-instance1",
+      "status": "healthy",
+      "last_check": "2025-09-15T13:29:45Z",
+      "response_time_ms": 250
+    }
+  ],
+  "version": "1.0.0"
+}
+```
+
+### Environment Variables
+
+#### Logging Configuration
+```bash
+# Logging Level (DEBUG, INFO, WARN, ERROR)
+LOG_LEVEL=INFO
+
+# Logging Format (text or json)
+LOG_FORMAT=json
+```
+
+#### Health Check Configuration
+```bash
+# Health check intervals (automatically configured in docker-compose.yml)
+# - interval: 30s (how often to check)
+# - timeout: 10s (max time to wait for response)
+# - retries: 3 (failures before marking unhealthy)
+# - start_period: 10s (grace period after container start)
+```
+
+## �📈 Metrics & Alerts
 
 ### Available Metrics
 ```prometheus
