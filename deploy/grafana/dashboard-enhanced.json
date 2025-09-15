@@ -541,7 +541,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Average Upload Speed by Service",
+      "title": "Monthly Average Upload Speed by Service",
       "type": "bargauge"
     },
     {
@@ -608,7 +608,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Average Download Speed by Service",
+      "title": "Monthly Average Download Speed by Service",
       "type": "bargauge"
     },
     {
