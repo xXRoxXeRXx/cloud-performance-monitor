@@ -95,7 +95,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[5m])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[5m])",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -167,7 +167,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[5m])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[5m])",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -242,7 +242,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "nextcloud_daily_success_rate_percent{service=~\"$service\"}",
+          "expr": "cloud_daily_success_rate_percent{service=~\"$service\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "legendFormat": "{{exported_instance}}",
@@ -310,7 +310,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(nextcloud_daily_test_count{service=~\"$service\"})",
+          "expr": "sum(cloud_daily_test_count{service=~\"$service\"})",
           "legendFormat": "Total Tests",
           "range": true,
           "refId": "A"
@@ -389,7 +389,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "nextcloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
+          "expr": "cloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -456,7 +456,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "nextcloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
+          "expr": "cloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -535,7 +535,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "nextcloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
+          "expr": "cloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -602,7 +602,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "nextcloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
+          "expr": "cloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -698,7 +698,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "nextcloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
+          "expr": "cloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
           "legendFormat": "Upload - {{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -709,7 +709,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "nextcloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
+          "expr": "cloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
           "legendFormat": "Download - {{exported_instance}}",
           "range": true,
           "refId": "B"
@@ -805,7 +805,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[1m])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[1m])",
           "legendFormat": "Current Upload - {{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -816,7 +816,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "nextcloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
+          "expr": "cloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
           "legendFormat": "Daily Avg Upload - {{exported_instance}}",
           "range": true,
           "refId": "B"
@@ -827,7 +827,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(nextcloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[1m])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[1m])",
           "legendFormat": "Current Download - {{exported_instance}}",
           "range": true,
           "refId": "C"
@@ -838,7 +838,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "nextcloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
+          "expr": "cloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
           "legendFormat": "Daily Avg Download - {{exported_instance}}",
           "range": true,
           "refId": "D"
@@ -851,7 +851,7 @@
   "refresh": "1m",
   "schemaVersion": 39,
   "tags": [
-    "nextcloud",
+    "cloud",
     "performance",
     "analytics",
     "history"
@@ -874,7 +874,7 @@
         "multi": true,
         "name": "service",
         "options": [],
-        "query": "label_values(nextcloud_test_duration_seconds,service)",
+        "query": "label_values(cloud_test_duration_seconds,service)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -890,8 +890,13 @@
   "timeRangeUpdatedDuringEditOrView": false,
   "timepicker": {},
   "timezone": "browser",
-  "title": "Nextcloud Performance Monitor - Enhanced Analytics",
-  "uid": "nextcloud-perf-enhanced",
+  "title": "Cloud Performance Monitor - Enhanced Analytics",
+  "uid": "cloud-perf-enhanced",
   "version": 1,
   "weekStart": ""
 }
+
+
+
+
+

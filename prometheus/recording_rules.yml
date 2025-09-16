@@ -3,72 +3,72 @@ groups:
     interval: 300s  # Calculate every 5 minutes
     rules:
       # Daily Upload Speed Averages (24 hours)
-      - record: nextcloud_daily_average_upload_speed_mbytes_per_sec
+      - record: cloud_daily_average_upload_speed_mbytes_per_sec
         expr: |
           avg_over_time(
-            nextcloud_test_speed_mbytes_per_sec{type="upload"}[24h]
+            cloud_test_speed_mbytes_per_sec{type="upload"}[24h]
           )
         labels:
           period: "24h"
 
       # Daily Download Speed Averages (24 hours)  
-      - record: nextcloud_daily_average_download_speed_mbytes_per_sec
+      - record: cloud_daily_average_download_speed_mbytes_per_sec
         expr: |
           avg_over_time(
-            nextcloud_test_speed_mbytes_per_sec{type="download"}[24h]
+            cloud_test_speed_mbytes_per_sec{type="download"}[24h]
           )
         labels:
           period: "24h"
 
       # Monthly Upload Speed Averages (30 days)
-      - record: nextcloud_monthly_average_upload_speed_mbytes_per_sec
+      - record: cloud_monthly_average_upload_speed_mbytes_per_sec
         expr: |
           avg_over_time(
-            nextcloud_test_speed_mbytes_per_sec{type="upload"}[30d]
+            cloud_test_speed_mbytes_per_sec{type="upload"}[30d]
           )
         labels:
           period: "30d"
 
       # Monthly Download Speed Averages (30 days)
-      - record: nextcloud_monthly_average_download_speed_mbytes_per_sec
+      - record: cloud_monthly_average_download_speed_mbytes_per_sec
         expr: |
           avg_over_time(
-            nextcloud_test_speed_mbytes_per_sec{type="download"}[30d]
+            cloud_test_speed_mbytes_per_sec{type="download"}[30d]
           )
         labels:
           period: "30d"
 
       # Daily Success Rates
-      - record: nextcloud_daily_success_rate_percent
+      - record: cloud_daily_success_rate_percent
         expr: |
           (
-            sum_over_time(nextcloud_test_success{error_code="none"}[24h]) /
-            count_over_time(nextcloud_test_success[24h])
+            sum_over_time(cloud_test_success{error_code="none"}[24h]) /
+            count_over_time(cloud_test_success[24h])
           ) * 100
         labels:
           period: "24h"
 
       # Monthly Success Rates  
-      - record: nextcloud_monthly_success_rate_percent
+      - record: cloud_monthly_success_rate_percent
         expr: |
           (
-            sum_over_time(nextcloud_test_success{error_code="none"}[30d]) /
-            count_over_time(nextcloud_test_success[30d])
+            sum_over_time(cloud_test_success{error_code="none"}[30d]) /
+            count_over_time(cloud_test_success[30d])
           ) * 100
         labels:
           period: "30d"
 
       # Daily Test Counts
-      - record: nextcloud_daily_test_count
+      - record: cloud_daily_test_count
         expr: |
-          count_over_time(nextcloud_test_duration_seconds[24h])
+          count_over_time(cloud_test_duration_seconds[24h])
         labels:
           period: "24h"
 
       # Monthly Test Counts
-      - record: nextcloud_monthly_test_count
+      - record: cloud_monthly_test_count
         expr: |
-          count_over_time(nextcloud_test_duration_seconds[30d])
+          count_over_time(cloud_test_duration_seconds[30d])
         labels:
           period: "30d"
 
@@ -76,31 +76,31 @@ groups:
     interval: 1800s  # Calculate every 30 minutes
     rules:
       # Upload Speed Trend (comparing current vs daily average)
-      - record: nextcloud_upload_speed_trend_ratio
+      - record: cloud_upload_speed_trend_ratio
         expr: |
           (
-            rate(nextcloud_test_speed_mbytes_per_sec{type="upload"}[1h]) /
-            avg_over_time(nextcloud_test_speed_mbytes_per_sec{type="upload"}[24h])
+            rate(cloud_test_speed_mbytes_per_sec{type="upload"}[1h]) /
+            avg_over_time(cloud_test_speed_mbytes_per_sec{type="upload"}[24h])
           )
         labels:
           trend_type: "upload_speed"
 
       # Download Speed Trend (comparing current vs daily average)
-      - record: nextcloud_download_speed_trend_ratio
+      - record: cloud_download_speed_trend_ratio
         expr: |
           (
-            rate(nextcloud_test_speed_mbytes_per_sec{type="download"}[1h]) /
-            avg_over_time(nextcloud_test_speed_mbytes_per_sec{type="download"}[24h])
+            rate(cloud_test_speed_mbytes_per_sec{type="download"}[1h]) /
+            avg_over_time(cloud_test_speed_mbytes_per_sec{type="download"}[24h])
           )
         labels:
           trend_type: "download_speed"
 
       # Performance Degradation Detection (when current < 80% of daily average)
-      - record: nextcloud_performance_degradation
+      - record: cloud_performance_degradation
         expr: |
           (
-            avg_over_time(nextcloud_test_speed_mbytes_per_sec[1h]) /
-            avg_over_time(nextcloud_test_speed_mbytes_per_sec[24h])
+            avg_over_time(cloud_test_speed_mbytes_per_sec[1h]) /
+            avg_over_time(cloud_test_speed_mbytes_per_sec[24h])
           ) < 0.8
         labels:
           alert_type: "performance_degradation"
@@ -109,25 +109,25 @@ groups:
     interval: 600s  # Calculate every 10 minutes
     rules:
       # Upload Speed Comparison between services
-      - record: nextcloud_service_upload_speed_ranking
+      - record: cloud_service_upload_speed_ranking
         expr: |
           sort_desc(
-            avg_over_time(nextcloud_test_speed_mbytes_per_sec{type="upload"}[1h])
+            avg_over_time(cloud_test_speed_mbytes_per_sec{type="upload"}[1h])
           )
 
       # Download Speed Comparison between services  
-      - record: nextcloud_service_download_speed_ranking
+      - record: cloud_service_download_speed_ranking
         expr: |
           sort_desc(
-            avg_over_time(nextcloud_test_speed_mbytes_per_sec{type="download"}[1h])
+            avg_over_time(cloud_test_speed_mbytes_per_sec{type="download"}[1h])
           )
 
       # Best performing service (combined upload + download)
-      - record: nextcloud_best_performing_service
+      - record: cloud_best_performing_service
         expr: |
           sort_desc(
             (
-              avg_over_time(nextcloud_test_speed_mbytes_per_sec{type="upload"}[1h]) +
-              avg_over_time(nextcloud_test_speed_mbytes_per_sec{type="download"}[1h])
+              avg_over_time(cloud_test_speed_mbytes_per_sec{type="upload"}[1h]) +
+              avg_over_time(cloud_test_speed_mbytes_per_sec{type="download"}[1h])
             ) / 2
           )
