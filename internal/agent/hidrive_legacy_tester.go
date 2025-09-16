@@ -99,12 +99,10 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	}
 	defer downloadReader.Close()
 
-	// Read all data to measure actual download speed - measure only transfer time
-	transferStart := time.Now()
+	// Read all data to measure download speed including HTTP overhead
 	downloadedBytes, err := io.Copy(io.Discard, downloadReader)
-	transferDuration := time.Since(transferStart)
-	downloadDuration := time.Since(startDownload) // Total duration for metrics
-	downloadSpeed := float64(downloadedBytes) / (1024 * 1024) / transferDuration.Seconds()
+	downloadDuration := time.Since(startDownload)
+	downloadSpeed := float64(downloadedBytes) / (1024 * 1024) / downloadDuration.Seconds()
 	
 	// Record download histogram
 	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
