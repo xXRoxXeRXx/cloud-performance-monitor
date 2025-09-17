@@ -28,7 +28,7 @@ Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Ü
 - **Alert Suppression**: Intelligente Unterdrückung redundanter Alerts
 - **SLA Monitoring**: Service Level Agreement Überwachung und Violation Alerts
 
-### � **Production-Ready Features**
+### 🔒 **Production-Ready Features**
 - **Health Checks**: Comprehensive health monitoring endpoints (/health, /health/live, /health/ready)
 - **Structured Logging**: JSON-based logging with configurable levels (DEBUG, INFO, WARN, ERROR)
 - **Graceful Shutdown**: Signal-based shutdown with proper cleanup and test cancellation
@@ -114,9 +114,11 @@ HIDRIVE_LEGACY_INSTANCE_1_CLIENT_SECRET=your-oauth2-client-secret
 HIDRIVE_LEGACY_INSTANCE_1_REFRESH_TOKEN=your-refresh-token
 HIDRIVE_LEGACY_INSTANCE_1_NAME=hidrive-legacy-main
 
-# Dropbox Instanzen
-DROPBOX_INSTANCE_1_TOKEN=sl.your-dropbox-access-token
-DROPBOX_INSTANCE_1_NAME=dropbox-main
+# Dropbox Instanzen (OAuth2)
+DROPBOX_INSTANCE_1_REFRESH_TOKEN=sl.your-dropbox-refresh-token
+DROPBOX_INSTANCE_1_APP_KEY=your-app-key
+DROPBOX_INSTANCE_1_APP_SECRET=your-app-secret
+DROPBOX_INSTANCE_1_NAME=user@example.com
 ```
 
 ### Unterstützte Cloud-Services
@@ -127,7 +129,7 @@ DROPBOX_INSTANCE_1_NAME=dropbox-main
 | **HiDrive Next** | WebDAV | Username/Password | Optimiert für IONOS HiDrive |
 | **MagentaCLOUD** | WebDAV | Username/Password/ANID | [📖 MagentaCLOUD Setup Guide](docs/MAGENTACLOUD_SETUP.md) |
 | **HiDrive Legacy** | OAuth2 REST API | Refresh Token | [📖 HiDrive OAuth2 Setup Guide](docs/HIDRIVE_OAUTH2_SETUP.md) |
-| **Dropbox** | REST API v2 | Access Token | [📖 Dropbox Setup Guide](docs/DROPBOX_SETUP.md) |
+| **Dropbox** | OAuth2 REST API | Refresh Token | [📖 Dropbox Setup Guide](docs/DROPBOX_SETUP.md) |
 
 ### E-Mail Provider Konfiguration
 Unterstützte Provider: **Gmail**, **Outlook**, **Yahoo**, **Strato**, und andere SMTP-Server.
@@ -141,8 +143,8 @@ Nach dem Start stehen folgende Interfaces zur Verfügung:
 | Service | URL | Beschreibung |
 |---------|-----|--------------|
 | **Grafana** | http://localhost:3003 | Haupt-Dashboard mit Performance-Metriken |
-| **Prometheus** | http://localhost:9090 | Metriken-Browser und Alert-Status |
-| **Alertmanager** | http://localhost:9093 | Alert-Management und E-Mail-Konfiguration |
+
+> **Hinweis**: Prometheus (Port 9090) und Alertmanager (Port 9093) sind aus Sicherheitsgründen nur intern zugänglich. Der Zugriff erfolgt über Grafana oder Docker-interne Verbindungen.
 
 ### Grafana Dashboard Features
 - **Performance Overview**: Upload/Download Geschwindigkeiten und Latenz
@@ -181,13 +183,16 @@ make clean-all          # Komplette Bereinigung
 
 ## API Endpoints
 
-### Monitor Agent (Port 8080)
+### Monitor Agent (Port 8080 - nur intern zugänglich)
 ```bash
-# Core Endpoints
+# Core Endpoints (nur über Docker-internes Netzwerk)
 GET /metrics              # Prometheus metrics
 GET /health              # Complete health status with all services
 GET /health/live         # Liveness probe (simple alive check)
 GET /health/ready        # Readiness probe (ready to serve traffic)
+
+# Zugriff für Debugging über Docker:
+docker exec monitor-agent curl http://localhost:8080/health
 
 # Example Health Response
 {
@@ -249,6 +254,27 @@ cloud_circuit_breaker_state{service="nextcloud|hidrive|magentacloud|hidrive_lega
 - **🌐 Network Alerts**: Connection timeouts, DNS issues
 - **📊 SLA Alerts**: Service level agreement violations
 
+## 🔒 Security Features
+
+### Port Security
+- **Minimal External Exposure**: Nur Grafana (Port 3003) extern zugänglich
+- **Internal Networking**: Alle Services kommunizieren über Docker-internes Netzwerk
+- **Secure by Default**: Prometheus, Alertmanager und Monitor-Agent nicht extern erreichbar
+
+### Accessing Internal Services
+```bash
+# Prometheus Metrics (nur intern)
+docker exec prometheus wget -qO- http://monitor-agent:8080/metrics
+
+# Alertmanager Status (nur intern)  
+docker exec alertmanager wget -qO- http://localhost:9093/api/v1/status
+
+# Service Health Checks
+docker exec monitor-agent curl http://localhost:8080/health
+```
+
+📖 Detaillierte Sicherheitsdokumentation: [docs/PORT_SECURITY.md](docs/PORT_SECURITY.md)
+
 ## 🏗️ Architecture
 
 ```
@@ -297,7 +323,8 @@ docker system prune     # Clean up Docker
 **No metrics in Grafana?**
 ```bash
 make logs-agent         # Check agent logs
-curl http://localhost:8080/metrics  # Test metrics endpoint
+# Test metrics endpoint via Docker internal network:
+docker exec prometheus wget -qO- http://monitor-agent:8080/metrics | head -10
 ```
 
 **Email notifications not working?**
