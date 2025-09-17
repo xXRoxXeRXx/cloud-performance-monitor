@@ -66,7 +66,7 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 			WithError(err),
 			WithDuration(uploadDuration),
 			WithSize(fileSize))
-		uploadErrCode = "upload_failed"
+		uploadErrCode = ExtractErrorCode(err, "upload")
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Inc()
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
 		// Continue with cleanup attempt
@@ -91,6 +91,7 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 			Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "download", "error", 
 				"Download failed", 
 				WithError(downloadErr))
+			downloadErrCode = ExtractErrorCode(downloadErr, "download")
 			TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
 			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
 		} else {
@@ -111,8 +112,9 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 					"Download read failed", 
 					WithError(readErr),
 					WithDuration(downloadDuration))
+				downloadErrCode = ExtractErrorCode(readErr, "download")
 				TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
-				TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "read_error").Set(0)
+				TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
 			} else if downloadedBytes != fileSize {
 				Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "download", "error", 
 					fmt.Sprintf("Size mismatch: expected %d, got %d", fileSize, downloadedBytes),

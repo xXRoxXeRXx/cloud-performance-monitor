@@ -78,7 +78,7 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Observe(uploadDuration.Seconds())
 	
 	if err != nil {
-		uploadErrCode = "upload_failed"
+		uploadErrCode = ExtractErrorCode(err, "upload")
 		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "upload", "error", 
 			"Upload failed", 
 			WithError(err),
@@ -113,11 +113,12 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 		
 	downloadReader, err := client.DownloadFile(fullPath)
 	if err != nil {
+		downloadErrCode := ExtractErrorCode(err, "download")
 		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "download", "error", 
 			"Download failed", 
 			WithError(err))
-		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "download_failed").Inc()
-		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "download_failed").Set(0)
+		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
 		return err
 	}
 	defer downloadReader.Close()
@@ -131,12 +132,13 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
 	
 	if err != nil {
+		downloadErrCode := ExtractErrorCode(err, "download")
 		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "download", "error", 
 			"Download read failed", 
 			WithError(err),
 			WithDuration(downloadDuration))
-		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "read_failed").Inc()
-		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "read_failed").Set(0)
+		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
 		TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
 		TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(0)
 		return err

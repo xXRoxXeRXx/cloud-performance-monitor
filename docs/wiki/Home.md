@@ -28,6 +28,11 @@ Welcome to the Cloud Performance Monitor Wiki! This contains comprehensive runbo
 - **Availability**: Service uptime and responsiveness
 - **Performance**: Upload/download speeds and durations
 - **Reliability**: Error rates and test failures
+
+### 📖 Reference Documentation
+- [Error Code Reference](Error-Code-Reference) - Complete error code catalog with descriptions
+- [Prometheus Metrics](Prometheus-Metrics) - All available metrics and their meanings
+- [Configuration Guide](Configuration-Guide) - Environment variables and settings
 - **Network**: Latency and connectivity issues
 - **SLA**: Service level agreement compliance
 

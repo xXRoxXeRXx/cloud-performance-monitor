@@ -51,8 +51,9 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 
 	if err != nil {
 		log.Printf("ERROR: Upload failed for %s: %v", cfg.URL, err)
-		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "upload_failed").Inc()
-		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "upload_error").Set(0)
+		uploadErrCode := ExtractErrorCode(err, "upload")
+		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", uploadErrCode).Inc()
+		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", uploadErrCode).Set(0)
 		// Try to clean up the failed chunking directory
 		_ = ncClient.DeleteFile(fullPath)
 		return
@@ -73,8 +74,9 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	body, err := ncClient.DownloadFile(fullPath)
 	if err != nil {
 		log.Printf("ERROR: Download failed for %s: %v", cfg.URL, err)
-		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", "download_failed").Inc()
-		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", "download_error").Set(0)
+		downloadErrCode := ExtractErrorCode(err, "download")
+		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", downloadErrCode).Inc()
+		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", downloadErrCode).Set(0)
 	} else {
 		// We need to read the body to get an accurate time measurement
 		bytesDownloaded, _ := io.Copy(io.Discard, body)
@@ -92,7 +94,8 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 		       log.Printf("Download finished in %v (%.2f MB/s)", downloadDuration, downloadSpeedMBs)
 	       } else {
 		       log.Printf("ERROR: Download incomplete for %s: expected %d bytes, got %d", cfg.URL, fileSize, bytesDownloaded)
-			  TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", "incomplete_download").Set(0)
+		       downloadErrCode := ExtractErrorCode(fmt.Errorf("download incomplete: expected %d bytes, got %d", fileSize, bytesDownloaded), "download")
+			  TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", downloadErrCode).Set(0)
 	       }
 	}
 

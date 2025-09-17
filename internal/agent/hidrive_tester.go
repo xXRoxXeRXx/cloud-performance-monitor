@@ -63,7 +63,7 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
                      WithError(err),
                      WithDuration(uploadDuration),
                      WithSize(fileSize))
-              uploadErrCode = "upload_failed"
+              uploadErrCode = ExtractErrorCode(err, "upload")
               TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Inc()
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
               return err
@@ -93,8 +93,8 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
               Logger.LogOperation(ERROR, "hidrive", cfg.InstanceName, "download", "error", 
                      "Download failed", 
                      WithError(err))
-              downloadErrCode = "download_error"
-              TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "download_failed").Inc()
+              downloadErrCode = ExtractErrorCode(err, "download")
+              TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
               return err
        }
