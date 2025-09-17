@@ -1,6 +1,13 @@
+This application is mostly vibe coded.
+
+Current legal status for vibe-coded application is unknown. If it's copyrightable
+and commiter has rights to assign a license, it is MIT license (text below).
+
+All manually added code is covered by MIT license.
+
 MIT License
 
-Copyright (c) 2025 Marcel
+Copyright (c) 2025 Marcel Meyer STRATO GmbH
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
