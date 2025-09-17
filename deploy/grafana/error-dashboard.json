@@ -63,7 +63,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -126,7 +126,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code!=\"none\"})",
           "refId": "A"
@@ -138,7 +138,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -193,7 +193,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "(\n  sum(cloud_test_success{service=~\"$service\",instance=~\"$instance\",error_code=\"none\"})\n  /\n  sum(cloud_test_success{service=~\"$service\",instance=~\"$instance\"})\n) * 100",
           "refId": "A"
@@ -205,7 +205,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -361,7 +361,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "topk(10, sum by (error_code, service, instance) (cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code!=\"none\"}))",
           "format": "table",
@@ -405,7 +405,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -549,7 +549,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "(\n  sum by (service, instance) (cloud_test_success{service=~\"$service\",instance=~\"$instance\",error_code=\"none\"})\n  /\n  sum by (service, instance) (cloud_test_success{service=~\"$service\",instance=~\"$instance\"})\n) * 100",
           "legendFormat": "{{service}} - {{instance}}",
@@ -562,7 +562,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -696,7 +696,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"http_5.*\"})",
           "legendFormat": "HTTP 5xx Errors",
@@ -705,7 +705,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"http_4.*\"})",
           "legendFormat": "HTTP 4xx Errors",
@@ -714,7 +714,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"network_.*\"})",
           "legendFormat": "Network",
@@ -723,7 +723,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"auth_.*|token_.*\"})",
           "legendFormat": "Auth",
@@ -732,7 +732,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"webdav_.*|chunk_.*\"})",
           "legendFormat": "WebDAV",
@@ -741,7 +741,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\".*upload.*|.*download.*|.*file.*|permission.*|quota.*|size_mismatch\"})",
           "legendFormat": "File Operations",
@@ -767,7 +767,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -892,7 +892,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "rate(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"$error_code\",error_code!=\"none\"}[5m]) * 300",
           "legendFormat": "{{service}} - {{error_code}}",
@@ -905,7 +905,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "PBFA97CFB590B2093"
       },
       "fieldConfig": {
         "defaults": {
@@ -1064,7 +1064,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "PBFA97CFB590B2093"
           },
           "expr": "topk(20, sum by (error_code) (cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"$error_code\",error_code!=\"none\"}))",
           "format": "table",
@@ -1149,7 +1149,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "PBFA97CFB590B2093"
         },
         "definition": "label_values(cloud_test_success, service)",
         "hide": 0,
@@ -1176,7 +1176,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "PBFA97CFB590B2093"
         },
         "definition": "label_values(cloud_test_success{service=~\"$service\"}, instance)",
         "hide": 0,
@@ -1203,7 +1203,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "PBFA97CFB590B2093"
         },
         "definition": "label_values(cloud_test_errors_total{error_code!=\"none\"}, error_code)",
         "hide": 0,
