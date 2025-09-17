@@ -24,9 +24,10 @@ jobs:
         with:
           go-version: '1.22'
 
-      # Schritt 3: Go-Module-Cache
+      # Schritt 3: Go-Module-Cache (mit Continue-on-Error für Cache-Probleme)
       - name: Cache Go modules
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/.cache/go-build
@@ -35,51 +36,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # Schritt 4: Linting mit golangci-lint
+      # Schritt 4: Linting mit golangci-lint (eigenes Caching deaktiviert)
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
           version: latest
           args: --timeout=5m
+          skip-cache: true
 
-      # Schritt 5: Abhängigkeiten laden (mit privatem Modulzugriff)
+      # Schritt 5: Abhängigkeiten laden (vereinfacht für öffentliches Repo)
       - name: Tidy and download dependencies
-        env:
-          GOPRIVATE: github.com/MarcelWMeyer/cloud-performance-monitor
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_TERMINAL_PROMPT: 1
-        run: |
-          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-          go mod tidy
+        run: go mod tidy
 
-      # Schritt 6: Unit-Tests mit Coverage ausführen (mit privatem Modulzugriff)
+      # Schritt 6: Unit-Tests mit Coverage ausführen
       - name: Run unit tests with coverage
-        env:
-          GOPRIVATE: github.com/MarcelWMeyer/cloud-performance-monitor
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_TERMINAL_PROMPT: 1
-        run: |
-          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-          go test -v -cover ./...
+        run: go test -v -cover ./...
 
       # Schritt 7: Integrationstests ausführen
       - name: Run integration tests
-        env:
-          GOPRIVATE: github.com/MarcelWMeyer/cloud-performance-monitor
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_TERMINAL_PROMPT: 1
-        run: |
-          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-          go test -tags=integration -v ./internal/agent/
+        run: go test -tags=integration -v ./internal/agent/
 
       # Schritt 8: Code Coverage Report generieren
       - name: Generate coverage report
-        env:
-          GOPRIVATE: github.com/MarcelWMeyer/cloud-performance-monitor
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_TERMINAL_PROMPT: 1
         run: |
-          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
           go test -v -coverprofile=coverage.out ./...
           go tool cover -html=coverage.out -o coverage.html
           echo "Coverage report generated"
@@ -110,6 +89,7 @@ jobs:
 
       - name: Cache Docker layers
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -137,4 +117,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
