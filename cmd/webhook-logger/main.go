@@ -103,13 +103,20 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Webhook logger is healthy")
 }
 
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Webhook Logger - Alertmanager Webhook Receiver\n\nAvailable endpoints:\n- POST /webhook\n- POST /webhook/critical\n- GET /health")
+}
+
 func main() {
+	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/webhook", webhookHandler)
 	http.HandleFunc("/webhook/critical", webhookHandler)
 	http.HandleFunc("/health", healthHandler)
 	
 	log.Println("🔔 Webhook Logger starting on :8080")
 	log.Println("📍 Endpoints:")
+	log.Println("   • GET  / - Service info")
 	log.Println("   • POST /webhook - General alerts")
 	log.Println("   • POST /webhook/critical - Critical alerts")
 	log.Println("   • GET  /health - Health check")
