@@ -127,7 +127,7 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 					WithDuration(downloadDuration),
 					WithSize(downloadedBytes),
 					WithSpeed(downloadSpeed))
-				TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "none").Set(1)
+				TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(1)
 			}
 		}
 	}

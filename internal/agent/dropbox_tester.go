@@ -174,13 +174,14 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 		WithSpeed(uploadSpeed))
 
 	// 3. Download test with metrics
+	downloadErrCode := "none"
 	startDownload := time.Now()
 	Logger.LogOperation(INFO, "dropbox", cfg.InstanceName, "download", "start", 
 		"Starting file download")
 		
 	downloadReader, err := client.DownloadFile(fullPath)
 	if err != nil {
-		downloadErrCode := ExtractErrorCode(err, "download")
+		downloadErrCode = ExtractErrorCode(err, "download")
 		Logger.LogOperation(ERROR, "dropbox", cfg.InstanceName, "download", "error", 
 			"Download failed", 
 			WithError(err))
@@ -224,7 +225,7 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 	}
 
 	// Record successful download metrics
-	TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "none").Set(1)
+	TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(1)
 	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
 	TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
 	
