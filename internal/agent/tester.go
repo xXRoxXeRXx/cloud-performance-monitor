@@ -70,11 +70,12 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	log.Printf("Upload finished in %v (%.2f MB/s)", uploadDuration, uploadSpeedMBs)
 
 	// 3. Download test with enhanced metrics
+	downloadErrCode := "none"
 	startDownload := time.Now()
 	body, err := ncClient.DownloadFile(fullPath)
 	if err != nil {
 		log.Printf("ERROR: Download failed for %s: %v", cfg.URL, err)
-		downloadErrCode := ExtractErrorCode(err, "download")
+		downloadErrCode = ExtractErrorCode(err, "download")
 		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", downloadErrCode).Inc()
 		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", downloadErrCode).Set(0)
 	} else {
@@ -90,11 +91,11 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 			downloadSpeedMBs := (float64(fileSize) / (1024 * 1024)) / downloadDuration.Seconds()
 			TestDuration.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
 			TestSpeedMbytesPerSec.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Set(downloadSpeedMBs)
-			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", "none").Set(1)
+			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", downloadErrCode).Set(1)
 		       log.Printf("Download finished in %v (%.2f MB/s)", downloadDuration, downloadSpeedMBs)
 	       } else {
 		       log.Printf("ERROR: Download incomplete for %s: expected %d bytes, got %d", cfg.URL, fileSize, bytesDownloaded)
-		       downloadErrCode := ExtractErrorCode(fmt.Errorf("download incomplete: expected %d bytes, got %d", fileSize, bytesDownloaded), "download")
+		       downloadErrCode = ExtractErrorCode(fmt.Errorf("download incomplete: expected %d bytes, got %d", fileSize, bytesDownloaded), "download")
 			  TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", downloadErrCode).Set(0)
 	       }
 	}
