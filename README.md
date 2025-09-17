@@ -179,7 +179,7 @@ make clean              # Container und Volumes entfernen
 make clean-all          # Komplette Bereinigung
 ```
 
-## � API Endpoints
+## API Endpoints
 
 ### Monitor Agent (Port 8080)
 ```bash
@@ -226,7 +226,7 @@ LOG_FORMAT=json
 # - start_period: 10s (grace period after container start)
 ```
 
-## �📈 Metrics & Alerts
+## 📈 Metrics & Alerts
 
 ### Available Metrics
 ```prometheus
@@ -324,7 +324,7 @@ NC_INSTANCE_2_URL=...
 # ... up to NC_INSTANCE_N_URL
 ```
 
-## � Testing & Quality Assurance
+## Testing & Quality Assurance
 
 ### Unit Tests
 ```bash
