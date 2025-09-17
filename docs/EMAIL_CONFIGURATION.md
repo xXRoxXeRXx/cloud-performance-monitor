@@ -11,16 +11,16 @@ Der Alertmanager wurde erfolgreich mit E-Mail-Benachrichtigungen konfiguriert. A
 ```bash
 # SMTP-Server Konfiguration
 SMTP_SMARTHOST=smtp.example.com:465
-SMTP_FROM=user@example.com
-SMTP_AUTH_USERNAME=user@example.com
+SMTP_FROM=admin@example.com
+SMTP_AUTH_USERNAME=admin@example.com
 SMTP_AUTH_PASSWORD=your-password
 SMTP_REQUIRE_TLS=true
 
 # E-Mail-Empfänger für verschiedene Alert-Typen
-EMAIL_ADMIN=user@example.com        # Kritische Alerts
-EMAIL_DEVOPS=user@example.com       # Performance Alerts
-EMAIL_NETWORK=user@example.com      # Netzwerk Alerts
-EMAIL_MANAGEMENT=user@example.com   # SLA Verletzungen
+EMAIL_ADMIN=admin@example.com        # Kritische Alerts
+EMAIL_DEVOPS=devops@example.com       # Performance Alerts
+EMAIL_NETWORK=network@example.com      # Netzwerk Alerts
+EMAIL_MANAGEMENT=management@example.com   # SLA Verletzungen
 ```
 
 ### Alert-Routing
