@@ -69,22 +69,30 @@ receivers:
     email_configs:
       - to: '${EMAIL_ADMIN}'
         headers:
-          Subject: '🚨 CRITICAL Alert - Nextcloud Performance Monitor'
+          Subject: '🚨 CRITICAL Alert - Cloud Performance Monitor'
         text: |
           🚨 CRITICAL ALERT DETECTED 🚨
           
           {{ range .Alerts -}}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
-          Instance: {{ .Labels.instance }}
+          Instance: {{ .Labels.exported_instance }}
           Service: {{ .Labels.service }}
           Severity: {{ .Labels.severity }}
+          {{ if .Labels.error_code }}Error Code: {{ .Labels.error_code }}{{ end }}
+          {{ if .Labels.type }}Test Type: {{ .Labels.type }}{{ end }}
           
           Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
           
           {{ if .Annotations.runbook_url }}
           Runbook: {{ .Annotations.runbook_url }}
           {{ end }}
+          
+          Full Alert Labels:
+          {{- range $key, $value := .Labels }}
+          - {{ $key }}: {{ $value }}
+          {{- end }}
           
           ---
           {{ end }}
@@ -100,16 +108,24 @@ receivers:
     email_configs:
       - to: '${EMAIL_DEVOPS}'
         headers:
-          Subject: '⚠️ Performance Alert - Nextcloud Performance Monitor'
+          Subject: '⚠️ Performance Alert - Cloud Performance Monitor'
         text: |
           ⚠️ PERFORMANCE ALERT ⚠️
           
           {{ range .Alerts -}}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
-          Instance: {{ .Labels.instance }}
+          Instance: {{ .Labels.exported_instance }}
           Service: {{ .Labels.service }}
+          {{ if .Labels.error_code }}Error Code: {{ .Labels.error_code }}{{ end }}
+          {{ if .Labels.type }}Test Type: {{ .Labels.type }}{{ end }}
           Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
+          
+          Alert Details:
+          {{- range $key, $value := .Labels }}
+          - {{ $key }}: {{ $value }}
+          {{- end }}
           
           {{ end }}
     
@@ -121,14 +137,16 @@ receivers:
     email_configs:
       - to: '${EMAIL_NETWORK}'
         headers:
-          Subject: '🌐 Network Alert - Nextcloud Performance Monitor'
+          Subject: '🌐 Network Alert - Cloud Performance Monitor'
         text: |
           🌐 NETWORK ALERT 🌐
           
           {{ range .Alerts -}}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
-          Instance: {{ .Labels.instance }}
+          Instance: {{ .Labels.exported_instance }}
+          Service: {{ .Labels.service }}
+          {{ if .Labels.error_code }}Error Code: {{ .Labels.error_code }}{{ end }}
           Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
           
           {{ if .Labels.latency }}
@@ -145,7 +163,7 @@ receivers:
     email_configs:
       - to: '${EMAIL_MANAGEMENT},${EMAIL_DEVOPS}'
         headers:
-          Subject: '📊 SLA Violation - Nextcloud Performance Monitor'
+          Subject: '📊 SLA Violation - Cloud Performance Monitor'
         text: |
           📊 SLA VIOLATION DETECTED 📊
           
@@ -154,8 +172,17 @@ receivers:
           
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.exported_instance }}
           Service: {{ .Labels.service }}
+          {{ if .Labels.error_code }}Error Code: {{ .Labels.error_code }}{{ end }}
+          {{ if .Labels.type }}Test Type: {{ .Labels.type }}{{ end }}
           Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
+          
+          SLA Details:
+          {{- range $key, $value := .Labels }}
+          - {{ $key }}: {{ $value }}
+          {{- end }}
           
           Please review the service performance and take corrective action.
           {{ end }}

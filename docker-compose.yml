@@ -35,8 +35,9 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
-    ports:
-      - "9090:9090"
+    # Port not exposed - only accessible from internal network
+    expose:
+      - "9090"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
@@ -59,8 +60,9 @@ services:
       - SMTP_REQUIRE_TLS=true
     volumes:
       - alertmanager-data:/alertmanager
-    ports:
-      - "9093:9093"
+    # Port not exposed - only accessible from internal network
+    expose:
+      - "9093"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
@@ -77,8 +79,9 @@ services:
       dockerfile: deploy/webhook-logger/Dockerfile
     image: nextcloud-webhook-logger:latest
     container_name: webhook-logger
-    ports:
-      - "8081:8080"
+    # Port not exposed - only accessible from internal network
+    expose:
+      - "8080"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]

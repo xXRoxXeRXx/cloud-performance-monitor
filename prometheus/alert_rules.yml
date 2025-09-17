@@ -15,58 +15,69 @@ groups:
 
       # ==== PERFORMANCE ALERTS ====
       - alert: HighUploadDuration
-        expr: nextcloud_test_duration_seconds{type="upload"} > 300
+        expr: cloud_test_duration_seconds{type="upload"} > 300
         for: 2m
         labels:
           severity: warning
           category: performance
         annotations:
-          summary: "High upload duration detected for {{ $labels.service }} - {{ $labels.instance }}"
+          summary: "High upload duration detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
           description: "Upload took {{ $value }}s, which is above the 5-minute threshold."
           runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-HighUploadDuration"
 
       - alert: CriticalUploadDuration
-        expr: nextcloud_test_duration_seconds{type="upload"} > 600
+        expr: cloud_test_duration_seconds{type="upload"} > 600
         for: 1m
         labels:
           severity: critical
           category: performance
         annotations:
-          summary: "Critical upload duration detected for {{ $labels.service }} - {{ $labels.instance }}"
+          summary: "Critical upload duration detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
           description: "Upload took {{ $value }}s, which is above the 10-minute critical threshold."
           runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-CriticalUploadDuration"
 
       - alert: SlowUploadSpeed
-        expr: nextcloud_test_speed_mbytes_per_sec{type="upload"} < 1
+        expr: cloud_test_speed_mbytes_per_sec{type="upload"} < 1
         for: 5m
         labels:
           severity: warning
           category: performance
         annotations:
-          summary: "Slow upload speed detected for {{ $labels.service }} - {{ $labels.instance }}"
+          summary: "Slow upload speed detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
           description: "Upload speed is {{ $value }} MB/s, below 1 MB/s threshold."
           runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-SlowUploadSpeed"
 
       # ==== ERROR RATE ALERTS ====
-      - alert: HighErrorRate
-        expr: rate(nextcloud_test_errors_total[5m]) > 0.1
-        for: 2m
-        labels:
-          severity: warning
-          category: reliability
-        annotations:
-          summary: "High error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
-          runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-HighErrorRate"
-
-      - alert: CriticalErrorRate
-        expr: rate(nextcloud_test_errors_total[5m]) > 0.5
+      - alert: ServiceTestFailure
+        expr: cloud_test_success{error_code!="none"} == 0
         for: 1m
         labels:
           severity: critical
           category: reliability
         annotations:
-          summary: "Critical error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
+          summary: "Service test failure for {{ $labels.service }} - {{ $labels.exported_instance }}"
+          description: "Test failed with error: {{ $labels.error_code }} for service {{ $labels.service }}"
+          runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure"
+
+      - alert: HighErrorRate
+        expr: rate(cloud_test_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "High error rate detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-HighErrorRate"
+
+      - alert: CriticalErrorRate
+        expr: rate(cloud_test_errors_total[5m]) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          category: reliability
+        annotations:
+          summary: "Critical error rate detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
           description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
           runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-CriticalErrorRate"
 
