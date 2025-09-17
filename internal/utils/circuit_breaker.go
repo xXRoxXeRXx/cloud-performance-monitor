@@ -57,6 +57,7 @@ type CircuitBreaker struct {
 	lastFailureTime time.Time
 	mutex           sync.RWMutex
 	name            string
+	logger          ClientLogger
 }
 
 // NewCircuitBreaker creates a new circuit breaker
@@ -69,6 +70,7 @@ func NewCircuitBreaker(name string, config *CircuitBreakerConfig) *CircuitBreake
 		config: config,
 		state:  CircuitClosed,
 		name:   name,
+		logger: &DefaultClientLogger{},
 	}
 }
 
@@ -159,8 +161,9 @@ func (cb *CircuitBreaker) setState(newState CircuitState) {
 			cb.successes = 0
 		}
 		
-		fmt.Printf("Circuit breaker '%s' state changed: %s -> %s\n", 
-			cb.name, oldState, newState)
+		cb.logger.LogOperation(INFO, "utils", "circuit_breaker", "state", "change", 
+			fmt.Sprintf("Circuit breaker '%s' state changed: %s -> %s", cb.name, oldState, newState), 
+			map[string]interface{}{"circuit_breaker": cb.name, "old_state": oldState.String(), "new_state": newState.String()})
 	}
 }
 

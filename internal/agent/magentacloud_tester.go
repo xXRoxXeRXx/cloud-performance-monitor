@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	magentacloud "github.com/MarcelWMeyer/cloud-performance-monitor/internal/magentacloud"
@@ -14,8 +13,10 @@ import (
 func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 	serviceLabel := "magentacloud"
 	uploadErrCode := "none"
-	log.Printf("[MagentaCLOUD] >>> RunMagentaCloudTest betreten für %s", cfg.URL)
-	log.Printf("Starting MagentaCLOUD performance test for instance: %s", cfg.URL)
+	
+	Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "test", "start", 
+		"Starting MagentaCLOUD performance test")
+	
 	client := magentacloud.NewClient(cfg.URL, cfg.Username, cfg.Password, cfg.ANID)
 	
 	// Ablauf wie Nextcloud-Test mit ANID-spezifischen Pfaden
@@ -26,7 +27,9 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 	// 0. Ensure directory exists
 	err := client.EnsureDirectory(testDir)
 	if err != nil {
-		log.Printf("[MagentaCLOUD] ERROR: Could not create test directory for %s: %v", cfg.URL, err)
+		Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "directory", "error", 
+			"Could not create test directory", 
+			WithError(err))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()
 		return err
 	}
@@ -43,6 +46,10 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 
 	// 2. Upload test with enhanced metrics
 	startUpload := time.Now()
+	Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "upload", "start", 
+		"Starting file upload", 
+		WithSize(fileSize))
+		
 	err = client.UploadFile(fullPath, reader, fileSize, chunkSize)
 	uploadDuration := time.Since(startUpload)
 	uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
@@ -54,13 +61,21 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 	TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
 
 	if err != nil {
-		log.Printf("[MagentaCLOUD] ERROR: Upload failed for %s: %v", cfg.URL, err)
+		Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "upload", "error", 
+			"Upload failed", 
+			WithError(err),
+			WithDuration(uploadDuration),
+			WithSize(fileSize))
 		uploadErrCode = "upload_failed"
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Inc()
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
 		// Continue with cleanup attempt
 	} else {
-		log.Printf("[MagentaCLOUD] Upload completed for %s in %v (speed: %.2f MB/s)", cfg.URL, uploadDuration, uploadSpeed)
+		Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "upload", "success", 
+			"Upload completed", 
+			WithDuration(uploadDuration),
+			WithSize(fileSize),
+			WithSpeed(uploadSpeed))
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(1)
 	}
 
@@ -68,9 +83,14 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 	downloadErrCode := "none"
 	if err == nil {
 		startDownload := time.Now()
+		Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "download", "start", 
+			"Starting file download")
+			
 		downloadReader, downloadErr := client.DownloadFile(fullPath)
 		if downloadErr != nil {
-			log.Printf("[MagentaCLOUD] ERROR: Download failed for %s: %v", cfg.URL, downloadErr)
+			Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "download", "error", 
+				"Download failed", 
+				WithError(downloadErr))
 			TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
 			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
 		} else {
@@ -87,27 +107,43 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 			TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
 
 			if readErr != nil {
-				log.Printf("[MagentaCLOUD] ERROR: Download read failed for %s: %v", cfg.URL, readErr)
+				Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "download", "error", 
+					"Download read failed", 
+					WithError(readErr),
+					WithDuration(downloadDuration))
 				TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
 				TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "read_error").Set(0)
 			} else if downloadedBytes != fileSize {
-				log.Printf("[MagentaCLOUD] ERROR: Size mismatch for %s: expected %d, got %d", cfg.URL, fileSize, downloadedBytes)
+				Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "download", "error", 
+					fmt.Sprintf("Size mismatch: expected %d, got %d", fileSize, downloadedBytes),
+					WithSize(downloadedBytes))
 				TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "size_mismatch").Inc()
 				TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "size_mismatch").Set(0)
 			} else {
-				log.Printf("[MagentaCLOUD] Download completed for %s in %v (speed: %.2f MB/s)", cfg.URL, downloadDuration, downloadSpeed)
+				Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "download", "success", 
+					"Download completed", 
+					WithDuration(downloadDuration),
+					WithSize(downloadedBytes),
+					WithSpeed(downloadSpeed))
 				TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "none").Set(1)
 			}
 		}
 	}
 
 	// 4. Cleanup
+	Logger.LogOperation(DEBUG, "magentacloud", cfg.InstanceName, "cleanup", "start", 
+		"Deleting test file")
 	cleanupErr := client.DeleteFile(fullPath)
 	if cleanupErr != nil {
-		log.Printf("[MagentaCLOUD] WARNING: Cleanup failed for %s: %v", cfg.URL, cleanupErr)
+		Logger.LogOperation(WARN, "magentacloud", cfg.InstanceName, "cleanup", "warning", 
+			"Cleanup failed", 
+			WithError(cleanupErr))
 	} else {
-		log.Printf("[MagentaCLOUD] Cleanup completed for %s", cfg.URL)
+		Logger.LogOperation(DEBUG, "magentacloud", cfg.InstanceName, "cleanup", "success", 
+			"Cleanup completed")
 	}
 
+	Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "test", "complete", 
+		"MagentaCLOUD test completed")
 	return err
 }

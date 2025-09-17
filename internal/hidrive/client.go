@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"path"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/utils"
 )
 
 // Client for interacting with the HiDrive Next WebDAV API
@@ -18,6 +18,7 @@ type Client struct {
 	Username   string
 	Password   string
 	HTTPClient *http.Client
+	logger     utils.ClientLogger
 }
 
 const (
@@ -38,6 +39,7 @@ func NewClient(baseURL, username, password string) *Client {
 		       Timeout:   DefaultTimeout,
 		       Transport: t,
 	       },
+	       logger: &utils.DefaultClientLogger{},
        }
 }
 
@@ -79,15 +81,21 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	chunkDirURL := c.BaseURL + chunkDir
 	destinationURL := c.BaseURL + path.Join("/remote.php/dav/files/", c.Username, filePath)
 
-	log.Printf("[HiDrive] Starting chunked upload for %s (size: %d bytes, chunk size: %d bytes, transfer ID: %s)", filePath, size, chunkSize, transferID)
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "upload", "start", 
+		fmt.Sprintf("Starting chunked upload for %s (size: %d bytes, chunk size: %d bytes, transfer ID: %s)", filePath, size, chunkSize, transferID), 
+		map[string]interface{}{"file_path": filePath, "size": size, "chunk_size": chunkSize, "transfer_id": transferID})
 
 	// 1. Create temporary directory for chunks on the server
-	log.Printf("[HiDrive] Creating chunk directory: %s", chunkDir)
+	c.logger.LogOperation(utils.DEBUG, "hidrive", c.BaseURL, "mkcol", "start", 
+		fmt.Sprintf("Creating chunk directory: %s", chunkDir), 
+		map[string]interface{}{"chunk_dir": chunkDir})
 	mkcolStart := time.Now()
 	
 	req, err := http.NewRequest("MKCOL", chunkDirURL, nil)
 	if err != nil {
-		log.Printf("[HiDrive] ERROR: Could not create MKCOL request: %v", err)
+		c.logger.LogOperation(utils.ERROR, "hidrive", c.BaseURL, "mkcol", "request_error", 
+			fmt.Sprintf("Could not create MKCOL request: %v", err), 
+			map[string]interface{}{"error": err.Error()})
 		return fmt.Errorf("could not create MKCOL request: %w", err)
 	}
 	req.SetBasicAuth(c.Username, c.Password)
@@ -98,31 +106,43 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	mkcolDuration := time.Since(mkcolStart)
 	
 	if err != nil {
-		log.Printf("[HiDrive] ERROR: MKCOL request failed after %v: %v", mkcolDuration, err)
+		c.logger.LogOperation(utils.ERROR, "hidrive", c.BaseURL, "mkcol", "failed", 
+			fmt.Sprintf("MKCOL request failed after %v: %v", mkcolDuration, err), 
+			map[string]interface{}{"duration": mkcolDuration, "error": err.Error()})
 		return fmt.Errorf("MKCOL request failed after %v: %w", mkcolDuration, err)
 	}
 	defer resp.Body.Close()
 	
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("[HiDrive] ERROR: MKCOL failed with status %s after %v, response: %s", resp.Status, mkcolDuration, string(body))
+		c.logger.LogOperation(utils.ERROR, "hidrive", c.BaseURL, "mkcol", "status_error", 
+			fmt.Sprintf("MKCOL failed with status %s after %v, response: %s", resp.Status, mkcolDuration, string(body)), 
+			map[string]interface{}{"status_code": resp.StatusCode, "duration": mkcolDuration, "response_body": string(body)})
 		return fmt.Errorf("MKCOL for chunks failed with status %s after %v", resp.Status, mkcolDuration)
 	}
 	
-	log.Printf("[HiDrive] SUCCESS: Chunk directory created in %v (status: %s)", mkcolDuration, resp.Status)
+	c.logger.LogOperation(utils.DEBUG, "hidrive", c.BaseURL, "mkcol", "success", 
+		fmt.Sprintf("Chunk directory created in %v (status: %s)", mkcolDuration, resp.Status), 
+		map[string]interface{}{"duration": mkcolDuration, "status_code": resp.StatusCode})
 
 	// 2. Upload file in chunks
-	log.Printf("[HiDrive] Starting chunk upload phase...")
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "chunk_upload", "start", 
+		"Starting chunk upload phase", nil)
 	if err := c.uploadChunks(chunkDir, reader, chunkSize, destinationURL); err != nil {
-		log.Printf("[HiDrive] ERROR: Chunk upload failed: %v", err)
+		c.logger.LogOperation(utils.ERROR, "hidrive", c.BaseURL, "chunk_upload", "failed", 
+			fmt.Sprintf("Chunk upload failed: %v", err), 
+			map[string]interface{}{"error": err.Error()})
 		return err
 	}
-	log.Printf("[HiDrive] All chunks uploaded successfully")
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "chunk_upload", "completed", 
+		"All chunks uploaded successfully", nil)
 
 	// 3. Assemble chunks by moving the directory
 	moveSource := c.BaseURL + chunkDir + "/.file"
 	
-	log.Printf("[HiDrive] Starting MOVE operation from %s to %s", moveSource, destinationURL)
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "move", "start", 
+		fmt.Sprintf("Starting MOVE operation from %s to %s", moveSource, destinationURL), 
+		map[string]interface{}{"source": moveSource, "destination": destinationURL})
 	req, err = http.NewRequest("MOVE", moveSource, nil)
 	if err != nil {
 		return fmt.Errorf("could not create MOVE request: %w", err)
@@ -139,27 +159,36 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 		Transport: c.HTTPClient.Transport,
 	}
 	
-	log.Printf("[HiDrive] Executing MOVE operation (this may take several minutes for large files)...")
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "move", "executing", 
+		"Executing MOVE operation (this may take several minutes for large files)", nil)
 	moveStart := time.Now()
 	resp, err = moveClient.Do(req)
 	moveDuration := time.Since(moveStart)
 	
 	if err != nil {
-		log.Printf("[HiDrive] MOVE operation failed after %v: %v", moveDuration, err)
+		c.logger.LogOperation(utils.ERROR, "hidrive", c.BaseURL, "move", "failed", 
+			fmt.Sprintf("MOVE operation failed after %v: %v", moveDuration, err), 
+			map[string]interface{}{"duration": moveDuration, "error": err.Error()})
 		return fmt.Errorf("MOVE request failed after %v: %w", moveDuration, err)
 	}
 	defer resp.Body.Close()
 
-	log.Printf("[HiDrive] MOVE operation completed in %v with status %s", moveDuration, resp.Status)
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "move", "completed", 
+		fmt.Sprintf("MOVE operation completed in %v with status %s", moveDuration, resp.Status), 
+		map[string]interface{}{"duration": moveDuration, "status_code": resp.StatusCode})
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
 		// Read response body for more detailed error information
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("[HiDrive] MOVE failed with status %s, response: %s", resp.Status, string(body))
+		c.logger.LogOperation(utils.ERROR, "hidrive", c.BaseURL, "move", "status_error", 
+			fmt.Sprintf("MOVE failed with status %s, response: %s", resp.Status, string(body)), 
+			map[string]interface{}{"status_code": resp.StatusCode, "response_body": string(body)})
 		return fmt.Errorf("final MOVE to assemble chunks failed with status %s", resp.Status)
 	}
 
-	log.Printf("Chunked upload successful for %s", filePath)
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "upload", "completed", 
+		fmt.Sprintf("Chunked upload successful for %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return nil
 }
 
@@ -169,7 +198,9 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 	totalChunks := 0
 	successfulChunks := 0
 	
-	log.Printf("[HiDrive] Starting chunk upload to %s (chunk size: %d bytes)", chunkDir, chunkSize)
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "chunk_upload", "start", 
+		fmt.Sprintf("Starting chunk upload to %s (chunk size: %d bytes)", chunkDir, chunkSize), 
+		map[string]interface{}{"chunk_dir": chunkDir, "chunk_size": chunkSize})
 	
 	// CRITICAL: Start chunk numbering at 1, not 0! (HiDrive requires 1-based indexing)
 	chunkNumber := 1
@@ -181,7 +212,9 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 			chunkPath := fmt.Sprintf("%s/%05d", chunkDir, chunkNumber)
 			chunkURL := c.BaseURL + chunkPath
 
-			log.Printf("[HiDrive] Uploading chunk %d: %d bytes to %s", chunkNumber, bytesRead, chunkPath)
+			c.logger.LogOperation(utils.DEBUG, "hidrive", c.BaseURL, "chunk_upload", "chunk_progress", 
+				fmt.Sprintf("Uploading chunk %d: %d bytes to %s", chunkNumber, bytesRead, chunkPath), 
+				map[string]interface{}{"chunk_number": chunkNumber, "bytes": bytesRead, "chunk_path": chunkPath})
 			chunkStart := time.Now()
 
 			// Retry logic for individual chunks
@@ -191,7 +224,9 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 			for attempt := 1; attempt <= maxRetries; attempt++ {
 				req, err := http.NewRequest("PUT", chunkURL, bytes.NewReader(chunk[:bytesRead]))
 				if err != nil {
-					log.Printf("[HiDrive] ERROR: Could not create PUT request for chunk %d (attempt %d): %v", chunkNumber, attempt, err)
+					c.logger.LogOperation(utils.ERROR, "hidrive", c.BaseURL, "chunk_upload", "request_error", 
+						fmt.Sprintf("Could not create PUT request for chunk %d (attempt %d): %v", chunkNumber, attempt, err), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "error": err.Error()})
 					if attempt == maxRetries {
 						return fmt.Errorf("could not create PUT request for chunk %d after %d attempts: %w", chunkNumber, maxRetries, err)
 					}
@@ -205,7 +240,9 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 
 				resp, chunkErr = c.HTTPClient.Do(req)
 				if chunkErr != nil {
-					log.Printf("[HiDrive] WARNING: PUT request for chunk %d failed (attempt %d/%d) after %v: %v", chunkNumber, attempt, maxRetries, time.Since(chunkStart), chunkErr)
+					c.logger.LogOperation(utils.WARN, "hidrive", c.BaseURL, "chunk_upload", "retry", 
+						fmt.Sprintf("PUT request for chunk %d failed (attempt %d/%d) after %v: %v", chunkNumber, attempt, maxRetries, time.Since(chunkStart), chunkErr), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "duration": time.Since(chunkStart), "error": chunkErr.Error()})
 					if attempt < maxRetries {
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
 						continue
@@ -220,7 +257,9 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 					// Read response body for detailed error information
 					body, _ := io.ReadAll(resp.Body)
 					resp.Body.Close()
-					log.Printf("[HiDrive] WARNING: Chunk %d upload failed (attempt %d/%d) with status %s after %v, response: %s", chunkNumber, attempt, maxRetries, resp.Status, time.Since(chunkStart), string(body))
+					c.logger.LogOperation(utils.WARN, "hidrive", c.BaseURL, "chunk_upload", "status_error", 
+						fmt.Sprintf("Chunk %d upload failed (attempt %d/%d) with status %s after %v, response: %s", chunkNumber, attempt, maxRetries, resp.Status, time.Since(chunkStart), string(body)), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "status_code": resp.StatusCode, "duration": time.Since(chunkStart), "response_body": string(body)})
 					if attempt < maxRetries {
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
 						continue
@@ -235,24 +274,34 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 			resp.Body.Close()
 			successfulChunks++
 			
-			log.Printf("[HiDrive] SUCCESS: Chunk %d uploaded successfully in %v (status: %s)", chunkNumber, chunkDuration, resp.Status)
+			c.logger.LogOperation(utils.DEBUG, "hidrive", c.BaseURL, "chunk_upload", "success", 
+				fmt.Sprintf("Chunk %d uploaded successfully in %v (status: %s)", chunkNumber, chunkDuration, resp.Status), 
+				map[string]interface{}{"chunk_number": chunkNumber, "duration": chunkDuration, "status_code": resp.StatusCode})
 			chunkNumber++ // Increment for next chunk
 		}
 		if readErr == io.EOF {
 			break
 		}
 		if readErr != nil {
-			log.Printf("[HiDrive] ERROR: Failed to read chunk %d: %v", chunkNumber, readErr)
+			c.logger.LogOperation(utils.ERROR, "hidrive", c.BaseURL, "chunk_upload", "read_error", 
+				fmt.Sprintf("Failed to read chunk %d: %v", chunkNumber, readErr), 
+				map[string]interface{}{"chunk_number": chunkNumber, "error": readErr.Error()})
 			return fmt.Errorf("failed to read chunk %d: %w", chunkNumber, readErr)
 		}
 	}
 	
-	log.Printf("[HiDrive] Chunk upload summary: %d/%d chunks uploaded successfully", successfulChunks, totalChunks)
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "chunk_upload", "summary", 
+		fmt.Sprintf("Chunk upload summary: %d/%d chunks uploaded successfully", successfulChunks, totalChunks), 
+		map[string]interface{}{"successful_chunks": successfulChunks, "total_chunks": totalChunks})
 	return nil
 }
 
 // DownloadFile downloads a file
 func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "download", "started", 
+		fmt.Sprintf("Download started for %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
+
 	fullPath := path.Join("/remote.php/dav/files/", c.Username, filePath)
 	req, err := c.newRequest("GET", fullPath, nil)
 	if err != nil {
@@ -285,5 +334,9 @@ func (c *Client) DeleteFile(filePath string) error {
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("delete failed, status: %s", resp.Status)
 	}
+
+	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "delete", "success", 
+		fmt.Sprintf("File deleted successfully: %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return nil
 }

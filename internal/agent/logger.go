@@ -55,16 +55,26 @@ func ParseLogLevel(level string) LogLevel {
 
 // LogEntry represents a structured log entry
 type LogEntry struct {
-	Timestamp time.Time `json:"timestamp"`
-	Level     string    `json:"level"`
-	Service   string    `json:"service,omitempty"`
-	Instance  string    `json:"instance,omitempty"`
-	Message   string    `json:"message"`
-	Error     string    `json:"error,omitempty"`
-	Duration  string    `json:"duration,omitempty"`
-	Status    string    `json:"status,omitempty"`
-	File      string    `json:"file,omitempty"`
-	Function  string    `json:"function,omitempty"`
+	Timestamp    time.Time `json:"timestamp"`
+	Level        string    `json:"level"`
+	Service      string    `json:"service,omitempty"`
+	Instance     string    `json:"instance,omitempty"`
+	Operation    string    `json:"operation,omitempty"`
+	Phase        string    `json:"phase,omitempty"`
+	Message      string    `json:"message"`
+	Error        string    `json:"error,omitempty"`
+	Duration     string    `json:"duration,omitempty"`
+	Status       string    `json:"status,omitempty"`
+	StatusCode   int       `json:"status_code,omitempty"`
+	Size         int64     `json:"size,omitempty"`
+	Speed        float64   `json:"speed_mbps,omitempty"`
+	ChunkNumber  int       `json:"chunk_number,omitempty"`
+	TotalChunks  int       `json:"total_chunks,omitempty"`
+	Attempt      int       `json:"attempt,omitempty"`
+	MaxAttempts  int       `json:"max_attempts,omitempty"`
+	TransferID   string    `json:"transfer_id,omitempty"`
+	File         string    `json:"file,omitempty"`
+	Function     string    `json:"function,omitempty"`
 }
 
 // StructuredLogger provides structured logging functionality
@@ -96,20 +106,17 @@ func (sl *StructuredLogger) SetLevel(level LogLevel) {
 }
 
 // log writes a log entry
-func (sl *StructuredLogger) log(level LogLevel, service, instance, message, errorMsg, duration, status string) {
+func (sl *StructuredLogger) log(level LogLevel, entry LogEntry) {
 	if level < sl.level {
 		return
 	}
 
-	entry := LogEntry{
-		Timestamp: time.Now().UTC(),
-		Level:     level.String(),
-		Service:   service,
-		Instance:  instance,
-		Message:   message,
-		Error:     errorMsg,
-		Duration:  duration,
-		Status:    status,
+	entry.Timestamp = time.Now().UTC()
+	entry.Level = level.String()
+
+	// Set default service if not provided
+	if entry.Service == "" {
+		entry.Service = sl.service
 	}
 
 	// Add caller information for ERROR level
@@ -154,15 +161,55 @@ func (sl *StructuredLogger) writeText(entry LogEntry) {
 	if entry.Instance != "" {
 		builder.WriteString(fmt.Sprintf(" [%s]", entry.Instance))
 	}
+
+	if entry.Operation != "" {
+		builder.WriteString(fmt.Sprintf(" [%s]", entry.Operation))
+	}
+
+	if entry.Phase != "" {
+		builder.WriteString(fmt.Sprintf(" [%s]", entry.Phase))
+	}
 	
 	builder.WriteString(fmt.Sprintf(" %s", entry.Message))
+
+	if entry.TransferID != "" {
+		builder.WriteString(fmt.Sprintf(" (transfer_id: %s)", entry.TransferID))
+	}
+
+	if entry.ChunkNumber > 0 {
+		if entry.TotalChunks > 0 {
+			builder.WriteString(fmt.Sprintf(" (chunk: %d/%d)", entry.ChunkNumber, entry.TotalChunks))
+		} else {
+			builder.WriteString(fmt.Sprintf(" (chunk: %d)", entry.ChunkNumber))
+		}
+	}
+
+	if entry.Attempt > 0 {
+		if entry.MaxAttempts > 0 {
+			builder.WriteString(fmt.Sprintf(" (attempt: %d/%d)", entry.Attempt, entry.MaxAttempts))
+		} else {
+			builder.WriteString(fmt.Sprintf(" (attempt: %d)", entry.Attempt))
+		}
+	}
 	
 	if entry.Duration != "" {
 		builder.WriteString(fmt.Sprintf(" (duration: %s)", entry.Duration))
 	}
+
+	if entry.Size > 0 {
+		builder.WriteString(fmt.Sprintf(" (size: %d bytes)", entry.Size))
+	}
+
+	if entry.Speed > 0 {
+		builder.WriteString(fmt.Sprintf(" (speed: %.2f MB/s)", entry.Speed))
+	}
 	
 	if entry.Status != "" {
 		builder.WriteString(fmt.Sprintf(" (status: %s)", entry.Status))
+	}
+
+	if entry.StatusCode > 0 {
+		builder.WriteString(fmt.Sprintf(" (http_status: %d)", entry.StatusCode))
 	}
 	
 	if entry.Error != "" {
@@ -178,57 +225,91 @@ func (sl *StructuredLogger) writeText(entry LogEntry) {
 
 // Debug logs a debug message
 func (sl *StructuredLogger) Debug(message string) {
-	sl.log(DEBUG, sl.service, "", message, "", "", "")
+	sl.log(DEBUG, LogEntry{
+		Message: message,
+	})
 }
 
 // DebugWithFields logs a debug message with additional fields
 func (sl *StructuredLogger) DebugWithFields(service, instance, message string) {
-	sl.log(DEBUG, service, instance, message, "", "", "")
+	sl.log(DEBUG, LogEntry{
+		Service:  service,
+		Instance: instance,
+		Message:  message,
+	})
 }
 
 // Info logs an info message
 func (sl *StructuredLogger) Info(message string) {
-	sl.log(INFO, sl.service, "", message, "", "", "")
+	sl.log(INFO, LogEntry{
+		Message: message,
+	})
 }
 
 // InfoWithFields logs an info message with additional fields
 func (sl *StructuredLogger) InfoWithFields(service, instance, message, duration, status string) {
-	sl.log(INFO, service, instance, message, "", duration, status)
+	sl.log(INFO, LogEntry{
+		Service:  service,
+		Instance: instance,
+		Message:  message,
+		Duration: duration,
+		Status:   status,
+	})
 }
 
 // Warn logs a warning message
 func (sl *StructuredLogger) Warn(message string) {
-	sl.log(WARN, sl.service, "", message, "", "", "")
+	sl.log(WARN, LogEntry{
+		Message: message,
+	})
 }
 
 // WarnWithFields logs a warning message with additional fields
 func (sl *StructuredLogger) WarnWithFields(service, instance, message, errorMsg string) {
-	sl.log(WARN, service, instance, message, errorMsg, "", "")
+	sl.log(WARN, LogEntry{
+		Service:  service,
+		Instance: instance,
+		Message:  message,
+		Error:    errorMsg,
+	})
 }
 
 // Error logs an error message
 func (sl *StructuredLogger) Error(message string, err error) {
-	errorMsg := ""
-	if err != nil {
-		errorMsg = err.Error()
+	entry := LogEntry{
+		Message: message,
 	}
-	sl.log(ERROR, sl.service, "", message, errorMsg, "", "")
+	if err != nil {
+		entry.Error = err.Error()
+	}
+	sl.log(ERROR, entry)
 }
 
 // ErrorWithFields logs an error message with additional fields
 func (sl *StructuredLogger) ErrorWithFields(service, instance, message string, err error) {
-	errorMsg := ""
-	if err != nil {
-		errorMsg = err.Error()
+	entry := LogEntry{
+		Service:  service,
+		Instance: instance,
+		Message:  message,
 	}
-	sl.log(ERROR, service, instance, message, errorMsg, "", "")
+	if err != nil {
+		entry.Error = err.Error()
+	}
+	sl.log(ERROR, entry)
 }
 
 // TestResult logs a test result with structured fields
 func (sl *StructuredLogger) TestResult(service, instance, testType, message, duration, status string, err error) {
-	errorMsg := ""
+	entry := LogEntry{
+		Service:   service,
+		Instance:  instance,
+		Operation: testType,
+		Message:   message,
+		Duration:  duration,
+		Status:    status,
+	}
 	if err != nil {
-		errorMsg = err.Error()
+		entry.Error = err.Error()
 	}
 	
 	level := INFO
@@ -236,9 +317,95 @@ func (sl *StructuredLogger) TestResult(service, instance, testType, message, dur
 		level = ERROR
 	}
 	
-	sl.log(level, service, instance, 
-		fmt.Sprintf("%s %s", testType, message), 
-		errorMsg, duration, status)
+	sl.log(level, entry)
+}
+
+// LogOperation logs a general operation with optional fields
+func (sl *StructuredLogger) LogOperation(level LogLevel, service, instance, operation, phase, message string, opts ...LogOption) {
+	entry := LogEntry{
+		Service:   service,
+		Instance:  instance,
+		Operation: operation,
+		Phase:     phase,
+		Message:   message,
+	}
+	
+	// Apply optional fields
+	for _, opt := range opts {
+		opt(&entry)
+	}
+	
+	sl.log(level, entry)
+}
+
+// LogOption is a function type for setting optional log entry fields
+type LogOption func(*LogEntry)
+
+// WithError adds an error to the log entry
+func WithError(err error) LogOption {
+	return func(e *LogEntry) {
+		if err != nil {
+			e.Error = err.Error()
+		}
+	}
+}
+
+// WithDuration adds a duration to the log entry
+func WithDuration(d time.Duration) LogOption {
+	return func(e *LogEntry) {
+		e.Duration = d.String()
+	}
+}
+
+// WithStatus adds a status to the log entry
+func WithStatus(status string) LogOption {
+	return func(e *LogEntry) {
+		e.Status = status
+	}
+}
+
+// WithStatusCode adds an HTTP status code to the log entry
+func WithStatusCode(code int) LogOption {
+	return func(e *LogEntry) {
+		e.StatusCode = code
+	}
+}
+
+// WithSize adds a file size to the log entry
+func WithSize(size int64) LogOption {
+	return func(e *LogEntry) {
+		e.Size = size
+	}
+}
+
+// WithSpeed adds a transfer speed to the log entry
+func WithSpeed(mbps float64) LogOption {
+	return func(e *LogEntry) {
+		e.Speed = mbps
+	}
+}
+
+// WithChunk adds chunk information to the log entry
+func WithChunk(chunkNumber, totalChunks int) LogOption {
+	return func(e *LogEntry) {
+		e.ChunkNumber = chunkNumber
+		e.TotalChunks = totalChunks
+	}
+}
+
+// WithAttempt adds retry attempt information to the log entry
+func WithAttempt(attempt, maxAttempts int) LogOption {
+	return func(e *LogEntry) {
+		e.Attempt = attempt
+		e.MaxAttempts = maxAttempts
+	}
+}
+
+// WithTransferID adds a transfer ID to the log entry
+func WithTransferID(transferID string) LogOption {
+	return func(e *LogEntry) {
+		e.TransferID = transferID
+	}
 }
 
 // Global logger instance
@@ -248,6 +415,14 @@ var Logger *StructuredLogger
 func InitLogger(levelStr, service string, jsonFormat bool) {
 	level := ParseLogLevel(levelStr)
 	Logger = NewStructuredLogger(level, service, jsonFormat)
+}
+
+// LogServiceOperation logs a service operation (convenience function for services)
+func LogServiceOperation(level LogLevel, service, instance, operation, phase, message string, opts ...LogOption) {
+	if Logger == nil {
+		return
+	}
+	Logger.LogOperation(level, service, instance, operation, phase, message, opts...)
 }
 
 // GetLogLevel returns the current log level from environment

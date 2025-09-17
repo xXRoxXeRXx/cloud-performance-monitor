@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -23,6 +22,7 @@ type Client struct {
 	AppSecret    string
 	HTTPClient   *http.Client
 	tokenMutex   sync.RWMutex
+	logger       utils.ClientLogger
 }
 
 const (
@@ -93,7 +93,7 @@ type ErrorResponse struct {
 }
 
 // NewClient creates a new Dropbox API client with OAuth2 refresh capability
-func NewClient(accessToken, refreshToken, appKey, appSecret string) *Client {
+func NewClient(accessToken, refreshToken, appKey, appSecret string, logger utils.ClientLogger) *Client {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.MaxIdleConns = 100
 	t.MaxConnsPerHost = 100
@@ -108,12 +108,13 @@ func NewClient(accessToken, refreshToken, appKey, appSecret string) *Client {
 			Timeout:   DefaultTimeout,
 			Transport: t,
 		},
+		logger: logger,
 	}
 }
 
 // NewClientWithOAuth2 creates a new Dropbox API client with OAuth2 refresh capability (alias for NewClient)
-func NewClientWithOAuth2(accessToken, refreshToken, appKey, appSecret string) *Client {
-	return NewClient(accessToken, refreshToken, appKey, appSecret)
+func NewClientWithOAuth2(accessToken, refreshToken, appKey, appSecret string, logger utils.ClientLogger) *Client {
+	return NewClient(accessToken, refreshToken, appKey, appSecret, logger)
 }
 
 // RefreshAccessToken refreshes the access token using the refresh token with retry logic
@@ -145,12 +146,18 @@ func (c *Client) RefreshAccessToken() error {
 
 		resp, err := c.HTTPClient.Do(req)
 		if err != nil {
+			c.logger.LogOperation(utils.ERROR, "dropbox", "oauth", "token", "refresh_request_error", 
+				fmt.Sprintf("Refresh request failed: %v", err), 
+				map[string]interface{}{"error": err.Error()})
 			return fmt.Errorf("refresh request failed: %v", err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
+			c.logger.LogOperation(utils.ERROR, "dropbox", "oauth", "token", "refresh_status_error", 
+				fmt.Sprintf("Refresh failed with status %d: %s", resp.StatusCode, string(body)), 
+				map[string]interface{}{"status_code": resp.StatusCode, "response_body": string(body)})
 			return fmt.Errorf("refresh failed with status %d: %s", resp.StatusCode, string(body))
 		}
 
@@ -167,7 +174,9 @@ func (c *Client) RefreshAccessToken() error {
 			c.RefreshToken = tokenResp.RefreshToken
 		}
 
-		log.Printf("Dropbox: Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn)
+		c.logger.LogOperation(utils.INFO, "dropbox", "oauth", "token", "refresh_success", 
+			fmt.Sprintf("Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn), 
+			map[string]interface{}{"expires_in": tokenResp.ExpiresIn})
 		return nil
 	})
 }
@@ -205,7 +214,9 @@ func (c *Client) doRequestWithRetry(req *http.Request) (*http.Response, error) {
 	resp.Body.Close()
 
 	// Attempt to refresh token
-	log.Printf("Dropbox: Access token expired, attempting refresh...")
+	c.logger.LogOperation(utils.INFO, "dropbox", "oauth", "token", "refresh_attempt", 
+		"Access token expired, attempting refresh...", 
+		map[string]interface{}{})
 	if err := c.RefreshAccessToken(); err != nil {
 		return nil, fmt.Errorf("failed to refresh access token: %v", err)
 	}
@@ -216,7 +227,9 @@ func (c *Client) doRequestWithRetry(req *http.Request) (*http.Response, error) {
 	c.tokenMutex.RUnlock()
 
 	// Retry the request with new token
-	log.Printf("Dropbox: Retrying request with refreshed token...")
+	c.logger.LogOperation(utils.DEBUG, "dropbox", "oauth", "token", "retry_request", 
+		"Retrying request with refreshed token...", 
+		map[string]interface{}{})
 	return c.HTTPClient.Do(req)
 }
 
@@ -245,12 +258,18 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 	if dirPath[0] != '/' {
 		return fmt.Errorf("directory path must start with /")
 	}
-	log.Printf("Dropbox: Directory %s will be created automatically on upload", dirPath)
+	c.logger.LogOperation(utils.DEBUG, "dropbox", "api", "directory", "auto_create", 
+		fmt.Sprintf("Directory %s will be created automatically on upload", dirPath), 
+		map[string]interface{}{"dir_path": dirPath})
 	return nil
 }
 
 // UploadFile uploads a file using chunked upload for large files or simple upload for small files
 func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunkSize int64) error {
+	c.logger.LogOperation(utils.INFO, "dropbox", "api", "upload", "start", 
+		fmt.Sprintf("Starting upload for %s (%d bytes)", filePath, size), 
+		map[string]interface{}{"file_path": filePath, "file_size": size, "chunk_size": chunkSize})
+		
 	if size <= DropboxMaxChunkSize {
 		return c.uploadSimple(filePath, reader)
 	}
@@ -279,16 +298,24 @@ func (c *Client) uploadSimple(filePath string, reader io.Reader) error {
 
 	resp, err := c.doRequestWithRetry(req)
 	if err != nil {
+		c.logger.LogOperation(utils.ERROR, "dropbox", "api", "upload", "request_error", 
+			fmt.Sprintf("Upload request failed: %v", err), 
+			map[string]interface{}{"file_path": filePath, "error": err.Error()})
 		return fmt.Errorf("upload request failed: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		c.logger.LogOperation(utils.ERROR, "dropbox", "api", "upload", "status_error", 
+			fmt.Sprintf("Upload failed with status %d: %s", resp.StatusCode, string(body)), 
+			map[string]interface{}{"file_path": filePath, "status_code": resp.StatusCode, "response_body": string(body)})
 		return fmt.Errorf("upload failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("Dropbox: Simple upload completed for %s", filePath)
+	c.logger.LogOperation(utils.INFO, "dropbox", "api", "upload", "simple_completed", 
+		fmt.Sprintf("Simple upload completed for %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return nil
 }
 
@@ -300,7 +327,9 @@ func (c *Client) uploadChunked(filePath string, reader io.Reader, size int64, ch
 		return fmt.Errorf("failed to start upload session: %v", err)
 	}
 
-	log.Printf("Dropbox: Started chunked upload session %s for %s (size: %d bytes)", sessionID, filePath, size)
+	c.logger.LogOperation(utils.INFO, "dropbox", "api", "upload", "session_started", 
+		fmt.Sprintf("Started chunked upload session %s for %s (size: %d bytes)", sessionID, filePath, size), 
+		map[string]interface{}{"session_id": sessionID, "file_path": filePath, "file_size": size})
 
 	// Upload chunks
 	var offset uint64 = 0
@@ -313,6 +342,9 @@ func (c *Client) uploadChunked(filePath string, reader io.Reader, size int64, ch
 			break
 		}
 		if err != nil && err != io.ErrUnexpectedEOF {
+			c.logger.LogOperation(utils.ERROR, "dropbox", "api", "upload", "read_error", 
+				fmt.Sprintf("Failed to read chunk %d: %v", chunkNum, err), 
+				map[string]interface{}{"chunk_num": chunkNum, "error": err.Error()})
 			return fmt.Errorf("failed to read chunk %d: %v", chunkNum, err)
 		}
 
@@ -328,11 +360,15 @@ func (c *Client) uploadChunked(filePath string, reader io.Reader, size int64, ch
 		}
 
 		if err != nil {
+			c.logger.LogOperation(utils.ERROR, "dropbox", "api", "upload", "chunk_error", 
+				fmt.Sprintf("Failed to upload chunk %d: %v", chunkNum, err), 
+				map[string]interface{}{"chunk_num": chunkNum, "offset": offset, "error": err.Error()})
 			return fmt.Errorf("failed to upload chunk %d: %v", chunkNum, err)
 		}
 
-		log.Printf("Dropbox: Uploaded chunk %d/%d (offset: %d, size: %d)", 
-			chunkNum, (size+chunkSize-1)/chunkSize, offset, n)
+		c.logger.LogOperation(utils.DEBUG, "dropbox", "api", "upload", "chunk_progress", 
+			fmt.Sprintf("Uploaded chunk %d/%d (offset: %d, size: %d)", chunkNum, (size+chunkSize-1)/chunkSize, offset, n), 
+			map[string]interface{}{"chunk_num": chunkNum, "total_chunks": (size + chunkSize - 1) / chunkSize, "offset": offset, "chunk_size": n})
 
 		offset += uint64(n)
 		chunkNum++
@@ -342,7 +378,9 @@ func (c *Client) uploadChunked(filePath string, reader io.Reader, size int64, ch
 		}
 	}
 
-	log.Printf("Dropbox: Chunked upload completed for %s (%d chunks)", filePath, chunkNum-1)
+	c.logger.LogOperation(utils.INFO, "dropbox", "api", "upload", "chunked_completed", 
+		fmt.Sprintf("Chunked upload completed for %s (%d chunks)", filePath, chunkNum-1), 
+		map[string]interface{}{"file_path": filePath, "total_chunks": chunkNum - 1})
 	return nil
 }
 
@@ -469,7 +507,9 @@ func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("download failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("Dropbox: Download started for %s", filePath)
+	c.logger.LogOperation(utils.INFO, "dropbox", "api", "download", "started", 
+		fmt.Sprintf("Download started for %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return resp.Body, nil
 }
 
@@ -499,7 +539,9 @@ func (c *Client) DeleteFile(filePath string) error {
 		return fmt.Errorf("delete failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("Dropbox: File deleted: %s", filePath)
+	c.logger.LogOperation(utils.INFO, "dropbox", "api", "delete", "success", 
+		fmt.Sprintf("File deleted: %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return nil
 }
 

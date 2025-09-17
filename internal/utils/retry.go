@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	"log"
 	"math"
 	"time"
 )
@@ -15,6 +14,7 @@ type RetryConfig struct {
 	MaxDelay        time.Duration
 	BackoffFactor   float64
 	RetryableErrors []string
+	logger          ClientLogger
 }
 
 // DefaultRetryConfig returns a sensible default retry configuration
@@ -31,6 +31,7 @@ func DefaultRetryConfig() *RetryConfig {
 			"network is unreachable",
 			"no such host",
 		},
+		logger: &DefaultClientLogger{},
 	}
 }
 
@@ -59,8 +60,9 @@ func (rc *RetryConfig) WithRetry(ctx context.Context, operation string, fn Retry
 	for attempt := 0; attempt <= rc.MaxRetries; attempt++ {
 		if attempt > 0 {
 			delay := rc.calculateDelay(attempt)
-			log.Printf("Retrying %s (attempt %d/%d) after %v delay", 
-				operation, attempt, rc.MaxRetries, delay)
+			rc.logger.LogOperation(DEBUG, "utils", "retry", "retry", "attempt", 
+				fmt.Sprintf("Retrying %s (attempt %d/%d) after %v delay", operation, attempt, rc.MaxRetries, delay), 
+				map[string]interface{}{"operation": operation, "attempt": attempt, "max_retries": rc.MaxRetries, "delay": delay})
 			
 			select {
 			case <-ctx.Done():
@@ -72,18 +74,24 @@ func (rc *RetryConfig) WithRetry(ctx context.Context, operation string, fn Retry
 		lastErr = fn(ctx)
 		if lastErr == nil {
 			if attempt > 0 {
-				log.Printf("Operation %s succeeded after %d retries", operation, attempt)
+				rc.logger.LogOperation(INFO, "utils", "retry", "retry", "success", 
+					fmt.Sprintf("Operation %s succeeded after %d retries", operation, attempt), 
+					map[string]interface{}{"operation": operation, "retries": attempt})
 			}
 			return nil
 		}
 		
 		// Check if error is retryable
 		if !rc.IsRetryableError(lastErr) {
-			log.Printf("Non-retryable error in %s: %v", operation, lastErr)
+			rc.logger.LogOperation(ERROR, "utils", "retry", "retry", "non_retryable", 
+				fmt.Sprintf("Non-retryable error in %s: %v", operation, lastErr), 
+				map[string]interface{}{"operation": operation, "error": lastErr.Error()})
 			return lastErr
 		}
 		
-		log.Printf("Retryable error in %s (attempt %d): %v", operation, attempt+1, lastErr)
+		rc.logger.LogOperation(WARN, "utils", "retry", "retry", "retryable_error", 
+			fmt.Sprintf("Retryable error in %s (attempt %d): %v", operation, attempt+1, lastErr), 
+			map[string]interface{}{"operation": operation, "attempt": attempt + 1, "error": lastErr.Error()})
 	}
 	
 	return fmt.Errorf("operation %s failed after %d retries: %w", operation, rc.MaxRetries, lastErr)

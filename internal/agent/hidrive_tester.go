@@ -5,7 +5,6 @@ import (
        "context"
        "fmt"
        "io"
-       "log"
        "time"
 
        hidrive "github.com/MarcelWMeyer/cloud-performance-monitor/internal/hidrive"
@@ -15,8 +14,10 @@ import (
 func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        serviceLabel := "hidrive"
        uploadErrCode := "none"
-       log.Printf("[HiDrive] >>> RunHiDriveTest betreten für %s", cfg.URL)
-       log.Printf("Starting HiDrive performance test for instance: %s", cfg.URL)
+       
+       Logger.LogOperation(INFO, "hidrive", cfg.InstanceName, "test", "start", 
+              "Starting HiDrive performance test")
+       
        client := hidrive.NewClient(cfg.URL, cfg.Username, cfg.Password)
        // Ablauf wie Nextcloud-Test
        testDir := "/performance_tests"
@@ -26,7 +27,9 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        // 0. Ensure directory exists
        err := client.EnsureDirectory(testDir)
        if err != nil {
-              log.Printf("[HiDrive] ERROR: Could not create test directory for %s: %v", cfg.URL, err)
+              Logger.LogOperation(ERROR, "hidrive", cfg.InstanceName, "directory", "error", 
+                     "Could not create test directory", 
+                     WithError(err))
               TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()
               return err
        }
@@ -43,6 +46,10 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
 
        // 2. Upload test with enhanced metrics
        startUpload := time.Now()
+       Logger.LogOperation(INFO, "hidrive", cfg.InstanceName, "upload", "start", 
+              "Starting file upload", 
+              WithSize(fileSize))
+              
        err = client.UploadFile(fullPath, reader, fileSize, chunkSize)
        uploadDuration := time.Since(startUpload)
        uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
@@ -51,7 +58,11 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Observe(uploadDuration.Seconds())
        
        if err != nil {
-              log.Printf("[HiDrive] ERROR: upload failed for %s: %v", cfg.URL, err)
+              Logger.LogOperation(ERROR, "hidrive", cfg.InstanceName, "upload", "error", 
+                     "Upload failed", 
+                     WithError(err),
+                     WithDuration(uploadDuration),
+                     WithSize(fileSize))
               uploadErrCode = "upload_failed"
               TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Inc()
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
@@ -65,14 +76,23 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
        TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
        TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(1)
-       log.Printf("[HiDrive] Upload finished in %v (%.2f MB/s)", uploadDuration, uploadSpeed)
+       Logger.LogOperation(INFO, "hidrive", cfg.InstanceName, "upload", "success", 
+              "Upload completed", 
+              WithDuration(uploadDuration),
+              WithSize(fileSize),
+              WithSpeed(uploadSpeed))
 
        // 3. Download test with enhanced metrics
        startDownload := time.Now()
+       Logger.LogOperation(INFO, "hidrive", cfg.InstanceName, "download", "start", 
+              "Starting file download")
+              
        body, err := client.DownloadFile(fullPath)
        downloadErrCode := "none"
        if err != nil {
-              log.Printf("[HiDrive] ERROR: download failed for %s: %v", cfg.URL, err)
+              Logger.LogOperation(ERROR, "hidrive", cfg.InstanceName, "download", "error", 
+                     "Download failed", 
+                     WithError(err))
               downloadErrCode = "download_error"
               TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "download_failed").Inc()
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
@@ -93,18 +113,33 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
               TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
               TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(1)
-              log.Printf("[HiDrive] Download finished in %v (%.2f MB/s)", downloadDuration, downloadSpeed)
+              Logger.LogOperation(INFO, "hidrive", cfg.InstanceName, "download", "success", 
+                     "Download completed", 
+                     WithDuration(downloadDuration),
+                     WithSize(bytesDownloaded),
+                     WithSpeed(downloadSpeed))
        } else {
               downloadErrCode = "incomplete_download"
               TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "incomplete_download").Inc()
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
-              log.Printf("[HiDrive] ERROR: Download incomplete for %s: expected %d bytes, got %d", cfg.URL, fileSize, bytesDownloaded)
+              Logger.LogOperation(ERROR, "hidrive", cfg.InstanceName, "download", "error", 
+                     fmt.Sprintf("Download incomplete: expected %d bytes, got %d", fileSize, bytesDownloaded))
        }
 
        // 4. Cleanup
+       Logger.LogOperation(DEBUG, "hidrive", cfg.InstanceName, "cleanup", "start", 
+              "Deleting test file")
        err = client.DeleteFile(fullPath)
        if err != nil {
-              log.Printf("[HiDrive] Warn: delete failed: %v", err)
+              Logger.LogOperation(WARN, "hidrive", cfg.InstanceName, "cleanup", "warning", 
+                     "Delete failed", 
+                     WithError(err))
+       } else {
+              Logger.LogOperation(DEBUG, "hidrive", cfg.InstanceName, "cleanup", "success", 
+                     "Test file cleanup completed")
        }
+       
+       Logger.LogOperation(INFO, "hidrive", cfg.InstanceName, "test", "complete", 
+              "HiDrive test completed successfully")
        return nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	hidrive_legacy "github.com/MarcelWMeyer/cloud-performance-monitor/internal/hidrive_legacy"
@@ -14,22 +13,28 @@ import (
 func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	serviceLabel := "hidrive_legacy"
 	uploadErrCode := "none"
-	log.Printf("[HiDrive Legacy] >>> RunHiDriveLegacyTest betreten für %s", cfg.InstanceName)
-	log.Printf("Starting HiDrive Legacy performance test for instance: %s", cfg.InstanceName)
+	
+	Logger.LogOperation(INFO, "hidrive_legacy", cfg.InstanceName, "test", "start", 
+		"Starting HiDrive Legacy performance test")
 	
 	// Create OAuth2 client with refresh token
 	client, err := hidrive_legacy.NewClientWithOAuth2(cfg.RefreshToken, cfg.ClientID, cfg.ClientSecret)
 	if err != nil {
-		log.Printf("[HiDrive Legacy] ERROR: OAuth2 client creation failed for %s: %v", cfg.InstanceName, err)
+		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "auth", "error", 
+			"OAuth2 client creation failed", 
+			WithError(err))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "connection", "oauth2_failed").Inc()
 		return err
 	}
-	log.Printf("[HiDrive Legacy] Using OAuth2 client with refresh token for %s", cfg.InstanceName)
+	Logger.LogOperation(DEBUG, "hidrive_legacy", cfg.InstanceName, "auth", "oauth2_init", 
+		"Using OAuth2 client with refresh token")
 	
 	// Test connection first
 	err = client.TestConnection()
 	if err != nil {
-		log.Printf("[HiDrive Legacy] ERROR: Connection test failed for %s: %v", cfg.InstanceName, err)
+		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "auth", "error", 
+			"Connection test failed", 
+			WithError(err))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "connection", "auth_failed").Inc()
 		return err
 	}
@@ -42,7 +47,9 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	// 0. Ensure directory exists
 	err = client.EnsureDirectory(testDir)
 	if err != nil {
-		log.Printf("[HiDrive Legacy] ERROR: Could not ensure test directory for %s: %v", cfg.InstanceName, err)
+		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "directory", "error", 
+			"Could not ensure test directory", 
+			WithError(err))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()
 		return err
 	}
@@ -59,6 +66,10 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 
 	// 2. Upload test with enhanced metrics
 	startUpload := time.Now()
+	Logger.LogOperation(INFO, "hidrive_legacy", cfg.InstanceName, "upload", "start", 
+		"Starting file upload", 
+		WithSize(fileSize))
+		
 	err = client.UploadFile(fullPath, reader, fileSize, chunkSize)
 	uploadDuration := time.Since(startUpload)
 	uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
@@ -68,7 +79,11 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	
 	if err != nil {
 		uploadErrCode = "upload_failed"
-		log.Printf("[HiDrive Legacy] ERROR: Upload failed for %s: %v", cfg.InstanceName, err)
+		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "upload", "error", 
+			"Upload failed", 
+			WithError(err),
+			WithDuration(uploadDuration),
+			WithSize(fileSize))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Inc()
 		// Record failed upload in metrics
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
@@ -85,14 +100,22 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
 	TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
 	
-	log.Printf("[HiDrive Legacy] Upload completed for %s: %.2f MB/s (%.2f seconds)", 
-		cfg.InstanceName, uploadSpeed, uploadDuration.Seconds())
+	Logger.LogOperation(INFO, "hidrive_legacy", cfg.InstanceName, "upload", "success", 
+		"Upload completed", 
+		WithDuration(uploadDuration),
+		WithSize(fileSize),
+		WithSpeed(uploadSpeed))
 
 	// 3. Download test with metrics
 	startDownload := time.Now()
+	Logger.LogOperation(INFO, "hidrive_legacy", cfg.InstanceName, "download", "start", 
+		"Starting file download")
+		
 	downloadReader, err := client.DownloadFile(fullPath)
 	if err != nil {
-		log.Printf("[HiDrive Legacy] ERROR: Download failed for %s: %v", cfg.InstanceName, err)
+		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "download", "error", 
+			"Download failed", 
+			WithError(err))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "download_failed").Inc()
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "download_failed").Set(0)
 		return err
@@ -108,7 +131,10 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
 	
 	if err != nil {
-		log.Printf("[HiDrive Legacy] ERROR: Download read failed for %s: %v", cfg.InstanceName, err)
+		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "download", "error", 
+			"Download read failed", 
+			WithError(err),
+			WithDuration(downloadDuration))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "read_failed").Inc()
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "read_failed").Set(0)
 		TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
@@ -119,7 +145,10 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	// Verify file size
 	if downloadedBytes != fileSize {
 		err = fmt.Errorf("downloaded file size mismatch: expected %d, got %d", fileSize, downloadedBytes)
-		log.Printf("[HiDrive Legacy] ERROR: %v for %s", err, cfg.InstanceName)
+		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "download", "error", 
+			"File size mismatch", 
+			WithError(err),
+			WithSize(downloadedBytes))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "size_mismatch").Inc()
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "size_mismatch").Set(0)
 		return err
@@ -130,22 +159,31 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
 	TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
 	
-	log.Printf("[HiDrive Legacy] Download completed for %s: %.2f MB/s (%.2f seconds)", 
-		cfg.InstanceName, downloadSpeed, downloadDuration.Seconds())
+	Logger.LogOperation(INFO, "hidrive_legacy", cfg.InstanceName, "download", "success", 
+		"Download completed", 
+		WithDuration(downloadDuration),
+		WithSize(downloadedBytes),
+		WithSpeed(downloadSpeed))
 
 	// 4. Cleanup - delete test file
+	Logger.LogOperation(DEBUG, "hidrive_legacy", cfg.InstanceName, "cleanup", "start", 
+		"Deleting test file")
 	err = client.DeleteFile(fullPath)
 	if err != nil {
-		log.Printf("[HiDrive Legacy] WARNING: Could not delete test file %s: %v", fullPath, err)
+		Logger.LogOperation(WARN, "hidrive_legacy", cfg.InstanceName, "cleanup", "warning", 
+			"Could not delete test file", 
+			WithError(err))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "cleanup", "delete_failed").Inc()
 		// Don't return error for cleanup failure
 	} else {
-		log.Printf("[HiDrive Legacy] Test file cleanup completed for %s", cfg.InstanceName)
+		Logger.LogOperation(DEBUG, "hidrive_legacy", cfg.InstanceName, "cleanup", "success", 
+			"Test file cleanup completed")
 	}
 
 	// Circuit breaker: Close on success
 	CircuitBreakerState.WithLabelValues(serviceLabel, cfg.InstanceName).Set(0)
 	
-	log.Printf("[HiDrive Legacy] <<< RunHiDriveLegacyTest completed for %s", cfg.InstanceName)
+	Logger.LogOperation(INFO, "hidrive_legacy", cfg.InstanceName, "test", "complete", 
+		"HiDrive Legacy test completed successfully")
 	return nil
 }

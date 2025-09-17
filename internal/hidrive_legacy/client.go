@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -25,6 +24,7 @@ type Client struct {
 	ClientID     string
 	ClientSecret string
 	HTTPClient   *http.Client
+	logger       utils.ClientLogger
 }
 
 const (
@@ -96,6 +96,7 @@ func NewClient(accessToken string) *Client {
 			Timeout:   DefaultTimeout,
 			Transport: t,
 		},
+		logger: &utils.DefaultClientLogger{},
 	}
 }
 
@@ -114,6 +115,7 @@ func NewClientWithOAuth2(refreshToken, clientID, clientSecret string) (*Client, 
 			Timeout:   DefaultTimeout,
 			Transport: t,
 		},
+		logger: &utils.DefaultClientLogger{},
 	}
 
 	// Generate initial access token
@@ -219,7 +221,9 @@ func (c *Client) RefreshAccessToken() error {
 			c.RefreshToken = tokenResp.RefreshToken
 		}
 
-		log.Printf("HiDrive Legacy: Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn)
+		c.logger.LogOperation(utils.INFO, "hidrive_legacy", "auth", "token_refresh", "success", 
+			fmt.Sprintf("Access token refreshed successfully (expires in %d seconds)", tokenResp.ExpiresIn), 
+			map[string]interface{}{"expires_in": tokenResp.ExpiresIn})
 		return nil
 	})
 }
@@ -263,7 +267,8 @@ func (c *Client) doRequestWithRetry(req *http.Request) (*http.Response, error) {
 	resp.Body.Close()
 
 	// Try to refresh the token
-	log.Printf("HiDrive Legacy: Received 401, attempting token refresh...")
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "auth", "token_refresh", "start", 
+		"Received 401, attempting token refresh", nil)
 	if err := c.RefreshAccessToken(); err != nil {
 		return nil, fmt.Errorf("token refresh failed: %v", err)
 	}
@@ -311,7 +316,9 @@ func (c *Client) GetUserHome() (string, error) {
 		return "", fmt.Errorf("failed to decode user info response: %v", err)
 	}
 
-	log.Printf("HiDrive Legacy: User home directory: %s", userInfo.Home)
+	c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "user_info", "success", 
+		fmt.Sprintf("User home directory: %s", userInfo.Home), 
+		map[string]interface{}{"home_directory": userInfo.Home})
 	return userInfo.Home, nil
 }
 
@@ -320,7 +327,9 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 	// Get the user's home directory from API
 	homePath, err := c.GetUserHome()
 	if err != nil {
-		log.Printf("HiDrive Legacy: Failed to get user home directory: %v", err)
+		c.logger.LogOperation(utils.ERROR, "hidrive_legacy", "api", "directory", "home_error", 
+			fmt.Sprintf("Failed to get user home directory: %v", err), 
+			map[string]interface{}{"error": err.Error()})
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 	
@@ -331,28 +340,38 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 	}
 	fullPath := cleanHomePath + "/" + dirPath
 	
-	log.Printf("HiDrive Legacy: Creating directory %s (home: %s, cleanHome: %s, dirPath: %s)", fullPath, homePath, cleanHomePath, dirPath)
+	c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "directory", "create", 
+		fmt.Sprintf("Creating directory %s (home: %s, cleanHome: %s, dirPath: %s)", fullPath, homePath, cleanHomePath, dirPath), 
+		map[string]interface{}{"full_path": fullPath, "home_path": homePath, "clean_home": cleanHomePath, "dir_path": dirPath})
 	
 	// Check if directory exists
 	req, err := c.newAPIRequest("GET", "/dir?path="+url.QueryEscape(fullPath), nil)
 	if err != nil {
-		log.Printf("HiDrive Legacy: Failed to create directory check request: %v", err)
+		c.logger.LogOperation(utils.ERROR, "hidrive_legacy", "api", "directory", "check_error", 
+			fmt.Sprintf("Failed to create directory check request: %v", err), 
+			map[string]interface{}{"error": err.Error()})
 		return fmt.Errorf("failed to create directory check request: %v", err)
 	}
 
 	resp, err := c.doRequestWithRetry(req)
 	if err != nil {
-		log.Printf("HiDrive Legacy: Directory check request failed: %v", err)
+		c.logger.LogOperation(utils.ERROR, "hidrive_legacy", "api", "directory", "check_failed", 
+			fmt.Sprintf("Directory check request failed: %v", err), 
+			map[string]interface{}{"error": err.Error()})
 		return fmt.Errorf("directory check request failed: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
-		log.Printf("HiDrive Legacy: Directory %s already exists", fullPath)
+		c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "directory", "exists", 
+			fmt.Sprintf("Directory %s already exists", fullPath), 
+			map[string]interface{}{"full_path": fullPath})
 		return nil
 	}
 
-	log.Printf("HiDrive Legacy: Directory does not exist, creating: %s", fullPath)
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "directory", "creating", 
+		fmt.Sprintf("Directory does not exist, creating: %s", fullPath), 
+		map[string]interface{}{"full_path": fullPath})
 
 	// Directory doesn't exist, create it
 	data := url.Values{}
@@ -360,25 +379,33 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 
 	req, err = c.newAPIRequest("POST", "/dir", strings.NewReader(data.Encode()))
 	if err != nil {
-		log.Printf("HiDrive Legacy: Failed to create directory request: %v", err)
+		c.logger.LogOperation(utils.ERROR, "hidrive_legacy", "api", "directory", "request_error", 
+			fmt.Sprintf("Failed to create directory request: %v", err), 
+			map[string]interface{}{"error": err.Error()})
 		return fmt.Errorf("failed to create directory request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err = c.doRequestWithRetry(req)
 	if err != nil {
-		log.Printf("HiDrive Legacy: Directory creation request failed: %v", err)
+		c.logger.LogOperation(utils.ERROR, "hidrive_legacy", "api", "directory", "creation_failed", 
+			fmt.Sprintf("Directory creation request failed: %v", err), 
+			map[string]interface{}{"error": err.Error()})
 		return fmt.Errorf("directory creation request failed: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("HiDrive Legacy: Directory creation failed with status %d: %s", resp.StatusCode, string(body))
+		c.logger.LogOperation(utils.ERROR, "hidrive_legacy", "api", "directory", "creation_status_error", 
+			fmt.Sprintf("Directory creation failed with status %d: %s", resp.StatusCode, string(body)), 
+			map[string]interface{}{"status_code": resp.StatusCode, "response_body": string(body)})
 		return fmt.Errorf("directory creation failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("HiDrive Legacy: Directory %s created successfully", dirPath)
+	c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "directory", "created", 
+		fmt.Sprintf("Directory %s created successfully", dirPath), 
+		map[string]interface{}{"dir_path": dirPath})
 	return nil
 }
 
@@ -396,7 +423,9 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 		cleanHomePath = "/" + cleanHomePath
 	}
 	fullPath := cleanHomePath + "/" + filePath
-	log.Printf("HiDrive Legacy: Uploading file to %s (home: %s, cleanHome: %s)", fullPath, homePath, cleanHomePath)
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "upload", "start", 
+		fmt.Sprintf("Uploading file to %s (home: %s, cleanHome: %s)", fullPath, homePath, cleanHomePath), 
+		map[string]interface{}{"full_path": fullPath, "home_path": homePath, "clean_home": cleanHomePath})
 	
 	if size <= chunkSize {
 		return c.uploadSimple(fullPath, reader, size)
@@ -410,7 +439,9 @@ func (c *Client) uploadSimple(filePath string, reader io.Reader, size int64) err
 	dirPath := path.Dir(filePath)
 	fileName := path.Base(filePath)
 	
-	log.Printf("HiDrive Legacy: Simple upload - dir: %s, filename: %s", dirPath, fileName)
+	c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "upload", "simple", 
+		fmt.Sprintf("Simple upload - dir: %s, filename: %s", dirPath, fileName), 
+		map[string]interface{}{"dir_path": dirPath, "file_name": fileName})
 	
 	// Create multipart form
 	var requestBody bytes.Buffer
@@ -454,13 +485,17 @@ func (c *Client) uploadSimple(filePath string, reader io.Reader, size int64) err
 		return fmt.Errorf("upload failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("HiDrive Legacy: Simple upload completed for %s", filePath)
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "upload", "completed", 
+		fmt.Sprintf("Simple upload completed for %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return nil
 }
 
 // uploadChunked uploads a file using HiDrive's chunked upload (POST + PATCH)
 func (c *Client) uploadChunked(filePath string, reader io.Reader, size int64, chunkSize int64) error {
-	log.Printf("HiDrive Legacy: Starting chunked upload for %s (size: %d bytes, chunk size: %d)", filePath, size, chunkSize)
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "upload", "chunked_start", 
+		fmt.Sprintf("Starting chunked upload for %s (size: %d bytes, chunk size: %d)", filePath, size, chunkSize), 
+		map[string]interface{}{"file_path": filePath, "size": size, "chunk_size": chunkSize})
 
 	// Step 1: Create empty file with POST /file
 	err := c.createEmptyFile(filePath)
@@ -499,14 +534,17 @@ func (c *Client) uploadChunked(filePath string, reader io.Reader, size int64, ch
 			return fmt.Errorf("failed to upload chunk %d at offset %d: %v", chunkNum, offset, err)
 		}
 
-		log.Printf("HiDrive Legacy: Uploaded chunk %d/%d (offset: %d, size: %d bytes)", 
-			chunkNum, totalChunks, offset, len(chunkData))
+		c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "upload", "chunk_progress", 
+			fmt.Sprintf("Uploaded chunk %d/%d (offset: %d, size: %d bytes)", chunkNum, totalChunks, offset, len(chunkData)), 
+			map[string]interface{}{"chunk_num": chunkNum, "total_chunks": totalChunks, "offset": offset, "chunk_size": len(chunkData)})
 
 		offset += currentChunkSize
 		chunkNum++
 	}
 
-	log.Printf("HiDrive Legacy: Chunked upload completed for %s (%d chunks)", filePath, chunkNum-1)
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "upload", "chunked_completed", 
+		fmt.Sprintf("Chunked upload completed for %s (%d chunks)", filePath, chunkNum-1), 
+		map[string]interface{}{"file_path": filePath, "total_chunks": chunkNum - 1})
 	return nil
 }
 
@@ -516,7 +554,9 @@ func (c *Client) createEmptyFile(filePath string) error {
 	dirPath := path.Dir(filePath)
 	fileName := path.Base(filePath)
 	
-	log.Printf("HiDrive Legacy: Creating empty file - dir: %s, filename: %s", dirPath, fileName)
+	c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "file", "create_empty", 
+		fmt.Sprintf("Creating empty file - dir: %s, filename: %s", dirPath, fileName), 
+		map[string]interface{}{"dir_path": dirPath, "filename": fileName})
 	
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
@@ -558,7 +598,9 @@ func (c *Client) createEmptyFile(filePath string) error {
 		return fmt.Errorf("empty file creation failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("HiDrive Legacy: Empty file created: %s", filePath)
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "file", "create_empty_success", 
+		fmt.Sprintf("Empty file created: %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return nil
 }
 
@@ -608,7 +650,9 @@ func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 		cleanHomePath = "/" + cleanHomePath
 	}
 	fullPath := cleanHomePath + "/" + filePath
-	log.Printf("HiDrive Legacy: Downloading file from %s (home: %s, cleanHome: %s)", fullPath, homePath, cleanHomePath)
+	c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "download", "path_constructed", 
+		fmt.Sprintf("Downloading file from %s (home: %s, cleanHome: %s)", fullPath, homePath, cleanHomePath), 
+		map[string]interface{}{"full_path": fullPath, "home_path": homePath, "clean_home": cleanHomePath, "file_path": filePath})
 	
 	req, err := c.newAPIRequest("GET", "/file?path="+url.QueryEscape(fullPath), nil)
 	if err != nil {
@@ -626,7 +670,9 @@ func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("download failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("HiDrive Legacy: Download started for %s", filePath)
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "download", "started", 
+		fmt.Sprintf("Download started for %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return resp.Body, nil
 }
 
@@ -644,7 +690,9 @@ func (c *Client) DeleteFile(filePath string) error {
 		cleanHomePath = "/" + cleanHomePath
 	}
 	fullPath := cleanHomePath + "/" + filePath
-	log.Printf("HiDrive Legacy: Deleting file %s (home: %s, cleanHome: %s)", fullPath, homePath, cleanHomePath)
+	c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "api", "delete", "path_constructed", 
+		fmt.Sprintf("Deleting file %s (home: %s, cleanHome: %s)", fullPath, homePath, cleanHomePath), 
+		map[string]interface{}{"full_path": fullPath, "home_path": homePath, "clean_home": cleanHomePath, "file_path": filePath})
 	
 	data := url.Values{}
 	data.Set("path", fullPath)
@@ -666,7 +714,9 @@ func (c *Client) DeleteFile(filePath string) error {
 		return fmt.Errorf("delete failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("HiDrive Legacy: File deleted: %s", filePath)
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "delete", "success", 
+		fmt.Sprintf("File deleted: %s", filePath), 
+		map[string]interface{}{"file_path": filePath})
 	return nil
 }
 
@@ -716,6 +766,8 @@ func (c *Client) TestConnection() error {
 		return fmt.Errorf("connection test failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("HiDrive Legacy: Connection test successful")
+	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "api", "connection", "test_success", 
+		"Connection test successful", 
+		map[string]interface{}{})
 	return nil
 }
