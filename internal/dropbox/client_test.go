@@ -2,10 +2,12 @@ package dropbox
 
 import (
 	"testing"
+
+	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/utils"
 )
 
 func TestNewClient(t *testing.T) {
-	client := NewClient("test_access_token", "test_refresh_token", "test_app_key", "test_app_secret")
+	client := NewClient("test_access_token", "test_refresh_token", "test_app_key", "test_app_secret", &utils.DefaultClientLogger{})
 
 	if client.AccessToken != "test_access_token" {
 		t.Errorf("Expected AccessToken to be 'test_access_token', got '%s'", client.AccessToken)
@@ -25,7 +27,7 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestNewClientWithOAuth2(t *testing.T) {
-	client := NewClientWithOAuth2("test_access_token", "test_refresh_token", "test_app_key", "test_app_secret")
+	client := NewClientWithOAuth2("test_access_token", "test_refresh_token", "test_app_key", "test_app_secret", &utils.DefaultClientLogger{})
 
 	if client.AccessToken != "test_access_token" {
 		t.Errorf("Expected AccessToken to be 'test_access_token', got '%s'", client.AccessToken)

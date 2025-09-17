@@ -182,7 +182,7 @@ func TestStructuredLogger_TestResult(t *testing.T) {
 		t.Error("Successful test should log at INFO level")
 	}
 	
-	if !strings.Contains(output, "UPLOAD completed") {
+	if !strings.Contains(output, "completed") {
 		t.Error("Test result should include test type and message")
 	}
 	

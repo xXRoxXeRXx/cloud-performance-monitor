@@ -53,6 +53,7 @@ func TestRetryWithMaxRetriesExceeded(t *testing.T) {
 		MaxDelay:        10 * time.Millisecond,
 		BackoffFactor:   2.0,
 		RetryableErrors: []string{"timeout"},
+		logger:          &DefaultClientLogger{},
 	}
 	
 	attempts := 0
