@@ -74,30 +74,35 @@ receivers:
           🚨 CRITICAL ALERT DETECTED 🚨
           
           {{ range .Alerts -}}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Instance: {{ .Labels.exported_instance }}
-          Service: {{ .Labels.service }}
-          Severity: {{ .Labels.severity }}
-          {{ if .Labels.error_code }}Error Code: {{ .Labels.error_code }}{{ end }}
-          {{ if .Labels.type }}Test Type: {{ .Labels.type }}{{ end }}
+          ==========================================
+          ALERT: {{ .Annotations.summary }}
+          ==========================================
           
-          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
+          📋 Alert Information:
+          • Description: {{ .Annotations.description }}
+          • Instance: {{ .Labels.exported_instance }}
+          • Service: {{ .Labels.service }}
+          • Severity: {{ .Labels.severity }}
+          • Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          • Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
           
-          {{ if .Annotations.runbook_url }}
-          Runbook: {{ .Annotations.runbook_url }}
-          {{ end }}
+          🔍 Error Details:
+          {{ if .Labels.error_code }}• Error Code: {{ .Labels.error_code }}{{ else }}• Error Code: Not available{{ end }}
+          {{ if .Labels.type }}• Test Type: {{ .Labels.type }}{{ end }}
+          {{ if .Labels.category }}• Category: {{ .Labels.category }}{{ end }}
           
-          Full Alert Labels:
+          🔧 Troubleshooting:
+          {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ else }}⚠️ No runbook available{{ end }}
+          
+          📊 Full Alert Labels:
           {{- range $key, $value := .Labels }}
-          - {{ $key }}: {{ $value }}
+          • {{ $key }}: {{ $value }}
           {{- end }}
           
-          ---
+          ==========================================
           {{ end }}
           
-          Please take immediate action to resolve this issue.
+          🚨 Please take immediate action to resolve this issue!
     
     # Webhook für kritische Alerts
     webhook_configs:
@@ -113,20 +118,33 @@ receivers:
           ⚠️ PERFORMANCE ALERT ⚠️
           
           {{ range .Alerts -}}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Instance: {{ .Labels.exported_instance }}
-          Service: {{ .Labels.service }}
-          {{ if .Labels.error_code }}Error Code: {{ .Labels.error_code }}{{ end }}
-          {{ if .Labels.type }}Test Type: {{ .Labels.type }}{{ end }}
-          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
+          ==========================================
+          PERFORMANCE ISSUE: {{ .Annotations.summary }}
+          ==========================================
           
-          Alert Details:
+          📋 Performance Details:
+          • Description: {{ .Annotations.description }}
+          • Instance: {{ .Labels.exported_instance }}
+          • Service: {{ .Labels.service }}
+          • Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          • Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
+          
+          🔍 Error Analysis:
+          {{ if .Labels.error_code }}• Error Code: {{ .Labels.error_code }}{{ else }}• Error Code: none (performance degradation){{ end }}
+          {{ if .Labels.type }}• Test Type: {{ .Labels.type }}{{ end }}
+          {{ if .Labels.category }}• Category: {{ .Labels.category }}{{ end }}
+          
+          📊 Performance Metrics:
           {{- range $key, $value := .Labels }}
-          - {{ $key }}: {{ $value }}
+          {{- if or (eq $key "duration") (eq $key "speed") (eq $key "latency") }}
+          • {{ $key }}: {{ $value }}
+          {{- end }}
           {{- end }}
           
+          🔧 Troubleshooting:
+          {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ else }}⚠️ No runbook available{{ end }}
+          
+          ==========================================
           {{ end }}
     
     webhook_configs:
@@ -142,17 +160,31 @@ receivers:
           🌐 NETWORK ALERT 🌐
           
           {{ range .Alerts -}}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Instance: {{ .Labels.exported_instance }}
-          Service: {{ .Labels.service }}
-          {{ if .Labels.error_code }}Error Code: {{ .Labels.error_code }}{{ end }}
-          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          ==========================================
+          NETWORK ISSUE: {{ .Annotations.summary }}
+          ==========================================
           
-          {{ if .Labels.latency }}
-          Current Latency: {{ .Labels.latency }}ms
-          {{ end }}
+          📋 Network Details:
+          • Description: {{ .Annotations.description }}
+          • Instance: {{ .Labels.exported_instance }}
+          • Service: {{ .Labels.service }}
+          • Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
           
+          🔍 Network Analysis:
+          {{ if .Labels.error_code }}• Error Code: {{ .Labels.error_code }}{{ else }}• Error Code: network_issue{{ end }}
+          {{ if .Labels.latency }}• Current Latency: {{ .Labels.latency }}ms{{ end }}
+          {{ if .Labels.type }}• Test Type: {{ .Labels.type }}{{ end }}
+          
+          🌐 Common Network Error Codes:
+          • http_504_timeout: Gateway timeout
+          • connection_refused: Service unavailable
+          • network_timeout: Network connectivity issue
+          • dns_resolution_failed: DNS problem
+          
+          🔧 Troubleshooting:
+          {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ else }}⚠️ No runbook available{{ end }}
+          
+          ==========================================
           {{ end }}
     
     webhook_configs:
@@ -168,21 +200,36 @@ receivers:
           📊 SLA VIOLATION DETECTED 📊
           
           {{ range .Alerts -}}
-          SLA Violation for Service: {{ .Labels.service }}
+          ==========================================
+          SLA BREACH: {{ .Annotations.summary }}
+          ==========================================
           
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Instance: {{ .Labels.exported_instance }}
-          Service: {{ .Labels.service }}
-          {{ if .Labels.error_code }}Error Code: {{ .Labels.error_code }}{{ end }}
-          {{ if .Labels.type }}Test Type: {{ .Labels.type }}{{ end }}
-          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
+          📋 SLA Violation Details:
+          • Service: {{ .Labels.service }}
+          • Instance: {{ .Labels.exported_instance }}
+          • Description: {{ .Annotations.description }}
+          • Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          • Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
           
-          SLA Details:
+          🔍 Root Cause Analysis:
+          {{ if .Labels.error_code }}• Primary Error Code: {{ .Labels.error_code }}{{ else }}• Error Code: sla_violation{{ end }}
+          {{ if .Labels.type }}• Test Type: {{ .Labels.type }}{{ end }}
+          {{ if .Labels.category }}• Category: {{ .Labels.category }}{{ end }}
+          
+          📊 Business Impact:
+          • Service Level Agreement breach detected
+          • Customer experience may be impacted
+          • Immediate corrective action required
+          
+          🔧 Escalation Path:
+          {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ else }}⚠️ No runbook available{{ end }}
+          
+          📈 All SLA Metrics:
           {{- range $key, $value := .Labels }}
-          - {{ $key }}: {{ $value }}
+          • {{ $key }}: {{ $value }}
           {{- end }}
+          
+          ==========================================
           
           Please review the service performance and take corrective action.
           {{ end }}
