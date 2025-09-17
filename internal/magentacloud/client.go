@@ -273,7 +273,7 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 					body, _ := io.ReadAll(resp.Body)
 					resp.Body.Close()
 					if attempt < maxRetries {
-						c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "chunk_upload", "retry", 
+						c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "status_error", 
 							fmt.Sprintf("PUT request for chunk %d failed (attempt %d/%d) with status %s: %s", chunkNumber, attempt, maxRetries, resp.Status, string(body)), 
 							map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "status_code": resp.StatusCode, "response_body": string(body)})
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff

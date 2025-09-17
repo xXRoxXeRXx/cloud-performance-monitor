@@ -161,6 +161,37 @@ client.SetLogger(&AgentLoggerAdapter{Logger: Logger})
 4. **Merge-Support**: Kombinierung mehrerer Field-Maps für komplexe Logs
 5. **Backward-kompatibel**: Bestehende Logs funktionieren weiterhin
 
+## Logging Level Guidelines
+
+### ERROR Level (Kritische Probleme)
+- **Chunk Upload/Download Failures**: HTTP-Fehler bei einzelnen Chunks (504 Gateway Timeout, 500 Server Error)
+- **Authentication Failures**: OAuth2 Refresh Token Errors, Login-Probleme
+- **Network Errors**: Connection Timeouts, DNS Resolution Failures
+- **File Operation Failures**: Upload/Download komplett fehlgeschlagen
+
+**Beispiel aus dem Live-System:**
+```
+[ERROR] [nextcloud] [chunk_upload] [status_error] Chunk 17 upload failed (attempt 1/3) with status 504 Gateway Timeout
+```
+
+### WARN Level (Behandelbare Probleme)
+- **Retry Operations**: Wenn Retries erfolgreich sind
+- **Performance Degradation**: Langsame Operationen, aber nicht fehlgeschlagen
+- **Configuration Issues**: Suboptimale Settings, aber funktional
+- **Circuit Breaker Events**: Temporäre Service-Deaktivierung
+
+### INFO Level (Normale Operationen)
+- **Test Starts/Completions**: Beginn und Ende von Upload/Download-Tests
+- **Authentication Success**: Erfolgreiche OAuth2 Token Refreshes
+- **File Operations**: Erfolgreiche Uploads, Downloads, Deletes
+- **Performance Metrics**: Speed, Duration, Size bei erfolgreichen Operationen
+
+### DEBUG Level (Detaillierte Informationen)
+- **Chunk Details**: Einzelne Chunk-Uploads (bei Erfolg)
+- **Internal State**: Circuit Breaker Status, Retry Logik
+- **Configuration**: Geladene Settings, Service Discovery
+- **Timing**: Detaillierte Performance-Breakdowns
+
 ### Impact:
 - **🔍 Bessere Debugging**: Strukturierte Logs mit vollständigem Kontext
 - **📊 Monitoring**: Performance-Metriken direkt aus Logs extrahierbar

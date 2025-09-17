@@ -225,7 +225,7 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 
 				resp, chunkErr = c.HTTPClient.Do(req)
 				if chunkErr != nil {
-					c.logger.LogOperation(utils.WARN, "nextcloud", c.BaseURL, "chunk_upload", "http_error", 
+					c.logger.LogOperation(utils.ERROR, "nextcloud", c.BaseURL, "chunk_upload", "http_error", 
 						fmt.Sprintf("PUT request for chunk %d failed (attempt %d/%d) after %v: %v", chunkNumber, attempt, maxRetries, time.Since(chunkStart), chunkErr), 
 						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "error": chunkErr.Error()})
 					if attempt < maxRetries {
@@ -242,7 +242,7 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 					// Read response body for detailed error information
 					body, _ := io.ReadAll(resp.Body)
 					resp.Body.Close()
-					c.logger.LogOperation(utils.WARN, "nextcloud", c.BaseURL, "chunk_upload", "status_error", 
+					c.logger.LogOperation(utils.ERROR, "nextcloud", c.BaseURL, "chunk_upload", "status_error", 
 						fmt.Sprintf("Chunk %d upload failed (attempt %d/%d) with status %s after %v, response: %s", chunkNumber, attempt, maxRetries, resp.Status, time.Since(chunkStart), string(body)), 
 						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "status": resp.Status, "response_body": string(body)})
 					if attempt < maxRetries {
