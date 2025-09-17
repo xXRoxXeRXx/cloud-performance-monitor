@@ -3,19 +3,38 @@
 # Nextcloud & HiDrive Performance Monitor – AI Agent Instructions
 
 ## Project Overview
-A containerized Go application that benchmarks Nextcloud, HiDrive, MagentaCLOUD, and Dropbox instances via synthetic WebDAV upload/download tests, exports Prometheus metrics (with service label), and provides a ready-to-use Grafana dashboard with service selector.
+A containerized Go application that benchmarks Nextcloud, HiDrive, MagentaCLOUD, and Dropbox instances via synthetic WebDAV upload/download tests, exports Prometheus metrics (with service label), and provides a ready-to-use Grafana dashboard with service selector. Features comprehensive alerting via Alertmanager with email notifications and structured logging across all services.
 
 - **Go Agent** (`cmd/agent/main.go`): Spawns a goroutine per instance (Nextcloud/HiDrive/MagentaCLOUD/HiDrive Legacy/Dropbox), runs periodic tests.
 - **WebDAV Clients** (`internal/nextcloud/client.go`, `internal/hidrive/client.go`, `internal/magentacloud/client.go`): Handle chunked file uploads/downloads, directory management, and cleanup.
 - **OAuth2 Clients** (`internal/hidrive_legacy/client.go`, `internal/dropbox/client.go`): Handle OAuth2 authentication, refresh tokens, and REST API operations.
 - **Metrics** (`internal/agent/metrics.go`): Exposes Prometheus metrics (duration, speed, success) with `service`, `instance`, and `type` labels.
 - **Config** (`internal/agent/config.go`): Loads instance credentials and test parameters from `.env`.
-- **Docker Compose**: Orchestrates agent, Prometheus, and Grafana.
-- **Grafana**: Visualizes metrics from Prometheus, dashboard at `deploy/grafana/dashboard.json` (with service selector).
+- **Logging** (`internal/agent/logger.go`): Unified structured logging with ClientLogger interface, configurable via LOG_LEVEL and LOG_FORMAT.
+- **Alerting** (`alertmanager/`): Email notifications for critical, performance, network, and SLA alerts with enhanced templates.
+- **Security** (`docs/PORT_SECURITY.md`): Minimal external port exposure, only Grafana accessible from outside.
+- **Docker Compose**: Orchestrates agent, Prometheus, Alertmanager, and Grafana with internal networking.
+- **Grafana**: Multiple dashboards including enhanced analytics at `deploy/grafana/enhanced-dashboard.json`.
 
 - **Multi-instance config**: Use numbered env vars (`NC_INSTANCE_1_URL`, etc.) in `.env`. HiDrive is supported via `HIDRIVE_INSTANCE_1_URL`, `HIDRIVE_INSTANCE_1_USER`, `HIDRIVE_INSTANCE_1_PASS` etc. MagentaCLOUD uses `MAGENTACLOUD_INSTANCE_1_URL`, `MAGENTACLOUD_INSTANCE_1_USER`, `MAGENTACLOUD_INSTANCE_1_ANID`, `MAGENTACLOUD_INSTANCE_1_PASS`. HiDrive Legacy uses OAuth2 with `HIDRIVE_LEGACY_INSTANCE_1_REFRESH_TOKEN`. Dropbox uses `DROPBOX_INSTANCE_1_TOKEN`.
 - **.env example**:
 	```env
+	# Test Configuration
+	TEST_FILE_SIZE_MB=100
+	TEST_INTERVAL_SECONDS=900
+	TEST_CHUNK_SIZE_MB=10
+
+	# Email/SMTP Configuration for Alertmanager
+	SMTP_SMARTHOST=smtp.example.com:587
+	SMTP_FROM=cloud-monitor@company.com
+	SMTP_AUTH_USERNAME=cloud-monitor@company.com
+	SMTP_AUTH_PASSWORD=your-smtp-password
+	SMTP_REQUIRE_TLS=true
+	EMAIL_ADMIN=admin@company.com
+	EMAIL_DEVOPS=devops@company.com
+	EMAIL_NETWORK=network@company.com
+	EMAIL_MANAGEMENT=management@company.com
+
 	# Nextcloud
 	NC_INSTANCE_1_URL=https://cloud.company-a.com
 	NC_INSTANCE_1_USER=monitor_user_a
@@ -37,9 +56,13 @@ A containerized Go application that benchmarks Nextcloud, HiDrive, MagentaCLOUD,
 	HIDRIVE_LEGACY_INSTANCE_1_CLIENT_ID=your-oauth2-client-id
 	HIDRIVE_LEGACY_INSTANCE_1_CLIENT_SECRET=your-oauth2-client-secret
 	HIDRIVE_LEGACY_INSTANCE_1_REFRESH_TOKEN=your-refresh-token
+	HIDRIVE_LEGACY_INSTANCE_1_NAME=hidrive-legacy-main
 
 	# Dropbox
-	DROPBOX_INSTANCE_1_TOKEN=your-dropbox-access-token
+	DROPBOX_INSTANCE_1_REFRESH_TOKEN=your-refresh-token
+	DROPBOX_INSTANCE_1_APP_KEY=your-app-key
+	DROPBOX_INSTANCE_1_APP_SECRET=your-app-secret
+	DROPBOX_INSTANCE_1_NAME=user@example.com
 	```
 - **Test logic**: Each test uploads a random file (streamed, not loaded in memory), downloads it, validates size, and deletes it.
 - **Chunked uploads**: Files >10MB are split into 10MB chunks, uploaded to `/remote.php/dav/uploads/{username}/` for Nextcloud/HiDrive or `/remote.php/dav/uploads/{ANID}/` for MagentaCLOUD, then assembled via MOVE.
@@ -51,10 +74,6 @@ A containerized Go application that benchmarks Nextcloud, HiDrive, MagentaCLOUD,
 	cloud_test_duration_seconds{service="magentacloud",instance="https://magentacloud.de",type="upload"} 3.9
 	cloud_test_duration_seconds{service="hidrive_legacy",instance="hidrive-legacy-main",type="upload"} 1.8
 	cloud_test_duration_seconds{service="dropbox",instance="user@example.com",type="upload"} 3.2
-	```
-	nextcloud_test_duration_seconds{service="magentacloud",instance="https://magentacloud.de",type="upload"} 3.9
-	nextcloud_test_duration_seconds{service="hidrive_legacy",instance="hidrive-legacy-main",type="upload"} 1.8
-	nextcloud_test_duration_seconds{service="dropbox",instance="user@example.com",type="upload"} 3.2
 	```
 - **Error handling**: Log errors, set Prometheus error labels, continue with other instances/tests.
 - **Provisioning**: Grafana and Prometheus are auto-provisioned via Dockerfile and config files.
@@ -80,7 +99,7 @@ go test -v -cover ./...
 ## Integration Points
 - **Prometheus**: Scrapes agent at `:8080/metrics` (see `prometheus/prometheus.yml`).
 - **Grafana**: Imports dashboard from `deploy/grafana/dashboard.json`, Prometheus datasource at `http://prometheus:9090`.
-- **Dashboard**: Panels use a `service` selector (Nextcloud/HiDrive/HiDrive Legacy/Dropbox) für das Filtern; Instanz-Filter ist optional.
+- **Dashboard**: Panels use a `service` selector (Nextcloud/HiDrive/MagentaCLOUD/HiDrive Legacy/Dropbox) für das Filtern; Instanz-Filter ist optional.
 
 ## Common Issues
 - **Dashboard import fails**: Ensure `dashboard.json` is valid JSON, not double-wrapped or corrupted.
