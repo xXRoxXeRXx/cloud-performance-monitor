@@ -8,8 +8,9 @@ services:
     environment:
       - LOG_LEVEL=INFO
       - LOG_FORMAT=json
-    ports:
-      - "8080:8080"
+    # Port not exposed - only accessible from internal network for Prometheus scraping
+    expose:
+      - "8080"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
