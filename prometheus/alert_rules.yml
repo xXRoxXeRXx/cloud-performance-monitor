@@ -52,14 +52,14 @@ groups:
 
       # ==== ERROR RATE ALERTS ====
       - alert: ServiceTestFailure
-        expr: cloud_test_success{error_code!="none"} == 0
+        expr: cloud_test_success{error_code="none"} == 0 or absent(cloud_test_success{error_code="none"})
         for: 1m
         labels:
           severity: critical
           category: reliability
         annotations:
           summary: "Service test failure for {{ $labels.service }} - {{ $labels.exported_instance }}"
-          description: "Test failed with error: {{ $labels.error_code }} for service {{ $labels.service }}"
+          description: "Test failed - no successful tests in the last interval for service {{ $labels.service }}"
           runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure"
 
       - alert: HighErrorRate
