@@ -52,10 +52,11 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
               
        err = client.UploadFile(fullPath, reader, fileSize, chunkSize)
        uploadDuration := time.Since(startUpload)
-       uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
        
        // Record histogram data
        TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Observe(uploadDuration.Seconds())
+       // Always record duration
+       TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
        
        if err != nil {
               Logger.LogOperation(ERROR, "hidrive", cfg.InstanceName, "upload", "error", 
@@ -73,7 +74,8 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        expectedChunks := (fileSize + chunkSize - 1) / chunkSize // Ceiling division
        ChunksUploaded.WithLabelValues(serviceLabel, cfg.InstanceName).Add(float64(expectedChunks))
        
-       TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
+       uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
+       // Only record speed for successful uploads
        TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
        TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(1)
        Logger.LogOperation(INFO, "hidrive", cfg.InstanceName, "upload", "success", 
@@ -103,14 +105,15 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        body.Close()
        downloadDuration := time.Since(startDownload)
        
-       // Calculate speed based on actually downloaded bytes including overhead
-       downloadSpeed := float64(bytesDownloaded) / (1024 * 1024) / downloadDuration.Seconds()
-       
        // Record histogram data for download
        TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
+       // Always record duration
+       TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
        
        if bytesDownloaded == fileSize {
-              TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
+              // Calculate speed based on actually downloaded bytes including overhead
+              downloadSpeed := float64(bytesDownloaded) / (1024 * 1024) / downloadDuration.Seconds()
+              // Only record speed for successful downloads
               TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(1)
               Logger.LogOperation(INFO, "hidrive", cfg.InstanceName, "download", "success", 

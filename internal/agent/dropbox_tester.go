@@ -139,10 +139,11 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 		
 	err = client.UploadFile(fullPath, reader, fileSize, chunkSize)
 	uploadDuration := time.Since(startUpload)
-	uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
 	
 	// Record histogram data
 	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Observe(uploadDuration.Seconds())
+	// Always record duration
+	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
 	
 	if err != nil {
 		uploadErrCode = ExtractErrorCode(err, "upload")
@@ -154,8 +155,7 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Inc()
 		// Record failed upload in metrics
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
-		TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
-		TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(0)
+		// Don't record speed for failed uploads
 		
 		// Circuit breaker: Open on failure
 		CircuitBreakerState.WithLabelValues(serviceLabel, cfg.InstanceName).Set(1)
@@ -163,8 +163,9 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 	}
 
 	// Record successful upload metrics
+	uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
 	TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(1)
-	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
+	// Only record speed for successful uploads
 	TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
 	
 	Logger.LogOperation(INFO, "dropbox", cfg.InstanceName, "upload", "success", 
@@ -194,10 +195,11 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 	// Read all data to measure download speed including HTTP overhead
 	downloadedBytes, err := io.Copy(io.Discard, downloadReader)
 	downloadDuration := time.Since(startDownload)
-	downloadSpeed := float64(downloadedBytes) / (1024 * 1024) / downloadDuration.Seconds()
 	
 	// Record download histogram
 	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
+	// Always record duration
+	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
 	
 	if err != nil {
 		downloadErrCode := ExtractErrorCode(err, "download")
@@ -207,8 +209,7 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 			WithDuration(downloadDuration))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(0)
-		TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
-		TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(0)
+		// Don't record speed for failed downloads
 		return err
 	}
 
@@ -225,8 +226,9 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 	}
 
 	// Record successful download metrics
+	downloadSpeed := float64(downloadedBytes) / (1024 * 1024) / downloadDuration.Seconds()
 	TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Set(1)
-	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
+	// Only record speed for successful downloads
 	TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
 	
 	Logger.LogOperation(INFO, "dropbox", cfg.InstanceName, "download", "success", 

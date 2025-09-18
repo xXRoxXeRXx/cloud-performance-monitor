@@ -65,6 +65,7 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 
 	uploadSpeedMBs := (float64(fileSize) / (1024 * 1024)) / uploadDuration.Seconds()
 	TestDuration.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
+	// Only record speed for successful uploads
 	TestSpeedMbytesPerSec.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload").Set(uploadSpeedMBs)
 	TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "none").Set(1)
 	log.Printf("Upload finished in %v (%.2f MB/s)", uploadDuration, uploadSpeedMBs)
@@ -86,10 +87,12 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 		
 		// Record histogram data for download
 		TestDurationHistogram.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
+		// Always record duration
+		TestDuration.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
 
 		if bytesDownloaded == fileSize {
 			downloadSpeedMBs := (float64(fileSize) / (1024 * 1024)) / downloadDuration.Seconds()
-			TestDuration.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
+			// Only record speed for successful downloads
 			TestSpeedMbytesPerSec.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download").Set(downloadSpeedMBs)
 			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", downloadErrCode).Set(1)
 		       log.Printf("Download finished in %v (%.2f MB/s)", downloadDuration, downloadSpeedMBs)

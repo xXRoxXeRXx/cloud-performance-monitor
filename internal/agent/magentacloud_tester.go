@@ -52,13 +52,11 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 		
 	err = client.UploadFile(fullPath, reader, fileSize, chunkSize)
 	uploadDuration := time.Since(startUpload)
-	uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
 	
 	// Record histogram data
 	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Observe(uploadDuration.Seconds())
-	// Record standard metrics
+	// Always record duration
 	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
-	TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
 
 	if err != nil {
 		Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "upload", "error", 
@@ -71,6 +69,9 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
 		// Continue with cleanup attempt
 	} else {
+		uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
+		// Only record speed for successful uploads
+		TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
 		Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "upload", "success", 
 			"Upload completed", 
 			WithDuration(uploadDuration),
@@ -99,13 +100,11 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 			downloadedBytes, readErr := io.Copy(io.Discard, downloadReader)
 			downloadReader.Close()
 			downloadDuration := time.Since(startDownload)
-			downloadSpeed := float64(downloadedBytes) / (1024 * 1024) / downloadDuration.Seconds()
 			
 			// Record histogram data
 			TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Observe(downloadDuration.Seconds())
-			// Record standard metrics
+			// Always record duration
 			TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadDuration.Seconds())
-			TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
 
 			if readErr != nil {
 				Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "download", "error", 
@@ -122,6 +121,9 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 				TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "size_mismatch").Inc()
 				TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", "size_mismatch").Set(0)
 			} else {
+				downloadSpeed := float64(downloadedBytes) / (1024 * 1024) / downloadDuration.Seconds()
+				// Only record speed for successful downloads
+				TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "download").Set(downloadSpeed)
 				Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "download", "success", 
 					"Download completed", 
 					WithDuration(downloadDuration),
