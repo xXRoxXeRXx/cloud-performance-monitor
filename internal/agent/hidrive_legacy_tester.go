@@ -23,7 +23,11 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "auth", "error", 
 			"OAuth2 client creation failed", 
 			WithError(err))
+		authErrCode := ExtractErrorCode(err, "oauth2")
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "connection", "oauth2_failed").Inc()
+		// Set failed test metrics to trigger alerts
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", authErrCode).Set(0)
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", authErrCode).Set(0)
 		return err
 	}
 	Logger.LogOperation(DEBUG, "hidrive_legacy", cfg.InstanceName, "auth", "oauth2_init", 
@@ -35,7 +39,11 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "auth", "error", 
 			"Connection test failed", 
 			WithError(err))
+		connErrCode := ExtractErrorCode(err, "connection")
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "connection", "auth_failed").Inc()
+		// Set failed test metrics to trigger alerts
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", connErrCode).Set(0)
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", connErrCode).Set(0)
 		return err
 	}
 	

@@ -100,7 +100,11 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 		Logger.LogOperation(ERROR, "dropbox", cfg.InstanceName, "auth", "error", 
 			"Failed to generate initial access token", 
 			WithError(err))
+		authErrCode := ExtractErrorCode(err, "oauth2")
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "connection", "oauth2_failed").Inc()
+		// Set failed test metrics to trigger alerts
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", authErrCode).Set(0)
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", authErrCode).Set(0)
 		return err
 	}
 	Logger.LogOperation(INFO, "dropbox", cfg.InstanceName, "auth", "success", 

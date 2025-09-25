@@ -52,15 +52,45 @@ groups:
 
       # ==== ERROR RATE ALERTS ====
       - alert: ServiceTestFailure
-        expr: cloud_test_success{error_code="none"} == 0 or absent(cloud_test_success{error_code="none"})
+        expr: |
+          (
+            cloud_test_success{error_code!="none"} == 0
+          ) or (
+            absent_over_time(cloud_test_success{error_code="none"}[20m])
+          )
         for: 1m
         labels:
           severity: critical
           category: reliability
+          error_code: "{{ $labels.error_code }}"
         annotations:
-          summary: "Service test failure for {{ $labels.service }} - {{ $labels.exported_instance }}"
-          description: "Test failed - no successful tests in the last interval for service {{ $labels.service }}"
+          summary: "Service test failure for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Test failed with error code: {{ $labels.error_code }} for service {{ $labels.service }} on {{ $labels.instance }}"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure"
+
+      - alert: ServiceUnavailable
+        expr: cloud_test_success{error_code=~"503|502|500"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+          error_code: "{{ $labels.error_code }}"
+        annotations:
+          summary: "Service unavailable: {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} is returning HTTP {{ $labels.error_code }} errors"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ServiceUnavailable"
+
+      - alert: RepeatedServiceFailures
+        expr: increase(cloud_test_errors_total[30m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          category: reliability
+          error_type: "{{ $labels.error_type }}"
+        annotations:
+          summary: "Repeated failures for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} has failed {{ $value }} times in the last 30 minutes. Error type: {{ $labels.error_type }}"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-RepeatedServiceFailures"
 
       - alert: HighErrorRate
         expr: rate(cloud_test_errors_total[5m]) > 0.1
@@ -68,10 +98,10 @@ groups:
         labels:
           severity: warning
           category: reliability
-          error_code: "{{ $labels.error_code }}"
+          error_type: "{{ $labels.error_type }}"
         annotations:
-          summary: "High error rate detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
-          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes. Recent error codes: {{ $labels.error_code }}"
+          summary: "High error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes. Error type: {{ $labels.error_type }}"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HighErrorRate"
 
       - alert: CriticalErrorRate
@@ -80,23 +110,36 @@ groups:
         labels:
           severity: critical
           category: reliability
-          error_code: "{{ $labels.error_code }}"
+          error_type: "{{ $labels.error_type }}"
         annotations:
-          summary: "Critical error rate detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
-          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes. Recent error codes: {{ $labels.error_code }}"
+          summary: "Critical error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes. Error type: {{ $labels.error_type }}"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-CriticalErrorRate"
 
-      - alert: TestFailures
-        expr: nextcloud_test_success < 1
-        for: 1m
+      # ==== HTTP ERROR ALERTS ====
+      - alert: HTTPServerError
+        expr: cloud_test_success{error_code=~"http_50[0-9]"} == 0
+        for: 30s
         labels:
-          severity: warning
-          category: reliability
+          severity: critical
+          category: availability
           error_code: "{{ $labels.error_code }}"
         annotations:
-          summary: "Test failure detected for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Test failed with error code: {{ $labels.error_code }}"
-          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-TestFailures"
+          summary: "HTTP server error for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} is returning HTTP server error: {{ $labels.error_code }}"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPServerError"
+
+      - alert: DirectoryCreationFailed
+        expr: increase(cloud_test_errors_total{error_type="directory_creation"}[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: reliability
+          error_type: "directory_creation"
+        annotations:
+          summary: "Directory creation failed for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} failed to create test directory {{ $value }} times in the last 10 minutes"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-DirectoryCreationFailed"
 
       # ==== NETWORK ALERTS ====
       - alert: HighNetworkLatency

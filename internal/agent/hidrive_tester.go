@@ -30,7 +30,11 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
               Logger.LogOperation(ERROR, "hidrive", cfg.InstanceName, "directory", "error", 
                      "Could not create test directory", 
                      WithError(err))
+              directoryErrCode := ExtractErrorCode(err, "directory")
               TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()
+              // Set failed test metrics to trigger alerts
+              TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", directoryErrCode).Set(0)
+              TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", directoryErrCode).Set(0)
               return err
        }
 
