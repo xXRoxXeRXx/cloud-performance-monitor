@@ -141,6 +141,78 @@ groups:
           description: "Service {{ $labels.service }} at {{ $labels.instance }} failed to create test directory {{ $value }} times in the last 10 minutes"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-DirectoryCreationFailed"
 
+      - alert: HTTPConflictError
+        expr: cloud_test_success{error_code="http_409_conflict"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          category: reliability
+          error_code: "http_409_conflict"
+        annotations:
+          summary: "HTTP 409 Conflict errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} is returning HTTP 409 Conflict errors, indicating resource conflicts or concurrent access issues"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPConflictError"
+
+      - alert: HTTPPreconditionFailed
+        expr: cloud_test_success{error_code="http_412_precondition_failed"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          category: reliability
+          error_code: "http_412_precondition_failed"
+        annotations:
+          summary: "HTTP 412 Precondition Failed errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} is returning HTTP 412 Precondition Failed errors, indicating conditional request failures"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPPreconditionFailed"
+
+      - alert: HTTPRateLimitError
+        expr: cloud_test_success{error_code="http_429_rate_limited"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: availability
+          error_code: "http_429_rate_limited"
+        annotations:
+          summary: "HTTP 429 Rate Limit errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} is returning HTTP 429 Too Many Requests errors, indicating rate limiting is active"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPRateLimitError"
+
+      - alert: RepeatedConflictErrors
+        expr: increase(cloud_test_errors_total{error_type="http_409_conflict"}[15m]) > 3
+        for: 2m
+        labels:
+          severity: critical
+          category: reliability
+          error_type: "http_409_conflict"
+        annotations:
+          summary: "Repeated HTTP 409 Conflict errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} has returned {{ $value }} HTTP 409 Conflict errors in the last 15 minutes, indicating persistent resource conflicts"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-RepeatedConflictErrors"
+
+      - alert: ClientTimeoutErrors
+        expr: cloud_test_success{error_code="network_timeout"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          category: network
+          error_code: "network_timeout"
+        annotations:
+          summary: "Client timeout errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} is experiencing client timeout errors, indicating network or performance issues"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ClientTimeoutErrors"
+
+      - alert: RepeatedTimeoutErrors
+        expr: increase(cloud_test_errors_total{error_type="network_timeout"}[20m]) > 2
+        for: 3m
+        labels:
+          severity: critical
+          category: network
+          error_type: "network_timeout"
+        annotations:
+          summary: "Repeated timeout errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} has experienced {{ $value }} timeout errors in the last 20 minutes, indicating persistent network or performance issues"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-RepeatedTimeoutErrors"
+
       # ==== NETWORK ALERTS ====
       - alert: HighNetworkLatency
         expr: nextcloud_network_latency_ms > 100

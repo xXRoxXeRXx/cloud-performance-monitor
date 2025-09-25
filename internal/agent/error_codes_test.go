@@ -73,6 +73,30 @@ func TestExtractErrorCode(t *testing.T) {
 			operation: "upload",
 			expected:  "chunk_assembly_failed",
 		},
+		{
+			name:      "HTTP 409 conflict",
+			err:       errors.New("upload of chunk 1 failed with status 409 Conflict"),
+			operation: "upload",
+			expected:  "http_409_conflict",
+		},
+		{
+			name:      "HTTP 412 precondition failed",
+			err:       errors.New("Chunk 19 upload failed with status 412 Precondition Failed"),
+			operation: "upload",
+			expected:  "http_412_precondition_failed",
+		},
+		{
+			name:      "Client timeout exceeded",
+			err:       errors.New("Client.Timeout exceeded while awaiting headers"),
+			operation: "upload",
+			expected:  "network_timeout",
+		},
+		{
+			name:      "HTTP 429 too many requests",
+			err:       errors.New("finish session failed with status 429: too_many_write_operations"),
+			operation: "upload",
+			expected:  "http_429_rate_limited",
+		},
 	}
 
 	for _, tt := range tests {

@@ -24,6 +24,12 @@ func ExtractErrorCode(err error, operation string) string {
 	if strings.Contains(errStr, "status 404") || strings.Contains(errStr, "404") || strings.Contains(errStr, "not found") {
 		return "http_404_not_found"
 	}
+	if strings.Contains(errStr, "status 409") || strings.Contains(errStr, "409") || strings.Contains(errStr, "conflict") {
+		return "http_409_conflict"
+	}
+	if strings.Contains(errStr, "status 412") || strings.Contains(errStr, "412") || strings.Contains(errStr, "precondition failed") {
+		return "http_412_precondition_failed"
+	}
 	if strings.Contains(errStr, "status 413") || strings.Contains(errStr, "413") || strings.Contains(errStr, "payload too large") {
 		return "http_413_payload_too_large"
 	}
@@ -55,7 +61,7 @@ func ExtractErrorCode(err error, operation string) string {
 	}
 
 	// Network patterns
-	if strings.Contains(errStr, "timeout") || strings.Contains(errStr, "deadline exceeded") {
+	if strings.Contains(errStr, "timeout") || strings.Contains(errStr, "deadline exceeded") || strings.Contains(errStr, "client.timeout exceeded") {
 		return "network_timeout"
 	}
 	if strings.Contains(errStr, "connection refused") || strings.Contains(errStr, "connection reset") {
@@ -120,6 +126,10 @@ func ExtractHTTPErrorCode(resp *http.Response, err error, operation string) stri
 			return "http_403_forbidden"
 		case 404:
 			return "http_404_not_found"
+		case 409:
+			return "http_409_conflict"
+		case 412:
+			return "http_412_precondition_failed"
 		case 413:
 			return "http_413_payload_too_large"
 		case 429:
