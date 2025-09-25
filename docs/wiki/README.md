@@ -12,7 +12,7 @@ This directory contains the markdown files for the GitHub Wiki. To set up the wi
 ### 2. Clone Wiki Repository
 ```bash
 # Clone the wiki repository (separate from main repo)
-git clone https://github.com/MarcelWMeyer/cloud-performance-monitor.wiki.git
+git clone https://github.com/xXRoxXeRXx/cloud-performance-monitor.wiki.git
 cd cloud-performance-monitor.wiki
 ```
 
@@ -88,7 +88,7 @@ Alert rules in `prometheus/alert_rules.yml` now include:
 annotations:
   summary: "Alert description"
   description: "Detailed description with context"
-  runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-AlertName"
+  runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-AlertName"
 ```
 
 This creates clickable links in:

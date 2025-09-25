@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	hidrive_legacy "github.com/MarcelWMeyer/cloud-performance-monitor/internal/hidrive_legacy"
+	hidrive_legacy "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/hidrive_legacy"
 )
 
 // RunHiDriveLegacyTest führt einen Upload/Download-Test für HiDrive Legacy API durch

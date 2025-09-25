@@ -97,6 +97,6 @@ Alle Error Codes werden auch im Grafana Error Dashboard angezeigt:
 
 ## Weitere Dokumentation
 
-- [GitHub Wiki Runbooks](https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/)
-- [Error Code Reference](https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Error-Code-Reference)
+- [GitHub Wiki Runbooks](https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/)
+- [Error Code Reference](https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Error-Code-Reference)
 - [Grafana Dashboard Guide](./GRAFANA_DASHBOARDS.md)

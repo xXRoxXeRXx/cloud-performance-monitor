@@ -71,6 +71,6 @@ docker exec prometheus wget -qO- http://monitor-agent:8080/metrics | head -20
 - **Management**: As configured in EMAIL_MANAGEMENT
 
 ## 📚 Additional Resources
-- [Project README](https://github.com/MarcelWMeyer/cloud-performance-monitor/blob/main/README.md)
-- [Email Configuration Guide](https://github.com/MarcelWMeyer/cloud-performance-monitor/blob/main/docs/EMAIL_CONFIGURATION.md)
-- [Port Security Documentation](https://github.com/MarcelWMeyer/cloud-performance-monitor/blob/main/docs/PORT_SECURITY.md)
+- [Project README](https://github.com/xXRoxXeRXx/cloud-performance-monitor/blob/main/README.md)
+- [Email Configuration Guide](https://github.com/xXRoxXeRXx/cloud-performance-monitor/blob/main/docs/EMAIL_CONFIGURATION.md)
+- [Port Security Documentation](https://github.com/xXRoxXeRXx/cloud-performance-monitor/blob/main/docs/PORT_SECURITY.md)

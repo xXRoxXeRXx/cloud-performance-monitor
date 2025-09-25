@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/agent"
-	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/nextcloud"
-	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/magentacloud"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/agent"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/nextcloud"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/magentacloud"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 

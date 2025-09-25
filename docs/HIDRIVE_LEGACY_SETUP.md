@@ -301,4 +301,4 @@ Das System testet alle konfigurierten Services sequenziell und exportiert Servic
 Bei Problemen:
 1. **Logs prüfen**: `docker logs monitor-agent`
 2. **API-Dokumentation**: https://developer.hidrive.com/
-3. **GitHub Issues**: https://github.com/MarcelWMeyer/cloud-performance-monitor/issues
+3. **GitHub Issues**: https://github.com/xXRoxXeRXx/cloud-performance-monitor/issues

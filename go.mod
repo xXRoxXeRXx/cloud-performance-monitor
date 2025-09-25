@@ -1,4 +1,4 @@
-module github.com/MarcelWMeyer/cloud-performance-monitor
+module github.com/xXRoxXeRXx/cloud-performance-monitor
 
 go 1.22
 

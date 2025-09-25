@@ -30,7 +30,7 @@
       "title": "Error Code Reference",
       "tooltip": "Complete error code documentation",
       "type": "link",
-      "url": "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Error-Code-Reference"
+      "url": "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Error-Code-Reference"
     },
     {
       "asDropdown": false,
@@ -42,7 +42,7 @@
       "title": "Troubleshooting Runbook",
       "tooltip": "Service test failure runbook",
       "type": "link",
-      "url": "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure"
+      "url": "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure"
     }
   ],
   "liveNow": false,
@@ -956,7 +956,7 @@
                   {
                     "targetBlank": true,
                     "title": "View Troubleshooting Guide",
-                    "url": "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure#${__data.fields[\"Error Code\"]}"
+                    "url": "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure#${__data.fields[\"Error Code\"]}"
                   }
                 ]
               }

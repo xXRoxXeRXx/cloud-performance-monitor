@@ -7,7 +7,7 @@ import (
        "io"
        "time"
 
-       hidrive "github.com/MarcelWMeyer/cloud-performance-monitor/internal/hidrive"
+       hidrive "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/hidrive"
 )
 
 // RunHiDriveTest führt einen Upload/Download-Test für HiDrive Next durch

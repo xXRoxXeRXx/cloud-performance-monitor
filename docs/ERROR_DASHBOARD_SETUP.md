@@ -48,13 +48,13 @@ http://localhost:3003/d/enhanced-performance/enhanced-cloud-performance-analytic
 #### Dokumentations-Links (im Dashboard integriert)
 ```
 📖 Error Code Reference:
-https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Error-Code-Reference
+https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Error-Code-Reference
 
 🔧 Troubleshooting Runbook:
-https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure
+https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure
 
 📚 Complete Wiki:
-https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki
+https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki
 ```
 
 ### 🛠️ Interaktive Filter
@@ -110,7 +110,7 @@ Das Dashboard integriert sich nahtlos mit den bestehenden Alerts:
   labels:
     error_code: "{{ $labels.error_code }}"
   annotations:
-    runbook_url: "https://github.com/MarcelWMeyer/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure#{{ $labels.error_code }}"
+    runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ServiceTestFailure#{{ $labels.error_code }}"
 ```
 
 ### 🔄 Automatische Updates

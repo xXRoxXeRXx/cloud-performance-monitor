@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/nextcloud"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/nextcloud"
 )
 
 // mockNextcloudServer creates a mock Nextcloud WebDAV server for testing

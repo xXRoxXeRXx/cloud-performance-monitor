@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
-	dropbox "github.com/MarcelWMeyer/cloud-performance-monitor/internal/dropbox"
-	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/utils"
+	dropbox "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/dropbox"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
 
 // clientLoggerAdapter adapts StructuredLogger to ClientLogger interface

@@ -3,7 +3,7 @@ package dropbox
 import (
 	"testing"
 
-	"github.com/MarcelWMeyer/cloud-performance-monitor/internal/utils"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
 
 func TestNewClient(t *testing.T) {

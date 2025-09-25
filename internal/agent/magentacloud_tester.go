@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	magentacloud "github.com/MarcelWMeyer/cloud-performance-monitor/internal/magentacloud"
+	magentacloud "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/magentacloud"
 )
 
 // RunMagentaCloudTest führt einen Upload/Download-Test für MagentaCLOUD durch
