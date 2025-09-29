@@ -177,6 +177,54 @@ groups:
           description: "Service {{ $labels.service }} at {{ $labels.instance }} is returning HTTP 429 Too Many Requests errors, indicating rate limiting is active"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPRateLimitError"
 
+      - alert: HTTPServiceUnavailable
+        expr: cloud_test_success{error_code="http_503_unavailable"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+          error_code: "http_503_unavailable"
+        annotations:
+          summary: "HTTP 503 Service Unavailable errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} is returning HTTP 503 Service Unavailable errors, indicating the service is temporarily unavailable"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPServiceUnavailable"
+
+      - alert: RepeatedServiceUnavailableErrors  
+        expr: increase(cloud_test_errors_total{error_type="http_503_unavailable"}[15m]) > 2
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+          error_type: "http_503_unavailable"
+        annotations:
+          summary: "Repeated HTTP 503 Service Unavailable errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} has returned {{ $value }} HTTP 503 Service Unavailable errors in the last 15 minutes, indicating persistent service unavailability"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-RepeatedServiceUnavailableErrors"
+
+      - alert: HTTPServerError
+        expr: cloud_test_success{error_code=~"http_5.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+          error_code: "{{ $labels.error_code }}"
+        annotations:
+          summary: "HTTP 5xx Server errors for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} is returning HTTP 5xx server errors ({{ $labels.error_code }}), indicating server problems"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPServerError"
+
+      - alert: DownloadIncompleteError
+        expr: cloud_test_success{error_code="download_failed"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          category: reliability
+          error_code: "download_failed"
+        annotations:
+          summary: "Download incomplete/failed for {{ $labels.service }} - {{ $labels.instance }}"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} has incomplete or failed downloads, indicating data transfer issues"
+          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-DownloadIncompleteError"
+
       - alert: RepeatedConflictErrors
         expr: increase(cloud_test_errors_total{error_type="http_409_conflict"}[15m]) > 3
         for: 2m

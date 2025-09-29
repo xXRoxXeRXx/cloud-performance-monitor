@@ -128,7 +128,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code!=\"none\"})",
+          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type!=\"none\"})",
           "refId": "A"
         }
       ],
@@ -363,7 +363,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "topk(10, sum by (error_code, service, instance) (cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code!=\"none\"}))",
+          "expr": "topk(10, sum by (error_type, service, instance) (cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type!=\"none\"}))",
           "format": "table",
           "instant": true,
           "refId": "A"
@@ -380,7 +380,7 @@
             "indexByName": {},
             "renameByName": {
               "Value": "Count",
-              "error_code": "Error Code",
+              "error_type": "Error Type",
               "instance": "Instance",
               "service": "Service"
             }
@@ -698,7 +698,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"http_5.*\"})",
+          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type=~\"http_5.*\"})",
           "legendFormat": "HTTP 5xx Errors",
           "refId": "A"
         },
@@ -707,7 +707,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"http_4.*\"})",
+          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type=~\"http_4.*\"})",
           "legendFormat": "HTTP 4xx Errors",
           "refId": "B"
         },
@@ -716,7 +716,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"network_.*\"})",
+          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type=~\"network_.*\"})",
           "legendFormat": "Network",
           "refId": "C"
         },
@@ -725,7 +725,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"auth_.*|token_.*\"})",
+          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type=~\"auth_.*|token_.*\"})",
           "legendFormat": "Auth",
           "refId": "D"
         },
@@ -734,7 +734,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"webdav_.*|chunk_.*\"})",
+          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type=~\"webdav_.*|chunk_.*\"})",
           "legendFormat": "WebDAV",
           "refId": "E"
         },
@@ -743,7 +743,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\".*upload.*|.*download.*|.*file.*|permission.*|quota.*|size_mismatch\"})",
+          "expr": "sum(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type=~\".*upload.*|.*download.*|.*file.*|permission.*|quota.*|size_mismatch\"})",
           "legendFormat": "File Operations",
           "refId": "F"
         }
@@ -894,8 +894,8 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "rate(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"$error_code\",error_code!=\"none\"}[5m]) * 300",
-          "legendFormat": "{{service}} - {{error_code}}",
+          "expr": "rate(cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type=~\"$error_type\",error_type!=\"none\"}[5m]) * 300",
+          "legendFormat": "{{service}} - {{error_type}}",
           "refId": "A"
         }
       ],
@@ -1066,7 +1066,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "topk(20, sum by (error_code) (cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_code=~\"$error_code\",error_code!=\"none\"}))",
+          "expr": "topk(20, sum by (error_type) (cloud_test_errors_total{service=~\"$service\",instance=~\"$instance\",error_type=~\"$error_type\",error_type!=\"none\"}))",
           "format": "table",
           "instant": true,
           "refId": "A"
@@ -1083,7 +1083,7 @@
             "indexByName": {},
             "renameByName": {
               "Value": "Total Count",
-              "error_code": "Error Code"
+              "error_type": "Error Type"
             }
           }
         },
@@ -1205,15 +1205,15 @@
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
-        "definition": "label_values(cloud_test_errors_total{error_code!=\"none\"}, error_code)",
+        "definition": "label_values(cloud_test_errors_total{error_type!=\"none\"}, error_type)",
         "hide": 0,
         "includeAll": true,
         "label": "Error Code",
         "multi": true,
-        "name": "error_code",
+        "name": "error_type",
         "options": [],
         "query": {
-          "query": "label_values(cloud_test_errors_total{error_code!=\"none\"}, error_code)",
+          "query": "label_values(cloud_test_errors_total{error_type!=\"none\"}, error_type)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
