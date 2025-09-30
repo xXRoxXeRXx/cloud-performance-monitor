@@ -153,5 +153,30 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 
 	Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "test", "complete", 
 		"MagentaCLOUD test completed")
+	
+	// Reset any previous error states if the test completed successfully
+	// This ensures old failed test metrics don't trigger false alarms
+	if err == nil && downloadErrCode == "none" {
+		// Reset common error codes that might be lingering from previous failures
+		errorCodesToReset := []string{
+			"http_404_not_found",
+			"http_403_forbidden", 
+			"http_401_unauthorized",
+			"http_500_server_error",
+			"http_503_unavailable",
+			"network_timeout",
+			"upload_failed",
+			"download_failed",
+		}
+		
+		for _, errorCode := range errorCodesToReset {
+			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", errorCode).Set(1)
+			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", errorCode).Set(1)
+		}
+		
+		Logger.LogOperation(DEBUG, "magentacloud", cfg.InstanceName, "metrics", "reset", 
+			"Reset previous error states to prevent false alarms")
+	}
+	
 	return err
 }
