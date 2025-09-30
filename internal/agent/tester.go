@@ -108,4 +108,21 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	if err != nil {
 		log.Printf("WARN: Failed to delete test file %s: %v", fullPath, err)
 	}
+	// Reset previous error states after successful test
+	if err == nil && downloadErrCode == "none" {
+		errorCodesToReset := []string{
+			"http_404_not_found",
+			"http_500_server_error",
+			"http_503_unavailable",
+			"http_504_timeout",
+			"network_timeout",
+			"upload_failed",
+			"download_failed",
+		}
+		for _, errorCode := range errorCodesToReset {
+			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", errorCode).Set(1)
+			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", errorCode).Set(1)
+		}
+		log.Printf("Reset previous error states for Nextcloud instance %s", cfg.InstanceName)
+	}
 }
