@@ -110,19 +110,10 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	}
 	// Reset previous error states after successful test
 	if err == nil && downloadErrCode == "none" {
-		errorCodesToReset := []string{
-			"http_404_not_found",
-			"http_500_server_error",
-			"http_503_unavailable",
-			"http_504_timeout",
-			"network_timeout",
-			"upload_failed",
-			"download_failed",
-		}
-		for _, errorCode := range errorCodesToReset {
+		for _, errorCode := range GetAllErrorCodes() {
 			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", errorCode).Set(1)
 			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", errorCode).Set(1)
 		}
-		log.Printf("Reset previous error states for Nextcloud instance %s", cfg.InstanceName)
+		log.Printf("Reset all previous error states for Nextcloud instance %s", cfg.InstanceName)
 	}
 }

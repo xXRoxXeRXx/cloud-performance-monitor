@@ -157,3 +157,56 @@ func ExtractHTTPErrorCode(resp *http.Response, err error, operation string) stri
 
 	return "none"
 }
+
+// GetAllErrorCodes returns a list of all possible error codes
+// This is used to reset metrics after successful tests to prevent false alerts
+func GetAllErrorCodes() []string {
+	return []string{
+		// HTTP Status Codes
+		"http_400_bad_request",
+		"http_401_unauthorized",
+		"http_403_forbidden",
+		"http_404_not_found",
+		"http_409_conflict",
+		"http_412_precondition_failed",
+		"http_413_payload_too_large",
+		"http_429_rate_limited",
+		"http_500_server_error",
+		"http_501_not_implemented",
+		"http_502_bad_gateway",
+		"http_503_unavailable",
+		"http_504_timeout",
+		"http_507_insufficient_storage",
+		
+		// Authentication Errors
+		"auth_failed",
+		"token_error",
+		"oauth2_failed",
+		
+		// Network Errors
+		"network_timeout",
+		"network_connection_error",
+		"network_dns_error",
+		"network_tls_error",
+		
+		// File Operation Errors
+		"permission_denied",
+		"quota_exceeded",
+		"file_too_large",
+		"size_mismatch",
+		"incomplete_download",
+		
+		// WebDAV Specific Errors
+		"webdav_error",
+		"chunk_assembly_failed",
+		
+		// Operation Specific Errors
+		"upload_failed",
+		"download_failed",
+		"directory_error",
+		"directory_creation",
+		"cleanup_failed",
+		"delete_failed",
+		"unknown_error",
+	}
+}

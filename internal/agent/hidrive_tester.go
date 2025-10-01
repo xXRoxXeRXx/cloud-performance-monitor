@@ -168,24 +168,13 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        
        // Reset any previous error states to prevent false alerts
        // This ensures old failed test metrics don't trigger false alarms
-       errorCodesToReset := []string{
-              "http_404_not_found",
-              "http_403_forbidden", 
-              "http_401_unauthorized",
-              "http_500_server_error",
-              "http_503_unavailable",
-              "network_timeout",
-              "upload_failed",
-              "download_failed",
-       }
-       
-       for _, errorCode := range errorCodesToReset {
+       for _, errorCode := range GetAllErrorCodes() {
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", errorCode).Set(1)
               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", errorCode).Set(1)
        }
        
        Logger.LogOperation(DEBUG, "hidrive", cfg.InstanceName, "metrics", "reset", 
-              "Reset previous error states to prevent false alarms")
+              "Reset all previous error states to prevent false alarms")
        
        return nil
 }
