@@ -315,10 +315,10 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 							fmt.Sprintf("PUT request for chunk %d failed with 409 Conflict (attempt %d/%d), attempting to cleanup existing chunk: %s", chunkNumber, attempt, maxRetries, chunkPath), 
 							map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "chunk_path": chunkPath})
 						
-						// Try to delete the conflicting chunk
-						if cleanupErr := c.DeleteDirectory(chunkPath); cleanupErr != nil {
+						// Try to delete the conflicting chunk file (not directory)
+						if cleanupErr := c.DeleteChunkFile(chunkPath); cleanupErr != nil {
 							c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "chunk_upload", "cleanup_failed", 
-								fmt.Sprintf("Failed to cleanup conflicting chunk %s: %v", chunkPath, cleanupErr), 
+								fmt.Sprintf("Failed to cleanup conflicting chunk file %s: %v", chunkPath, cleanupErr), 
 								map[string]interface{}{"chunk_path": chunkPath, "cleanup_error": cleanupErr.Error()})
 						}
 						
@@ -400,6 +400,33 @@ func (c *Client) DeleteFile(filePath string) error {
 	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "delete", "success", 
 		fmt.Sprintf("File deleted successfully: %s", filePath), 
 		map[string]interface{}{"file_path": filePath})
+	return nil
+}
+
+// DeleteChunkFile deletes a chunk file during upload conflict resolution
+// More tolerant of various status codes since it's used for cleanup
+func (c *Client) DeleteChunkFile(chunkPath string) error {
+	req, err := c.newRequest("DELETE", chunkPath, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Accept 204 No Content, 404 Not Found (chunk already gone), 200 OK, and 409 Conflict
+	// 409 Conflict is acceptable for chunk cleanup - it means the chunk couldn't be deleted but that's ok
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound && 
+	   resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusConflict {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("chunk file delete failed, status: %s, response: %s", resp.Status, string(body))
+	}
+
+	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "delete_chunk", "success", 
+		fmt.Sprintf("Chunk file deleted or cleanup attempted: %s (status: %s)", chunkPath, resp.Status), 
+		map[string]interface{}{"chunk_path": chunkPath, "status_code": resp.StatusCode})
 	return nil
 }
 
