@@ -85,90 +85,15 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunkSize int64) error {
 	transferID := uuid.New().String()
 	chunkDir := path.Join("/remote.php/dav/uploads/", c.ANID, transferID)
-	chunkDirURL := c.BaseURL + chunkDir
 	destinationURL := c.BaseURL + path.Join("/remote.php/dav/files/", c.ANID, filePath)
 
 	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "upload", "start", 
 		fmt.Sprintf("Starting chunked upload for %s (size: %d bytes, chunk size: %d bytes, transfer ID: %s)", filePath, size, chunkSize, transferID), 
 		map[string]interface{}{"file_path": filePath, "size": size, "chunk_size": chunkSize, "transfer_id": transferID})
 
-	// 1. Create temporary directory for chunks on the server (with 409 conflict handling)
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "mkcol", "start", 
-		fmt.Sprintf("Creating chunk directory: %s", chunkDir), 
-		map[string]interface{}{"chunk_dir": chunkDir})
-	
-	maxMkcolRetries := 2
-	var mkcolDuration time.Duration
-	for mkcolAttempt := 1; mkcolAttempt <= maxMkcolRetries; mkcolAttempt++ {
-		mkcolStart := time.Now()
-		
-		req, err := http.NewRequest("MKCOL", chunkDirURL, nil)
-		if err != nil {
-			c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "request_error", 
-				fmt.Sprintf("Could not create MKCOL request: %v", err), 
-				map[string]interface{}{"error": err.Error()})
-			return fmt.Errorf("could not create MKCOL request: %w", err)
-		}
-		req.SetBasicAuth(c.Username, c.Password)
-		req.Header.Set("User-Agent", MagentaCloudUserAgent)
-		req.Header.Set("Accept", "*/*")
-		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-		req.Header.Set("Connection", "keep-alive")
-		// Add Destination header like bash script does
-		req.Header.Set("Destination", destinationURL)
-		
-		resp, err := c.HTTPClient.Do(req)
-		mkcolDuration = time.Since(mkcolStart)
-		
-		if err != nil {
-			if mkcolAttempt == maxMkcolRetries {
-				c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "failed", 
-					fmt.Sprintf("MKCOL request failed after %v (attempt %d/%d): %v", mkcolDuration, mkcolAttempt, maxMkcolRetries, err), 
-					map[string]interface{}{"duration": mkcolDuration, "attempt": mkcolAttempt, "error": err.Error()})
-				return fmt.Errorf("MKCOL request failed after %v: %w", mkcolDuration, err)
-			}
-			time.Sleep(time.Duration(mkcolAttempt) * time.Second)
-			continue
-		}
-		defer resp.Body.Close()
-		
-		if resp.StatusCode == http.StatusCreated {
-			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "mkcol", "success", 
-				fmt.Sprintf("Chunk directory created in %v (status: %s, attempt: %d/%d)", mkcolDuration, resp.Status, mkcolAttempt, maxMkcolRetries), 
-				map[string]interface{}{"duration": mkcolDuration, "status_code": resp.StatusCode, "attempt": mkcolAttempt})
-			break // Success
-		}
-		
-		body, _ := io.ReadAll(resp.Body)
-		
-		// Handle 409 Conflict - cleanup existing chunk directory and retry
-		if resp.StatusCode == http.StatusConflict {
-			c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "mkcol", "conflict", 
-				fmt.Sprintf("MKCOL failed with 409 Conflict (attempt %d/%d), cleaning up existing chunk directory: %s", mkcolAttempt, maxMkcolRetries, chunkDir), 
-				map[string]interface{}{"status_code": resp.StatusCode, "attempt": mkcolAttempt, "chunk_dir": chunkDir})
-			
-			// Try to cleanup existing chunk directory
-			if cleanupErr := c.cleanupChunkDirectory(chunkDir); cleanupErr != nil {
-				c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "mkcol", "cleanup_failed", 
-					fmt.Sprintf("Failed to cleanup conflicting chunk directory %s: %v", chunkDir, cleanupErr), 
-					map[string]interface{}{"chunk_dir": chunkDir, "cleanup_error": cleanupErr.Error()})
-			}
-			
-			if mkcolAttempt < maxMkcolRetries {
-				time.Sleep(time.Duration(mkcolAttempt) * time.Second)
-				continue // Retry MKCOL after cleanup
-			}
-		}
-		
-		// Other error - log and fail
-		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "status_error", 
-			fmt.Sprintf("MKCOL failed with status %s after %v (attempt %d/%d), response: %s", resp.Status, mkcolDuration, mkcolAttempt, maxMkcolRetries, string(body)), 
-			map[string]interface{}{"status_code": resp.StatusCode, "duration": mkcolDuration, "attempt": mkcolAttempt, "response_body": string(body)})
-		
-		if mkcolAttempt == maxMkcolRetries {
-			return fmt.Errorf("MKCOL for chunks failed with status %s after %v", resp.Status, mkcolDuration)
-		}
-		time.Sleep(time.Duration(mkcolAttempt) * time.Second)
+	// 1. Create temporary directory for chunks on the server
+	if err := c.createChunkDirectory(chunkDir, destinationURL); err != nil {
+		return fmt.Errorf("failed to create chunk directory: %w", err)
 	}
 
 	// 2. Upload file in chunks
@@ -320,6 +245,13 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 							c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "chunk_upload", "cleanup_failed", 
 								fmt.Sprintf("Failed to cleanup conflicting chunk file %s: %v", chunkPath, cleanupErr), 
 								map[string]interface{}{"chunk_path": chunkPath, "cleanup_error": cleanupErr.Error()})
+						} else {
+							// After successful chunk cleanup, recreate the chunk directory if it was deleted
+							if recreateErr := c.createChunkDirectory(chunkDir, destinationURL); recreateErr != nil {
+								c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "chunk_upload", "recreate_failed", 
+									fmt.Sprintf("Failed to recreate chunk directory after cleanup: %v", recreateErr), 
+									map[string]interface{}{"chunk_dir": chunkDir, "recreate_error": recreateErr.Error()})
+							}
 						}
 						
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
@@ -481,4 +413,72 @@ func (c *Client) cleanupChunkDirectory(chunkDir string) error {
 		fmt.Sprintf("Successfully cleaned up chunk directory: %s", chunkDir), 
 		map[string]interface{}{"chunk_dir": chunkDir})
 	return nil
+}
+
+// createChunkDirectory creates a chunk upload directory on the server
+// Used for initial setup and recreation after cleanup
+func (c *Client) createChunkDirectory(chunkDir, destinationURL string) error {
+	chunkDirURL := c.BaseURL + chunkDir
+	
+	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "mkcol", "start", 
+		fmt.Sprintf("Creating chunk directory: %s", chunkDir), 
+		map[string]interface{}{"chunk_dir": chunkDir})
+	
+	maxMkcolRetries := 2
+	var mkcolDuration time.Duration
+	for mkcolAttempt := 1; mkcolAttempt <= maxMkcolRetries; mkcolAttempt++ {
+		mkcolStart := time.Now()
+		
+		req, err := http.NewRequest("MKCOL", chunkDirURL, nil)
+		if err != nil {
+			c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "request_error", 
+				fmt.Sprintf("Could not create MKCOL request: %v", err), 
+				map[string]interface{}{"error": err.Error()})
+			return fmt.Errorf("could not create MKCOL request: %w", err)
+		}
+		req.SetBasicAuth(c.Username, c.Password)
+		req.Header.Set("User-Agent", MagentaCloudUserAgent)
+		req.Header.Set("Accept", "*/*")
+		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+		req.Header.Set("Connection", "keep-alive")
+		req.Header.Set("Destination", destinationURL)
+		
+		resp, err := c.HTTPClient.Do(req)
+		mkcolDuration = time.Since(mkcolStart)
+		
+		if err != nil {
+			if mkcolAttempt == maxMkcolRetries {
+				c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "failed", 
+					fmt.Sprintf("MKCOL request failed after %v (attempt %d/%d): %v", mkcolDuration, mkcolAttempt, maxMkcolRetries, err), 
+					map[string]interface{}{"duration": mkcolDuration, "attempt": mkcolAttempt, "error": err.Error()})
+				return fmt.Errorf("MKCOL request failed after %v: %w", mkcolDuration, err)
+			}
+			time.Sleep(time.Duration(mkcolAttempt) * time.Second)
+			continue
+		}
+		defer resp.Body.Close()
+		
+		if resp.StatusCode == http.StatusCreated {
+			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "mkcol", "success", 
+				fmt.Sprintf("Chunk directory created in %v (status: %s, attempt: %d/%d)", mkcolDuration, resp.Status, mkcolAttempt, maxMkcolRetries), 
+				map[string]interface{}{"duration": mkcolDuration, "status_code": resp.StatusCode, "attempt": mkcolAttempt})
+			return nil // Success
+		} else if resp.StatusCode == http.StatusMethodNotAllowed {
+			// Directory might already exist - check if we can access it
+			c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "mkcol", "already_exists", 
+				fmt.Sprintf("Directory might already exist (status: %s, attempt: %d/%d)", resp.Status, mkcolAttempt, maxMkcolRetries), 
+				map[string]interface{}{"status_code": resp.StatusCode, "attempt": mkcolAttempt})
+			return nil // Treat as success
+		} else {
+			body, _ := io.ReadAll(resp.Body)
+			if mkcolAttempt == maxMkcolRetries {
+				c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "failed", 
+					fmt.Sprintf("MKCOL request failed with status %s after %d attempts, response: %s", resp.Status, maxMkcolRetries, string(body)), 
+					map[string]interface{}{"status_code": resp.StatusCode, "response_body": string(body), "attempt": mkcolAttempt})
+				return fmt.Errorf("MKCOL request failed with status %s after %d attempts", resp.Status, maxMkcolRetries)
+			}
+			time.Sleep(time.Duration(mkcolAttempt) * time.Second)
+		}
+	}
+	return fmt.Errorf("MKCOL request failed after %d attempts", maxMkcolRetries)
 }
