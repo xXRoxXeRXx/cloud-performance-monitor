@@ -208,6 +208,14 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 				req.Header.Set("Accept", "*/*")
 				req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 				req.Header.Set("Connection", "keep-alive")
+				
+				// On retry attempts after 409 Conflict, force overwrite with If-Match header
+				if attempt > 1 {
+					req.Header.Set("If-Match", "*")
+					c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "retry_overwrite", 
+						fmt.Sprintf("Retry attempt %d for chunk %d with If-Match header to force overwrite", attempt, chunkNumber), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt})
+				}
 				req.Header.Set("Content-Type", "application/octet-stream")
 				// CRITICAL: Add Destination header like bash script does for each chunk!
 				req.Header.Set("Destination", destinationURL)
@@ -234,24 +242,37 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 					body, _ := io.ReadAll(resp.Body)
 					resp.Body.Close()
 					
-					// Handle 409 Conflict - try to delete existing chunk and retry
+					// Handle 409 Conflict - try to overwrite the existing chunk
 					if resp.StatusCode == http.StatusConflict && attempt < maxRetries {
 						c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "chunk_upload", "conflict", 
-							fmt.Sprintf("PUT request for chunk %d failed with 409 Conflict (attempt %d/%d), attempting to cleanup existing chunk: %s", chunkNumber, attempt, maxRetries, chunkPath), 
+							fmt.Sprintf("PUT request for chunk %d failed with 409 Conflict (attempt %d/%d), trying to overwrite existing chunk: %s", chunkNumber, attempt, maxRetries, chunkPath), 
 							map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "chunk_path": chunkPath})
 						
-						// Try to delete the conflicting chunk file (not directory)
-						if cleanupErr := c.DeleteChunkFile(chunkPath); cleanupErr != nil {
-							c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "chunk_upload", "cleanup_failed", 
-								fmt.Sprintf("Failed to cleanup conflicting chunk file %s: %v", chunkPath, cleanupErr), 
-								map[string]interface{}{"chunk_path": chunkPath, "cleanup_error": cleanupErr.Error()})
-						} else {
-							// After successful chunk cleanup, recreate the chunk directory if it was deleted
-							if recreateErr := c.createChunkDirectory(chunkDir, destinationURL); recreateErr != nil {
-								c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "chunk_upload", "recreate_failed", 
-									fmt.Sprintf("Failed to recreate chunk directory after cleanup: %v", recreateErr), 
-									map[string]interface{}{"chunk_dir": chunkDir, "recreate_error": recreateErr.Error()})
+						// Try different approaches to resolve the conflict
+						resolved := false
+						
+						// Approach 1: Try DELETE with different headers
+						deleteReq, err := c.newRequest("DELETE", chunkPath, nil)
+						if err == nil {
+							deleteReq.Header.Set("If-Match", "*") // Force delete regardless of etag
+							deleteResp, err := c.HTTPClient.Do(deleteReq)
+							if err == nil {
+								deleteResp.Body.Close()
+								if deleteResp.StatusCode == http.StatusNoContent || deleteResp.StatusCode == http.StatusNotFound {
+									resolved = true
+									c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "delete_success", 
+										"Successfully deleted conflicting chunk with If-Match header", 
+										map[string]interface{}{"chunk_path": chunkPath, "status_code": deleteResp.StatusCode})
+								}
 							}
+						}
+						
+						// Approach 2: If DELETE didn't work, try PUT with If-Match header to overwrite
+						if !resolved {
+							c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "retry_overwrite", 
+								"Attempting to overwrite conflicting chunk with If-Match header", 
+								map[string]interface{}{"chunk_path": chunkPath})
+							// The next iteration will try PUT with If-Match header (see below)
 						}
 						
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
