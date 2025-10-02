@@ -416,26 +416,6 @@ func (c *Client) DeleteDirectory(dirPath string) error {
 	return nil
 }
 
-// cleanupChunkDirectory removes a chunk upload directory and its contents
-func (c *Client) cleanupChunkDirectory(chunkDir string) error {
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "cleanup", "start", 
-		fmt.Sprintf("Cleaning up chunk directory: %s", chunkDir), 
-		map[string]interface{}{"chunk_dir": chunkDir})
-	
-	err := c.DeleteDirectory(chunkDir)
-	if err != nil {
-		c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "cleanup", "failed", 
-			fmt.Sprintf("Failed to cleanup chunk directory %s: %v", chunkDir, err), 
-			map[string]interface{}{"chunk_dir": chunkDir, "error": err.Error()})
-		return err
-	}
-	
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "cleanup", "success", 
-		fmt.Sprintf("Successfully cleaned up chunk directory: %s", chunkDir), 
-		map[string]interface{}{"chunk_dir": chunkDir})
-	return nil
-}
-
 // createChunkDirectory creates a chunk upload directory on the server
 // Used for initial setup and recreation after cleanup
 func (c *Client) createChunkDirectory(chunkDir, destinationURL string) error {
