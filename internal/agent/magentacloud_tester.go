@@ -87,9 +87,12 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 	// 3. Download test (only if upload was successful)
 	downloadErrCode := "none"
 	if err == nil {
+		// Small delay to ensure file is fully available after MOVE operation
+		time.Sleep(2 * time.Second)
+		
 		startDownload := time.Now()
 		Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "download", "start", 
-			"Starting file download")
+			fmt.Sprintf("Starting file download for path: %s", fullPath))
 			
 		downloadReader, downloadErr := client.DownloadFile(fullPath)
 		if downloadErr != nil {
