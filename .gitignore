@@ -16,6 +16,9 @@
 .env.production
 .env.backup
 
+# Debug files with credentials
+debug_magentacloud.md
+
 # Docker volumes and data
 prometheus-data/
 grafana-data/
