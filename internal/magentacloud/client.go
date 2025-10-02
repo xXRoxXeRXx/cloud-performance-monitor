@@ -99,7 +99,7 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	// 2. Upload file in chunks
 	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "start", 
 		"Starting chunk upload phase", nil)
-	if err := c.uploadChunks(chunkDir, reader, chunkSize, destinationURL); err != nil {
+	if err := c.uploadChunks(chunkDir, reader, chunkSize, destinationURL, size); err != nil {
 		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "failed", 
 			fmt.Sprintf("Chunk upload failed: %v", err), 
 			map[string]interface{}{"error": err.Error()})
@@ -167,7 +167,7 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 }
 
 // uploadChunks uploads the file in chunks to the server
-func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64, destinationURL string) error {
+func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64, destinationURL string, totalSize int64) error {
 	chunk := make([]byte, chunkSize)
 	totalChunks := 0
 	successfulChunks := 0
@@ -219,6 +219,8 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 				req.Header.Set("Content-Type", "application/octet-stream")
 				// CRITICAL: Add Destination header like bash script does for each chunk!
 				req.Header.Set("Destination", destinationURL)
+				// CRITICAL: Add OC-Total-Length header as required by Nextcloud Chunking v2
+				req.Header.Set("OC-Total-Length", fmt.Sprintf("%d", totalSize))
 				req.ContentLength = int64(bytesRead)
 
 				resp, chunkErr = c.HTTPClient.Do(req)
@@ -464,29 +466,18 @@ func (c *Client) createChunkDirectory(chunkDir, destinationURL string) error {
 				fmt.Sprintf("Chunk directory created in %v (status: %s, attempt: %d/%d)", mkcolDuration, resp.Status, mkcolAttempt, maxMkcolRetries), 
 				map[string]interface{}{"duration": mkcolDuration, "status_code": resp.StatusCode, "attempt": mkcolAttempt})
 			
-			// MagentaCLOUD requires a .target file in the chunk directory
-			if err := c.createTargetFile(chunkDir, destinationURL); err != nil {
-				c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "target_failed", 
-					fmt.Sprintf("Failed to create .target file after MKCOL: %v", err), 
-					map[string]interface{}{"chunk_dir": chunkDir, "destination_url": destinationURL, "error": err.Error()})
-				return fmt.Errorf("failed to create .target file: %w", err)
-			}
+			// MagentaCLOUD should have the destination from the MKCOL Destination header
+			// Let's try without creating a separate .target file
+			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "mkcol", "destination_set", 
+				fmt.Sprintf("Chunk directory created with destination: %s", destinationURL), 
+				map[string]interface{}{"chunk_dir": chunkDir, "destination_url": destinationURL})
 			
 			return nil // Success
 		} else if resp.StatusCode == http.StatusMethodNotAllowed {
-			// Directory might already exist - check if we can access it
+			// Directory might already exist - this is ok for chunking v2
 			c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "mkcol", "already_exists", 
 				fmt.Sprintf("Directory might already exist (status: %s, attempt: %d/%d)", resp.Status, mkcolAttempt, maxMkcolRetries), 
 				map[string]interface{}{"status_code": resp.StatusCode, "attempt": mkcolAttempt})
-			
-			// Even if directory exists, ensure .target file is present
-			if err := c.createTargetFile(chunkDir, destinationURL); err != nil {
-				c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "mkcol", "target_failed", 
-					fmt.Sprintf("Failed to create .target file for existing directory: %v", err), 
-					map[string]interface{}{"chunk_dir": chunkDir, "destination_url": destinationURL, "error": err.Error()})
-				// Don't fail here - the directory might have a valid .target file already
-			}
-			
 			return nil // Treat as success
 		} else {
 			body, _ := io.ReadAll(resp.Body)
@@ -500,43 +491,4 @@ func (c *Client) createChunkDirectory(chunkDir, destinationURL string) error {
 		}
 	}
 	return fmt.Errorf("MKCOL request failed after %d attempts", maxMkcolRetries)
-}
-
-// createTargetFile creates the .target file required by MagentaCLOUD for chunked uploads
-func (c *Client) createTargetFile(chunkDir, destinationURL string) error {
-	targetPath := chunkDir + "/.target"
-	targetURL := c.BaseURL + targetPath
-	
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "target_file", "start", 
-		fmt.Sprintf("Creating .target file: %s -> %s", targetPath, destinationURL), 
-		map[string]interface{}{"target_path": targetPath, "destination_url": destinationURL})
-	
-	// Create PUT request for .target file with destination URL as content
-	req, err := http.NewRequest("PUT", targetURL, strings.NewReader(destinationURL))
-	if err != nil {
-		return fmt.Errorf("could not create .target file PUT request: %w", err)
-	}
-	
-	req.SetBasicAuth(c.Username, c.Password)
-	req.Header.Set("User-Agent", MagentaCloudUserAgent)
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Content-Type", "text/plain")
-	req.Header.Set("Content-Length", fmt.Sprintf("%d", len(destinationURL)))
-	
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf(".target file creation failed: %w", err)
-	}
-	defer resp.Body.Close()
-	
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf(".target file creation failed with status %s, response: %s", resp.Status, string(body))
-	}
-	
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "target_file", "success", 
-		fmt.Sprintf(".target file created successfully (status: %s)", resp.Status), 
-		map[string]interface{}{"target_path": targetPath, "status_code": resp.StatusCode})
-	
-	return nil
 }
