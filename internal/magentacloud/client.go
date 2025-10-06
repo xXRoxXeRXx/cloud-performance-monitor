@@ -185,6 +185,10 @@ func (c *Client) uploadFileInternal(filePath string, reader io.Reader, size int6
 	
 	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "move", "executing", 
 		"Executing MOVE operation (this may take several minutes for large files)", nil)
+	
+	// Log the MOVE request details
+	c.logHTTPRequest("MOVE", moveSource, req.Header, "")
+	
 	moveStart := time.Now()
 	resp, err := moveClient.Do(req)
 	moveDuration := time.Since(moveStart)
@@ -265,8 +269,8 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt})
 				}
 				req.Header.Set("Content-Type", "application/octet-stream")
-				// CRITICAL: Add Destination header like bash script does for each chunk!
-				req.Header.Set("Destination", destinationURL)
+				// NOTE: Regular chunks don't need Destination header - only final .target upload needs it
+				// req.Header.Set("Destination", destinationURL) // REMOVED: Causes 409 conflicts
 				// CRITICAL: Add OC-Total-Length header as required by Nextcloud Chunking v2
 				req.Header.Set("OC-Total-Length", fmt.Sprintf("%d", totalSize))
 				req.ContentLength = int64(bytesRead)
