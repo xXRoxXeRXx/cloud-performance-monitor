@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	magentacloud "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/magentacloud"
@@ -90,17 +91,36 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 	// 3. Download test (only if upload was successful)
 	downloadErrCode := "none"
 	if err == nil {
-		// Small delay to ensure file is fully available after MOVE operation
-		time.Sleep(2 * time.Second)
+		// Extended delay to ensure file is fully available after MOVE operation
+		// MagentaCLOUD backend needs more time after chunked uploads for file availability
+		time.Sleep(5 * time.Second)
 		
 		startDownload := time.Now()
 		Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "download", "start", 
 			fmt.Sprintf("Starting file download for path: %s", fullPath))
+		
+		// Retry logic for 503 Service Unavailable errors
+		var downloadReader io.ReadCloser
+		var downloadErr error
+		maxRetries := 3
+		for attempt := 1; attempt <= maxRetries; attempt++ {
+			downloadReader, downloadErr = client.DownloadFile(fullPath)
+			if downloadErr == nil {
+				break // Success
+			}
 			
-		downloadReader, downloadErr := client.DownloadFile(fullPath)
+			// Check if it's a 503 error and retry
+			if strings.Contains(downloadErr.Error(), "503") && attempt < maxRetries {
+				Logger.LogOperation(WARN, "magentacloud", cfg.InstanceName, "download", "retry", 
+					fmt.Sprintf("Download attempt %d failed with 503, retrying in 3 seconds", attempt), 
+					WithError(downloadErr))
+				time.Sleep(3 * time.Second)
+			}
+		}
+		
 		if downloadErr != nil {
 			Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "download", "error", 
-				"Download failed", 
+				fmt.Sprintf("Download failed after %d attempts", maxRetries), 
 				WithError(downloadErr))
 			downloadErrCode = ExtractErrorCode(downloadErr, "download")
 			TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "download", downloadErrCode).Inc()

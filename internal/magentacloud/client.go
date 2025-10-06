@@ -122,8 +122,9 @@ func (c *Client) uploadFileInternal(filePath string, reader io.Reader, size int6
 
 	// Small delay to ensure the directory is available for chunk uploads
 	// MagentaCLOUD seems to have a timing issue where the directory is created but not immediately available
+	// Increase delay from 500ms to 2 seconds due to persistent 404 issues after MKCOL
 	delayStart := time.Now()
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 	totalDelay += time.Since(delayStart)
 	
 	// Verify the directory was created and is accessible
@@ -136,7 +137,7 @@ func (c *Client) uploadFileInternal(filePath string, reader io.Reader, size int6
 			return totalDelay, fmt.Errorf("failed to re-create chunk directory after verification failure: %w", err)
 		}
 		retryDelayStart := time.Now()
-		time.Sleep(1 * time.Second) // Longer delay for retry
+		time.Sleep(3 * time.Second) // Longer delay for retry (increased from 1s to 3s)
 		totalDelay += time.Since(retryDelayStart)
 	} else {
 		c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "verification", "success", 
@@ -681,7 +682,7 @@ func (c *Client) listDirectory(dirPath string) ([]string, error) {
 	entries := parseWebDAVResponse(string(body))
 	
 	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "list", "success", 
-		fmt.Sprintf("Found %d entries in directory %s", len(entries), dirPath), 
+		fmt.Sprintf("Found %d entries in directory %s (Note: Property-level 404s in PROPFIND responses are normal)", len(entries), dirPath), 
 		map[string]interface{}{"dir_path": dirPath, "count": len(entries), "entries": entries})
 
 	return entries, nil
@@ -769,8 +770,29 @@ func (c *Client) logHTTPResponse(method, url string, statusCode int, headers htt
 		})
 
 	// Log response body for error cases
-	if statusCode >= 400 || (body != "" && len(body) < 2000) {
-		c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "http_response", "body", 
+	// For PROPFIND requests with 207 status, property-level 404s are normal and expected
+	isPropFindSuccess := method == "PROPFIND" && statusCode == 207
+	shouldLogBody := statusCode >= 400 || (body != "" && len(body) < 2000 && !isPropFindSuccess)
+	
+	if shouldLogBody {
+		logLevel := utils.DEBUG
+		operation := "body"
+		
+		// For genuine errors (4xx/5xx status codes), use more visible logging
+		if statusCode >= 400 {
+			if statusCode >= 500 {
+				logLevel = utils.ERROR
+				operation = "server_error"
+			} else if statusCode == 404 {
+				logLevel = utils.WARN  
+				operation = "not_found"
+			} else {
+				logLevel = utils.WARN
+				operation = "client_error"
+			}
+		}
+		
+		c.logger.LogOperation(logLevel, "magentacloud", c.BaseURL, "http_response", operation, 
 			fmt.Sprintf("Response body: %s", body), 
 			map[string]interface{}{"body": body, "status_code": statusCode})
 	}
