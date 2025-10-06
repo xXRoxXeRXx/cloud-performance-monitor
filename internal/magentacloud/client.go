@@ -561,20 +561,8 @@ func (c *Client) createChunkDirectory(chunkDir, destinationURL string) error {
 				map[string]interface{}{"chunk_dir": chunkDir, "destination_url": destinationURL})
 			
 			// Add delay to ensure directory is available across all load balancer nodes
+			// This fixes the 409 conflict issues by allowing proper directory propagation
 			time.Sleep(2 * time.Second)
-			
-			// Create .target file that MagentaCLOUD requires for chunk uploads
-			targetPath := chunkDir + "/.target"
-			if err := c.createTargetFile(targetPath, destinationURL); err != nil {
-				c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "target_file", "failed", 
-					fmt.Sprintf("Failed to create .target file: %v", err), 
-					map[string]interface{}{"target_path": targetPath, "error": err.Error()})
-				// Continue anyway - chunking might still work
-			} else {
-				c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "target_file", "success", 
-					fmt.Sprintf(".target file created successfully: %s", targetPath), 
-					map[string]interface{}{"target_path": targetPath})
-			}
 			
 			return nil // Success
 		} else if resp.StatusCode == http.StatusMethodNotAllowed {
@@ -837,51 +825,4 @@ func parseWebDAVResponse(xmlBody string) []string {
 	}
 	
 	return entries
-}
-
-// createTargetFile creates a .target file in the chunk directory with the destination URL
-// This is required by MagentaCLOUD for the Nextcloud Chunking v2 protocol
-func (c *Client) createTargetFile(targetPath, destinationURL string) error {
-	targetFileURL := c.BaseURL + targetPath
-	
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "target_file", "start", 
-		fmt.Sprintf("Creating .target file: %s", targetPath), 
-		map[string]interface{}{"target_path": targetPath, "destination_url": destinationURL})
-	
-	// Create a simple PUT request with the destination URL as content
-	req, err := http.NewRequest("PUT", targetFileURL, strings.NewReader(destinationURL))
-	if err != nil {
-		return fmt.Errorf("could not create .target file request: %w", err)
-	}
-	
-	req.SetBasicAuth(c.Username, c.Password)
-	req.Header.Set("User-Agent", MagentaCloudUserAgent)
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Content-Type", "text/plain")
-	
-	// Log detailed HTTP request
-	c.logHTTPRequest("PUT", targetFileURL, req.Header, destinationURL)
-	
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf(".target file request failed: %w", err)
-	}
-	defer resp.Body.Close()
-	
-	body, _ := io.ReadAll(resp.Body)
-	
-	// Log detailed HTTP response
-	c.logHTTPResponse("PUT", targetFileURL, resp.StatusCode, resp.Header, string(body))
-	
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return fmt.Errorf(".target file creation failed with status %s, response: %s", resp.Status, string(body))
-	}
-	
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "target_file", "success", 
-		fmt.Sprintf(".target file created successfully with status %s", resp.Status), 
-		map[string]interface{}{"target_path": targetPath, "status_code": resp.StatusCode})
-	
-	return nil
 }
