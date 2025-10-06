@@ -66,6 +66,15 @@ A containerized Go application that benchmarks Nextcloud, HiDrive, MagentaCLOUD,
 	```
 - **Test logic**: Each test uploads a random file (streamed, not loaded in memory), downloads it, validates size, and deletes it.
 - **Chunked uploads**: Files >10MB are split into 10MB chunks, uploaded to `/remote.php/dav/uploads/{username}/` for Nextcloud/HiDrive or `/remote.php/dav/uploads/{ANID}/` for MagentaCLOUD, then assembled via MOVE.
+- **Performance optimizations**: 
+  - HiDrive uses optimized HTTP transport with MaxIdleConns=100, MaxConnsPerHost=100 for better connection reuse
+  - MagentaCLOUD includes 2-second delay between upload completion and download start due to backend file availability timing
+  - All clients use 10-minute timeout for MOVE operations to handle large file assembly
+  - Progressive backoff retry logic for chunk upload conflicts (409 errors)
+- **Protocol compliance**: 
+  - MagentaCLOUD follows Nextcloud Chunking v2 protocol with mandatory OC-Total-Length and Destination headers
+  - User-Agent mimics official Nextcloud desktop client for better compatibility
+  - OAuth2 token refresh handling for HiDrive Legacy and Dropbox services
 - **Metrics**: All metrics labeled by `service` (nextcloud/hidrive/magentacloud/hidrive_legacy/dropbox), `instance` (URL) and `type` (upload/download). Errors are logged and surfaced via Prometheus labels.
 - **Prometheus metric example**:
 	```
@@ -105,11 +114,19 @@ go test -v -cover ./...
 - **Dashboard import fails**: Ensure `dashboard.json` is valid JSON, not double-wrapped or corrupted.
 - **No data in Grafana**: Check agent logs, Prometheus target, and that metrics use correct labels (especially `service`).
 - **WebDAV errors**: Confirm Nextcloud/HiDrive user/app password has full read/write permissions.
+- **MagentaCLOUD 404 download errors**: Fixed by implementing 2-second delay after upload completion to allow backend file availability.
+- **409 Conflict errors**: Handled by progressive backoff retry logic with If-Match headers for chunk overwrites.
+- **Large file timeouts**: MOVE operations use extended 10-minute timeout for file assembly.
+- **OAuth2 token expiry**: HiDrive Legacy and Dropbox clients automatically refresh tokens using refresh_token grants.
 
 ## Key Files/Dirs
 - `cmd/agent/main.go`: Agent entrypoint, goroutine orchestration.
 - `internal/nextcloud/client.go`: WebDAV logic, chunked upload/download.
-- `internal/hidrive/client.go`: HiDrive WebDAV logic, chunked upload/download.
+- `internal/hidrive/client.go`: HiDrive WebDAV logic, chunked upload/download with optimized HTTP transport.
+- `internal/magentacloud/client.go`: MagentaCLOUD WebDAV client with Nextcloud Chunking v2 protocol implementation.
+- `internal/hidrive_legacy/client.go`: HiDrive Legacy OAuth2 REST API client with token refresh handling.
+- `internal/dropbox/client.go`: Dropbox OAuth2 client with automatic token refresh.
+- `internal/agent/*_tester.go`: Service-specific test implementations with error handling and timing logic.
 - `internal/agent/metrics.go`: Prometheus metric definitions.
 - `deploy/grafana/dashboard.json`: Grafana dashboard definition (mit Service-Selector).
 - `.env.example`: Configuration template.

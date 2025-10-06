@@ -5,9 +5,7 @@ services:
     container_name: monitor-agent
     env_file:
       - .env
-    environment:
-      - LOG_LEVEL=INFO
-      - LOG_FORMAT=json
+    # No hardcoded LOG_LEVEL - use .env file settings
     # Port not exposed - only accessible from internal network for Prometheus scraping
     expose:
       - "8080"
