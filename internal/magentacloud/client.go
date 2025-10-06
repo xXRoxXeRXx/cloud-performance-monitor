@@ -258,11 +258,10 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 				req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 				req.Header.Set("Connection", "keep-alive")
 				
-				// On retry attempts after 409 Conflict, force overwrite with If-Match header
+				// On retry attempts after 409 Conflict, don't use If-Match to avoid 412 errors
 				if attempt > 1 {
-					req.Header.Set("If-Match", "*")
-					c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "retry_overwrite", 
-						fmt.Sprintf("Retry attempt %d for chunk %d with If-Match header to force overwrite", attempt, chunkNumber), 
+					c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "retry_upload", 
+						fmt.Sprintf("Retry attempt %d for chunk %d after conflict resolution", attempt, chunkNumber), 
 						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt})
 				}
 				req.Header.Set("Content-Type", "application/octet-stream")
@@ -332,31 +331,32 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 						// Try different approaches to resolve the conflict
 						resolved := false
 						
-						// Approach 1: Try DELETE with different headers
+						// Approach 1: Try DELETE without If-Match header (avoid 412 errors)
 						deleteReq, err := c.newRequest("DELETE", chunkPath, nil)
 						if err == nil {
-							deleteReq.Header.Set("If-Match", "*") // Force delete regardless of etag
+							// Don't use If-Match header for DELETE to avoid 412 when chunk doesn't exist
 							c.logHTTPRequest("DELETE", c.BaseURL+chunkPath, deleteReq.Header, "")
 							deleteResp, err := c.HTTPClient.Do(deleteReq)
 							if err == nil {
 								deleteBody, _ := io.ReadAll(deleteResp.Body)
 								deleteResp.Body.Close()
 								c.logHTTPResponse("DELETE", c.BaseURL+chunkPath, deleteResp.StatusCode, deleteResp.Header, string(deleteBody))
-								if deleteResp.StatusCode == http.StatusNoContent || deleteResp.StatusCode == http.StatusNotFound {
+								// Accept 204 No Content, 404 Not Found, or 409 Conflict as success for cleanup
+								if deleteResp.StatusCode == http.StatusNoContent || deleteResp.StatusCode == http.StatusNotFound || deleteResp.StatusCode == http.StatusConflict {
 									resolved = true
 									c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "delete_success", 
-										"Successfully deleted conflicting chunk with If-Match header", 
+										"Successfully deleted/cleaned conflicting chunk", 
 										map[string]interface{}{"chunk_path": chunkPath, "status_code": deleteResp.StatusCode})
 								}
 							}
 						}
 						
-						// Approach 2: If DELETE didn't work, try PUT with If-Match header to overwrite
+						// Approach 2: If DELETE didn't work, try PUT without If-Match header to avoid 412 errors
 						if !resolved {
-							c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "retry_overwrite", 
-								"Attempting to overwrite conflicting chunk with If-Match header", 
+							c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "retry_upload", 
+								"Attempting to upload chunk after conflict resolution", 
 								map[string]interface{}{"chunk_path": chunkPath})
-							// The next iteration will try PUT with If-Match header (see below)
+							// The next iteration will try PUT without If-Match header (see above)
 						}
 						
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff

@@ -93,7 +93,7 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 	if err == nil {
 		// Extended delay to ensure file is fully available after MOVE operation
 		// MagentaCLOUD backend needs more time after chunked uploads for file availability
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 		
 		startDownload := time.Now()
 		Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "download", "start", 
