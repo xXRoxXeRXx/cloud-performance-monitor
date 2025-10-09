@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
+	"path"
 	"time"
-
 	"github.com/google/uuid"
 	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
@@ -25,7 +24,6 @@ type Client struct {
 const (
 	DefaultTimeout = 300 * time.Second
 	// User-Agent string that mimics the official Nextcloud desktop client
-	// MagentaCLOUD uses Nextcloud backend so we use the same User-Agent
 	MagentaCloudUserAgent = "Mozilla/5.0 (Windows) mirall/3.15.3 (build 20250107) (Nextcloud, windows-10.0.20348 ClientArchitecture: x86_64 OsArchitecture: x86_64)"
 )
 
@@ -61,7 +59,7 @@ func (c *Client) newRequest(method, urlPath string, body io.Reader) (*http.Reque
 // EnsureDirectory ensures the test directory exists
 // Uses ANID in path: /remote.php/dav/files/{ANID}/path
 func (c *Client) EnsureDirectory(dirPath string) error {
-	fullPath := fmt.Sprintf("/remote.php/dav/files/%s%s", c.ANID, dirPath)
+	fullPath := path.Join("/remote.php/dav/files/", c.ANID, dirPath)
 	req, err := c.newRequest("MKCOL", fullPath, nil)
 	if err != nil {
 		return err
@@ -82,90 +80,56 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 // UploadFile uploads a file using the chunking API
 // Uses ANID in both upload and destination paths
 func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunkSize int64) error {
-	_, err := c.uploadFileInternal(filePath, reader, size, chunkSize)
-	return err
-}
+		c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "upload", "start", 
+		fmt.Sprintf("Starting upload for %s (size: %d bytes, chunk size: %d bytes)", filePath, size, chunkSize), 
+		map[string]interface{}{"file_path": filePath, "file_size": size, "chunk_size": chunkSize})
 
-// UploadFileWithMetrics uploads a file and returns both error and technical delay duration
-// This allows performance testers to subtract artificial delays from speed calculations
-func (c *Client) UploadFileWithMetrics(filePath string, reader io.Reader, size int64, chunkSize int64) (time.Duration, error) {
-	return c.uploadFileInternal(filePath, reader, size, chunkSize)
-}
 
-// uploadFileInternal is the core upload implementation that tracks technical delays
-func (c *Client) uploadFileInternal(filePath string, reader io.Reader, size int64, chunkSize int64) (time.Duration, error) {
-	var totalDelay time.Duration
 	transferID := uuid.New().String()
-	chunkDir := fmt.Sprintf("/remote.php/dav/uploads/%s/%s", c.ANID, transferID)
-	destinationURL := c.BaseURL + fmt.Sprintf("/remote.php/dav/files/%s%s", c.ANID, filePath)
-
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "upload", "start", 
-		fmt.Sprintf("Starting chunked upload for %s (size: %d bytes, chunk size: %d bytes, transfer ID: %s)", filePath, size, chunkSize, transferID), 
-		map[string]interface{}{"file_path": filePath, "size": size, "chunk_size": chunkSize, "transfer_id": transferID})
-
-	// Pre-upload cleanup: Check and clean any existing chunk directories
-	uploadsDir := fmt.Sprintf("/remote.php/dav/uploads/%s", c.ANID)
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "cleanup", "start", 
-		"Checking for existing upload directories to cleanup before starting new upload", 
-		map[string]interface{}{"uploads_dir": uploadsDir})
-	
-	if err := c.cleanupUploadDirectory(uploadsDir); err != nil {
-		c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "cleanup", "failed", 
-			fmt.Sprintf("Failed to cleanup upload directory: %v", err), 
-			map[string]interface{}{"error": err.Error()})
-	}
+	chunkDir := path.Join("/remote.php/dav/uploads/", c.ANID, transferID)
+	chunkDirURL := c.BaseURL + chunkDir
+	destinationURL := c.BaseURL + path.Join("/remote.php/dav/files/", c.ANID, filePath)
 
 	// 1. Create temporary directory for chunks on the server
-	if err := c.createChunkDirectory(chunkDir, destinationURL); err != nil {
-		return totalDelay, fmt.Errorf("failed to create chunk directory: %w", err)
-	}
-
-	// Small delay to ensure the directory is available for chunk uploads
-	// MagentaCLOUD seems to have a timing issue where the directory is created but not immediately available
-	// Increase delay from 500ms to 2 seconds due to persistent 404 issues after MKCOL
-	delayStart := time.Now()
-	time.Sleep(2 * time.Second)
-	totalDelay += time.Since(delayStart)
+	mkcolStart := time.Now()
 	
-	// Verify the directory was created and is accessible
-	if entries, err := c.listDirectory(chunkDir); err != nil {
-		c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "verification", "failed", 
-			fmt.Sprintf("Chunk directory verification failed after creation: %v", err), 
-			map[string]interface{}{"chunk_dir": chunkDir, "error": err.Error()})
-		// Try creating it again
-		if err := c.createChunkDirectory(chunkDir, destinationURL); err != nil {
-			return totalDelay, fmt.Errorf("failed to re-create chunk directory after verification failure: %w", err)
-		}
-		retryDelayStart := time.Now()
-		time.Sleep(3 * time.Second) // Longer delay for retry (increased from 1s to 3s)
-		totalDelay += time.Since(retryDelayStart)
-	} else {
-		c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "verification", "success", 
-			fmt.Sprintf("Chunk directory verified accessible with %d entries", len(entries)), 
-			map[string]interface{}{"chunk_dir": chunkDir, "entries": entries, "count": len(entries)})
+	req, err := http.NewRequest("MKCOL", chunkDirURL, nil)
+	if err != nil {
+		return fmt.Errorf("could not create MKCOL request: %w", err)
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+	req.Header.Set("User-Agent", MagentaCloudUserAgent)
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Connection", "keep-alive")
+	// Add Destination header like bash script does
+	req.Header.Set("Destination", destinationURL)
+	
+	resp, err := c.HTTPClient.Do(req)
+	mkcolDuration := time.Since(mkcolStart)
+	
+	if err != nil {
+		return fmt.Errorf("MKCOL request failed after %v: %w", mkcolDuration, err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("MKCOL for chunks failed with status %s after %v", resp.Status, mkcolDuration)
 	}
 
 	// 2. Upload file in chunks
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "start", 
-		"Starting chunk upload phase", nil)
-	if err := c.uploadChunks(chunkDir, reader, chunkSize, destinationURL, size); err != nil {
-		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "failed", 
-			fmt.Sprintf("Chunk upload failed: %v", err), 
-			map[string]interface{}{"error": err.Error()})
-		return totalDelay, err
+// 2. Upload file in chunks
+	if err := c.uploadChunks(chunkDir, reader, chunkSize, destinationURL); err != nil {
+		return err
 	}
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "completed", 
-		"All chunks uploaded successfully", nil)
 
 	// 3. Assemble chunks by moving the directory
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "move", "start", 
-		fmt.Sprintf("Starting MOVE operation from %s/.file to %s", c.BaseURL+chunkDir, destinationURL), 
-		map[string]interface{}{"source": c.BaseURL + chunkDir + "/.file", "destination": destinationURL})
 	moveSource := c.BaseURL + chunkDir + "/.file"
-	
-	req, err := http.NewRequest("MOVE", moveSource, nil)
+
+	fmt.Printf("[MagentaCloud] Starting MOVE operation from %s to %s\n", moveSource, destinationURL)
+	req, err = http.NewRequest("MOVE", moveSource, nil)
 	if err != nil {
-		return totalDelay, fmt.Errorf("could not create MOVE request: %w", err)
+		return fmt.Errorf("could not create MOVE request: %w", err)
 	}
 	req.SetBasicAuth(c.Username, c.Password)
 	req.Header.Set("User-Agent", MagentaCloudUserAgent)
@@ -182,54 +146,48 @@ func (c *Client) uploadFileInternal(filePath string, reader io.Reader, size int6
 		Timeout: 10 * time.Minute, // 10 minutes for large file assembly
 		Transport: c.HTTPClient.Transport,
 	}
-	
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "move", "executing", 
-		"Executing MOVE operation (this may take several minutes for large files)", nil)
-	
-	// Log the MOVE request details
-	c.logHTTPRequest("MOVE", moveSource, req.Header, "")
-	
+
+	fmt.Printf("[MagentaCloud] Executing MOVE operation (this may take several minutes for large files)...\n")
 	moveStart := time.Now()
-	resp, err := moveClient.Do(req)
+	resp, err = moveClient.Do(req)
 	moveDuration := time.Since(moveStart)
 	
 	if err != nil {
 		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "move", "failed", 
-			fmt.Sprintf("MOVE request failed after %v: %v", moveDuration, err), 
-			map[string]interface{}{"duration": moveDuration, "error": err.Error()})
-		return totalDelay, fmt.Errorf("MOVE request failed after %v: %w", moveDuration, err)
+			fmt.Sprintf("MOVE operation failed after %v: %v", moveDuration, err), 
+			map[string]interface{}{"duration": moveDuration.String(), "error": err.Error()})
+		return fmt.Errorf("MOVE request failed after %v: %w", moveDuration, err)
 	}
 	defer resp.Body.Close()
+
+	fmt.Printf("[MagentaCloud] MOVE operation completed in %v with status %s\n", moveDuration, resp.Status)
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
 		// Read response body for more detailed error information
 		body, _ := io.ReadAll(resp.Body)
-		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "move", "status_error", 
-			fmt.Sprintf("MOVE operation failed with status %s, response: %s", resp.Status, string(body)), 
-			map[string]interface{}{"status_code": resp.StatusCode, "response_body": string(body)})
-		return totalDelay, fmt.Errorf("final MOVE to assemble chunks failed with status %s, response: %s", resp.Status, string(body))
+		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "move", "failed", 
+			fmt.Sprintf("MOVE failed with status %s, response: %s", resp.Status, string(body)), 
+			map[string]interface{}{"status": resp.Status, "response_body": string(body)})
+		return fmt.Errorf("final MOVE to assemble chunks failed with status %s", resp.Status)
 	}
 
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "move", "completed", 
-		fmt.Sprintf("MOVE operation completed in %v with status %s", moveDuration, resp.Status), 
-		map[string]interface{}{"duration": moveDuration, "status_code": resp.StatusCode})
 	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "upload", "completed", 
 		fmt.Sprintf("Chunked upload successful for %s", filePath), 
 		map[string]interface{}{"file_path": filePath})
-	return totalDelay, nil
+	return nil
 }
 
 // uploadChunks uploads the file in chunks to the server
-func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64, destinationURL string, totalSize int64) error {
+func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64, destinationURL string) error {
 	chunk := make([]byte, chunkSize)
 	totalChunks := 0
 	successfulChunks := 0
-	
+
 	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "start", 
 		fmt.Sprintf("Starting chunk upload to %s (chunk size: %d bytes)", chunkDir, chunkSize), 
 		map[string]interface{}{"chunk_dir": chunkDir, "chunk_size": chunkSize})
 	
-	// CRITICAL: Start chunk numbering at 1, not 0! (like bash script: 00001, 00002, etc.)
+	// CRITICAL: Start chunk numbering at 1, not 0! (Nextcloud requires 1-based indexing like HiDrive)
 	chunkNumber := 1
 	for {
 		bytesRead, readErr := reader.Read(chunk)
@@ -243,14 +201,18 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 				fmt.Sprintf("Uploading chunk %d: %d bytes to %s", chunkNumber, bytesRead, chunkPath), 
 				map[string]interface{}{"chunk_number": chunkNumber, "bytes": bytesRead, "chunk_path": chunkPath})
 
+			chunkStart := time.Now()
+
 			// Retry logic for individual chunks
 			var resp *http.Response
 			var chunkErr error
 			maxRetries := 3
-			chunkStart := time.Now()
 			for attempt := 1; attempt <= maxRetries; attempt++ {
 				req, err := http.NewRequest("PUT", chunkURL, bytes.NewReader(chunk[:bytesRead]))
 				if err != nil {
+					c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "request_error", 
+						fmt.Sprintf("Could not create PUT request for chunk %d (attempt %d): %v", chunkNumber, attempt, err), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "error": err.Error()})
 					if attempt == maxRetries {
 						return fmt.Errorf("could not create PUT request for chunk %d after %d attempts: %w", chunkNumber, maxRetries, err)
 					}
@@ -261,28 +223,16 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 				req.Header.Set("Accept", "*/*")
 				req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 				req.Header.Set("Connection", "keep-alive")
-				
-				// On retry attempts after 409 Conflict, don't use If-Match to avoid 412 errors
-				if attempt > 1 {
-					c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "retry_upload", 
-						fmt.Sprintf("Retry attempt %d for chunk %d after conflict resolution", attempt, chunkNumber), 
-						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt})
-				}
 				req.Header.Set("Content-Type", "application/octet-stream")
-				// NOTE: Regular chunks don't need Destination header - only final .target upload needs it
-				// req.Header.Set("Destination", destinationURL) // REMOVED: Causes 409 conflicts
-				// CRITICAL: Add OC-Total-Length header as required by Nextcloud Chunking v2
-				req.Header.Set("OC-Total-Length", fmt.Sprintf("%d", totalSize))
+				// CRITICAL: Add Destination header like bash script does for each chunk!
+				req.Header.Set("Destination", destinationURL)
 				req.ContentLength = int64(bytesRead)
-
-				// Log detailed HTTP request information
-				c.logHTTPRequest("PUT", chunkURL, req.Header, fmt.Sprintf("[CHUNK DATA %d bytes]", bytesRead))
 
 				resp, chunkErr = c.HTTPClient.Do(req)
 				if chunkErr != nil {
-					c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "request_error", 
-						fmt.Sprintf("HTTP request failed for chunk %d (attempt %d/%d): %v", chunkNumber, attempt, maxRetries, chunkErr), 
-						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "error": chunkErr.Error()})
+					c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "http_error", 
+						fmt.Sprintf("PUT request for chunk %d failed (attempt %d/%d) after %v: %v", chunkNumber, attempt, maxRetries, time.Since(chunkStart), chunkErr), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "error": chunkErr.Error()})
 					if attempt < maxRetries {
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
 						continue
@@ -292,119 +242,57 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 
 				// Check response status - Accept both 201 Created, 200 OK and 204 No Content
 				if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
-					body, _ := io.ReadAll(resp.Body)
-					resp.Body.Close()
-					
-					// Log successful response
-					c.logHTTPResponse("PUT", chunkURL, resp.StatusCode, resp.Header, string(body))
-					
-					chunkDuration := time.Since(chunkStart)
-					c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "chunk_upload", "success", 
-						fmt.Sprintf("Chunk %d uploaded successfully in %v (status: %s)", chunkNumber, chunkDuration, resp.Status), 
-						map[string]interface{}{"chunk_number": chunkNumber, "duration": chunkDuration, "status_code": resp.StatusCode})
 					break // Success
 				} else {
 					// Read response body for detailed error information
 					body, _ := io.ReadAll(resp.Body)
 					resp.Body.Close()
-					
-					// Log failed response
-					c.logHTTPResponse("PUT", chunkURL, resp.StatusCode, resp.Header, string(body))
-					
-					// Handle 409 Conflict - try to overwrite the existing chunk
-					if resp.StatusCode == http.StatusConflict && attempt < maxRetries {
-						c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "chunk_upload", "conflict", 
-							fmt.Sprintf("PUT request for chunk %d failed with 409 Conflict (attempt %d/%d), trying to overwrite existing chunk: %s", chunkNumber, attempt, maxRetries, chunkPath), 
-							map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "chunk_path": chunkPath})
-						
-						// DEBUG: List the chunk directory to see what's there
-						c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "debug", "conflict_analysis", 
-							"409 Conflict detected - analyzing chunk directory contents", 
-							map[string]interface{}{"chunk_dir": chunkDir, "chunk_path": chunkPath})
-						
-						if entries, err := c.listDirectory(chunkDir); err == nil {
-							c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "debug", "directory_listing", 
-								fmt.Sprintf("Chunk directory contains %d entries: %v", len(entries), entries), 
-								map[string]interface{}{"chunk_dir": chunkDir, "entries": entries, "count": len(entries)})
-						} else {
-							c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "debug", "listing_failed", 
-								fmt.Sprintf("Failed to list chunk directory: %v", err), 
-								map[string]interface{}{"chunk_dir": chunkDir, "error": err.Error()})
-						}
-						
-						// Try different approaches to resolve the conflict
-						resolved := false
-						
-						// Approach 1: Try DELETE without If-Match header (avoid 412 errors)
-						deleteReq, err := c.newRequest("DELETE", chunkPath, nil)
-						if err == nil {
-							// Don't use If-Match header for DELETE to avoid 412 when chunk doesn't exist
-							c.logHTTPRequest("DELETE", c.BaseURL+chunkPath, deleteReq.Header, "")
-							deleteResp, err := c.HTTPClient.Do(deleteReq)
-							if err == nil {
-								deleteBody, _ := io.ReadAll(deleteResp.Body)
-								deleteResp.Body.Close()
-								c.logHTTPResponse("DELETE", c.BaseURL+chunkPath, deleteResp.StatusCode, deleteResp.Header, string(deleteBody))
-								// Accept 204 No Content, 404 Not Found, or 409 Conflict as success for cleanup
-								if deleteResp.StatusCode == http.StatusNoContent || deleteResp.StatusCode == http.StatusNotFound || deleteResp.StatusCode == http.StatusConflict {
-									resolved = true
-									c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "delete_success", 
-										"Successfully deleted/cleaned conflicting chunk", 
-										map[string]interface{}{"chunk_path": chunkPath, "status_code": deleteResp.StatusCode})
-								}
-							}
-						}
-						
-						// Approach 2: If DELETE didn't work, try PUT without If-Match header to avoid 412 errors
-						if !resolved {
-							c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "retry_upload", 
-								"Attempting to upload chunk after conflict resolution", 
-								map[string]interface{}{"chunk_path": chunkPath})
-							// The next iteration will try PUT without If-Match header (see above)
-						}
-						
-						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
-						continue
-					}
-					
+					c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "status_error", 
+						fmt.Sprintf("Chunk %d upload failed (attempt %d/%d) with status %s after %v, response: %s", chunkNumber, attempt, maxRetries, resp.Status, time.Since(chunkStart), string(body)), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "status": resp.Status, "response_body": string(body)})
 					if attempt < maxRetries {
-						c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "status_error", 
-							fmt.Sprintf("PUT request for chunk %d failed (attempt %d/%d) with status %s: %s", chunkNumber, attempt, maxRetries, resp.Status, string(body)), 
-							map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "status_code": resp.StatusCode, "response_body": string(body)})
 						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
 						continue
 					}
-					return fmt.Errorf("upload of chunk %d failed with status %s after %d attempts, response: %s", chunkNumber, resp.Status, maxRetries, string(body))
+					return fmt.Errorf("upload of chunk %d failed with status %s after %d attempts", chunkNumber, resp.Status, maxRetries)
 				}
 			}
+			
+			chunkDuration := time.Since(chunkStart)
 			
 			// Immediately close response body to avoid resource leaks
 			resp.Body.Close()
 			successfulChunks++
+
+			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "chunk_upload", "chunk_success", 
+				fmt.Sprintf("Chunk %d uploaded successfully in %v (status: %s)", chunkNumber, chunkDuration, resp.Status), 
+				map[string]interface{}{"chunk_number": chunkNumber, "duration": chunkDuration.String(), "status": resp.Status})
 			chunkNumber++ // Increment for next chunk
 		}
 		if readErr == io.EOF {
 			break
 		}
 		if readErr != nil {
+			c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "read_error", 
+				fmt.Sprintf("Failed to read chunk %d: %v", chunkNumber, readErr), 
+				map[string]interface{}{"chunk_number": chunkNumber, "error": readErr.Error()})
 			return fmt.Errorf("failed to read chunk %d: %w", chunkNumber, readErr)
 		}
 	}
-	
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "summary", 
+
+	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "completed", 
 		fmt.Sprintf("Chunk upload summary: %d/%d chunks uploaded successfully", successfulChunks, totalChunks), 
 		map[string]interface{}{"successful_chunks": successfulChunks, "total_chunks": totalChunks})
 	return nil
 }
 
 // DownloadFile downloads a file
-// Uses ANID in path: /remote.php/dav/files/{ANID}/path
 func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "download", "started", 
 		fmt.Sprintf("Download started for %s", filePath), 
 		map[string]interface{}{"file_path": filePath})
 
-	fullPath := fmt.Sprintf("/remote.php/dav/files/%s%s", c.ANID, filePath)
+	fullPath := path.Join("/remote.php/dav/files/", c.ANID, filePath)
 	req, err := c.newRequest("GET", fullPath, nil)
 	if err != nil {
 		return nil, err
@@ -421,9 +309,8 @@ func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 }
 
 // DeleteFile deletes a file or directory
-// Uses ANID in path: /remote.php/dav/files/{ANID}/path
 func (c *Client) DeleteFile(filePath string) error {
-	fullPath := fmt.Sprintf("/remote.php/dav/files/%s%s", c.ANID, filePath)
+	fullPath := path.Join("/remote.php/dav/files/", c.ANID, filePath)
 	req, err := c.newRequest("DELETE", fullPath, nil)
 	if err != nil {
 		return err
@@ -442,391 +329,4 @@ func (c *Client) DeleteFile(filePath string) error {
 		fmt.Sprintf("File deleted successfully: %s", filePath), 
 		map[string]interface{}{"file_path": filePath})
 	return nil
-}
-
-// DeleteChunkFile deletes a chunk file during upload conflict resolution
-// More tolerant of various status codes since it's used for cleanup
-func (c *Client) DeleteChunkFile(chunkPath string) error {
-	req, err := c.newRequest("DELETE", chunkPath, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Accept 204 No Content, 404 Not Found (chunk already gone), 200 OK, and 409 Conflict
-	// 409 Conflict is acceptable for chunk cleanup - it means the chunk couldn't be deleted but that's ok
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound && 
-	   resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusConflict {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("chunk file delete failed, status: %s, response: %s", resp.Status, string(body))
-	}
-
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "delete_chunk", "success", 
-		fmt.Sprintf("Chunk file deleted or cleanup attempted: %s (status: %s)", chunkPath, resp.Status), 
-		map[string]interface{}{"chunk_path": chunkPath, "status_code": resp.StatusCode})
-	return nil
-}
-
-// DeleteDirectory deletes a directory (including chunk upload directories)
-// Accepts both file paths and upload paths
-func (c *Client) DeleteDirectory(dirPath string) error {
-	// If it's not an absolute WebDAV path, assume it's a file path
-	var fullPath string
-	if !strings.HasPrefix(dirPath, "/remote.php/dav/") {
-		fullPath = fmt.Sprintf("/remote.php/dav/files/%s%s", c.ANID, dirPath)
-	} else {
-		fullPath = dirPath
-	}
-	
-	req, err := c.newRequest("DELETE", fullPath, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Accept both 204 No Content and 404 Not Found (directory already gone)
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("directory delete failed, status: %s, response: %s", resp.Status, string(body))
-	}
-
-	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "delete_directory", "success", 
-		fmt.Sprintf("Directory deleted successfully: %s", fullPath), 
-		map[string]interface{}{"directory_path": fullPath})
-	return nil
-}
-
-// createChunkDirectory creates a chunk upload directory on the server
-// Used for initial setup and recreation after cleanup
-func (c *Client) createChunkDirectory(chunkDir, destinationURL string) error {
-	chunkDirURL := c.BaseURL + chunkDir
-	
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "mkcol", "start", 
-		fmt.Sprintf("Creating chunk directory: %s", chunkDir), 
-		map[string]interface{}{"chunk_dir": chunkDir})
-	
-	maxMkcolRetries := 2
-	var mkcolDuration time.Duration
-	for mkcolAttempt := 1; mkcolAttempt <= maxMkcolRetries; mkcolAttempt++ {
-		mkcolStart := time.Now()
-		
-		req, err := http.NewRequest("MKCOL", chunkDirURL, nil)
-		if err != nil {
-			c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "request_error", 
-				fmt.Sprintf("Could not create MKCOL request: %v", err), 
-				map[string]interface{}{"error": err.Error()})
-			return fmt.Errorf("could not create MKCOL request: %w", err)
-		}
-		req.SetBasicAuth(c.Username, c.Password)
-		req.Header.Set("User-Agent", MagentaCloudUserAgent)
-		req.Header.Set("Accept", "*/*")
-		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-		req.Header.Set("Connection", "keep-alive")
-		req.Header.Set("Destination", destinationURL)
-		
-		// Log detailed HTTP request
-		c.logHTTPRequest("MKCOL", chunkDirURL, req.Header, "")
-		
-		resp, err := c.HTTPClient.Do(req)
-		mkcolDuration = time.Since(mkcolStart)
-		
-		if err != nil {
-			if mkcolAttempt == maxMkcolRetries {
-				c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "failed", 
-					fmt.Sprintf("MKCOL request failed after %v (attempt %d/%d): %v", mkcolDuration, mkcolAttempt, maxMkcolRetries, err), 
-					map[string]interface{}{"duration": mkcolDuration, "attempt": mkcolAttempt, "error": err.Error()})
-				return fmt.Errorf("MKCOL request failed after %v: %w", mkcolDuration, err)
-			}
-			time.Sleep(time.Duration(mkcolAttempt) * time.Second)
-			continue
-		}
-		defer resp.Body.Close()
-		
-		body, _ := io.ReadAll(resp.Body)
-		
-		// Log detailed HTTP response
-		c.logHTTPResponse("MKCOL", chunkDirURL, resp.StatusCode, resp.Header, string(body))
-		
-		if resp.StatusCode == http.StatusCreated {
-			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "mkcol", "success", 
-				fmt.Sprintf("Chunk directory created in %v (status: %s, attempt: %d/%d)", mkcolDuration, resp.Status, mkcolAttempt, maxMkcolRetries), 
-				map[string]interface{}{"duration": mkcolDuration, "status_code": resp.StatusCode, "attempt": mkcolAttempt})
-			
-			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "mkcol", "destination_set", 
-				fmt.Sprintf("Chunk directory created with destination: %s", destinationURL), 
-				map[string]interface{}{"chunk_dir": chunkDir, "destination_url": destinationURL})
-			
-			// Add delay to ensure directory is available across all load balancer nodes
-			// This fixes the 409 conflict issues by allowing proper directory propagation
-			time.Sleep(2 * time.Second)
-			
-			return nil // Success
-		} else if resp.StatusCode == http.StatusMethodNotAllowed {
-			// Directory might already exist - this is ok for chunking v2
-			c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "mkcol", "already_exists", 
-				fmt.Sprintf("Directory might already exist (status: %s, attempt: %d/%d)", resp.Status, mkcolAttempt, maxMkcolRetries), 
-				map[string]interface{}{"status_code": resp.StatusCode, "attempt": mkcolAttempt})
-			return nil // Treat as success
-		} else {
-			body, _ := io.ReadAll(resp.Body)
-			if mkcolAttempt == maxMkcolRetries {
-				c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "mkcol", "failed", 
-					fmt.Sprintf("MKCOL request failed with status %s after %d attempts, response: %s", resp.Status, maxMkcolRetries, string(body)), 
-					map[string]interface{}{"status_code": resp.StatusCode, "response_body": string(body), "attempt": mkcolAttempt})
-				return fmt.Errorf("MKCOL request failed with status %s after %d attempts", resp.Status, maxMkcolRetries)
-			}
-			time.Sleep(time.Duration(mkcolAttempt) * time.Second)
-		}
-	}
-	return fmt.Errorf("MKCOL request failed after %d attempts", maxMkcolRetries)
-}
-
-// cleanupUploadDirectory lists and cleans up any existing upload directories
-func (c *Client) cleanupUploadDirectory(uploadsDir string) error {
-	// First, list what's in the uploads directory
-	entries, err := c.listDirectory(uploadsDir)
-	if err != nil {
-		// If directory doesn't exist, that's fine
-		return nil
-	}
-
-	if len(entries) > 0 {
-		c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "cleanup", "found_existing", 
-			fmt.Sprintf("Found %d existing upload directories that need cleanup", len(entries)), 
-			map[string]interface{}{"uploads_dir": uploadsDir, "count": len(entries), "entries": entries})
-
-		// Clean up each old upload directory
-		for _, entry := range entries {
-			entryPath := fmt.Sprintf("%s/%s", uploadsDir, entry)
-			c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "cleanup", "deleting", 
-				fmt.Sprintf("Deleting old upload directory: %s", entryPath), 
-				map[string]interface{}{"entry_path": entryPath})
-			
-			if err := c.deleteDirectory(entryPath); err != nil {
-				c.logger.LogOperation(utils.WARN, "magentacloud", c.BaseURL, "cleanup", "delete_failed", 
-					fmt.Sprintf("Failed to delete old upload directory %s: %v", entryPath, err), 
-					map[string]interface{}{"entry_path": entryPath, "error": err.Error()})
-			} else {
-				c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "cleanup", "delete_success", 
-					fmt.Sprintf("Successfully deleted old upload directory: %s", entryPath), 
-					map[string]interface{}{"entry_path": entryPath})
-			}
-		}
-	} else {
-		c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "cleanup", "clean", 
-			"No existing upload directories found - uploads directory is clean", 
-			map[string]interface{}{"uploads_dir": uploadsDir})
-	}
-
-	return nil
-}
-
-// listDirectory lists the contents of a directory using PROPFIND
-func (c *Client) listDirectory(dirPath string) ([]string, error) {
-	url := c.BaseURL + dirPath
-	
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "list", "start", 
-		fmt.Sprintf("Listing directory contents: %s", dirPath), 
-		map[string]interface{}{"dir_path": dirPath, "url": url})
-
-	// PROPFIND request to list directory contents
-	propfindBody := `<?xml version="1.0" encoding="UTF-8"?>
-<d:propfind xmlns:d="DAV:">
-  <d:prop>
-    <d:resourcetype/>
-    <d:displayname/>
-  </d:prop>
-</d:propfind>`
-
-	req, err := http.NewRequest("PROPFIND", url, strings.NewReader(propfindBody))
-	if err != nil {
-		return nil, fmt.Errorf("could not create PROPFIND request: %w", err)
-	}
-
-	req.SetBasicAuth(c.Username, c.Password)
-	req.Header.Set("User-Agent", MagentaCloudUserAgent)
-	req.Header.Set("Content-Type", "application/xml; charset=utf-8")
-	req.Header.Set("Depth", "1")
-
-	c.logHTTPRequest("PROPFIND", url, req.Header, propfindBody)
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "list", "request_failed", 
-			fmt.Sprintf("PROPFIND request failed: %v", err), 
-			map[string]interface{}{"error": err.Error()})
-		return nil, fmt.Errorf("PROPFIND request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-	c.logHTTPResponse("PROPFIND", url, resp.StatusCode, resp.Header, string(body))
-
-	if resp.StatusCode == http.StatusNotFound {
-		c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "list", "not_found", 
-			"Directory not found (this is normal for first upload)", 
-			map[string]interface{}{"dir_path": dirPath})
-		return []string{}, nil
-	}
-
-	if resp.StatusCode != 207 { // Multi-Status
-		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "list", "unexpected_status", 
-			fmt.Sprintf("PROPFIND failed with status %s, response: %s", resp.Status, string(body)), 
-			map[string]interface{}{"status_code": resp.StatusCode, "response_body": string(body)})
-		return nil, fmt.Errorf("PROPFIND failed with status %s", resp.Status)
-	}
-
-	// Parse the XML response to extract directory entries
-	entries := parseWebDAVResponse(string(body))
-	
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "list", "success", 
-		fmt.Sprintf("Found %d entries in directory %s (Note: Property-level 404s in PROPFIND responses are normal)", len(entries), dirPath), 
-		map[string]interface{}{"dir_path": dirPath, "count": len(entries), "entries": entries})
-
-	return entries, nil
-}
-
-// deleteDirectory deletes a directory and all its contents
-func (c *Client) deleteDirectory(dirPath string) error {
-	url := c.BaseURL + dirPath
-	
-	req, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		return fmt.Errorf("could not create DELETE request: %w", err)
-	}
-
-	req.SetBasicAuth(c.Username, c.Password)
-	req.Header.Set("User-Agent", MagentaCloudUserAgent)
-
-	c.logHTTPRequest("DELETE", url, req.Header, "")
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("DELETE request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-	c.logHTTPResponse("DELETE", url, resp.StatusCode, resp.Header, string(body))
-
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound {
-		return fmt.Errorf("DELETE failed with status %s, response: %s", resp.Status, string(body))
-	}
-
-	return nil
-}
-
-// logHTTPRequest logs detailed information about HTTP requests
-func (c *Client) logHTTPRequest(method, url string, headers http.Header, body string) {
-	headerMap := make(map[string]string)
-	for k, v := range headers {
-		if len(v) > 0 {
-			// Don't log sensitive information
-			if k == "Authorization" {
-				headerMap[k] = "[REDACTED]"
-			} else {
-				headerMap[k] = v[0]
-			}
-		}
-	}
-
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "http_request", "details", 
-		fmt.Sprintf("HTTP %s %s", method, url), 
-		map[string]interface{}{
-			"method": method, 
-			"url": url, 
-			"headers": headerMap,
-			"body_length": len(body),
-			"has_body": body != "",
-		})
-
-	// Log body for non-sensitive requests
-	if body != "" && method != "PUT" {
-		c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "http_request", "body", 
-			fmt.Sprintf("Request body: %s", body), 
-			map[string]interface{}{"body": body})
-	}
-}
-
-// logHTTPResponse logs detailed information about HTTP responses
-func (c *Client) logHTTPResponse(method, url string, statusCode int, headers http.Header, body string) {
-	headerMap := make(map[string]string)
-	for k, v := range headers {
-		if len(v) > 0 {
-			headerMap[k] = v[0]
-		}
-	}
-
-	c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "http_response", "details", 
-		fmt.Sprintf("HTTP %s %s -> %d", method, url, statusCode), 
-		map[string]interface{}{
-			"method": method, 
-			"url": url, 
-			"status_code": statusCode,
-			"headers": headerMap,
-			"body_length": len(body),
-		})
-
-	// Log response body for error cases
-	// For PROPFIND requests with 207 status, property-level 404s are normal and expected
-	isPropFindSuccess := method == "PROPFIND" && statusCode == 207
-	shouldLogBody := statusCode >= 400 || (body != "" && len(body) < 2000 && !isPropFindSuccess)
-	
-	if shouldLogBody {
-		logLevel := utils.DEBUG
-		operation := "body"
-		
-		// For genuine errors (4xx/5xx status codes), use more visible logging
-		if statusCode >= 400 {
-			if statusCode >= 500 {
-				logLevel = utils.ERROR
-				operation = "server_error"
-			} else if statusCode == 404 {
-				logLevel = utils.WARN  
-				operation = "not_found"
-			} else {
-				logLevel = utils.WARN
-				operation = "client_error"
-			}
-		}
-		
-		c.logger.LogOperation(logLevel, "magentacloud", c.BaseURL, "http_response", operation, 
-			fmt.Sprintf("Response body: %s", body), 
-			map[string]interface{}{"body": body, "status_code": statusCode})
-	}
-}
-
-// parseWebDAVResponse parses a WebDAV XML response and extracts resource names
-func parseWebDAVResponse(xmlBody string) []string {
-	var entries []string
-	
-	// Simple XML parsing - look for <d:href> elements
-	lines := strings.Split(xmlBody, "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.Contains(line, "<d:href>") && strings.Contains(line, "</d:href>") {
-			start := strings.Index(line, "<d:href>") + 8
-			end := strings.Index(line, "</d:href>")
-			if start < end {
-				href := line[start:end]
-				// Extract just the directory name from the path
-				if parts := strings.Split(href, "/"); len(parts) > 0 {
-					name := parts[len(parts)-1]
-					if name != "" && name != "uploads" {
-						entries = append(entries, name)
-					}
-				}
-			}
-		}
-	}
-	
-	return entries
 }

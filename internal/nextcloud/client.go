@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"path"
 	"time"
-
 	"github.com/google/uuid"
 	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
