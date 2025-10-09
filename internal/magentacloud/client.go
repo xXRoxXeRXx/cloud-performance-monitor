@@ -80,9 +80,18 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 // UploadFile uploads a file using the chunking API
 // Uses ANID in both upload and destination paths
 func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunkSize int64) error {
-		c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "upload", "start", 
+	_, err := c.UploadFileWithMetrics(filePath, reader, size, chunkSize)
+	return err
+}
+
+// UploadFileWithMetrics uploads a file and returns the artificial delay duration
+// This allows callers to calculate fair performance metrics by subtracting delays
+func (c *Client) UploadFileWithMetrics(filePath string, reader io.Reader, size int64, chunkSize int64) (time.Duration, error) {
+	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "upload", "start", 
 		fmt.Sprintf("Starting upload for %s (size: %d bytes, chunk size: %d bytes)", filePath, size, chunkSize), 
 		map[string]interface{}{"file_path": filePath, "file_size": size, "chunk_size": chunkSize})
+
+	var totalArtificialDelay time.Duration
 
 
 	transferID := uuid.New().String()
@@ -95,7 +104,7 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	
 	req, err := http.NewRequest("MKCOL", chunkDirURL, nil)
 	if err != nil {
-		return fmt.Errorf("could not create MKCOL request: %w", err)
+		return totalArtificialDelay, fmt.Errorf("could not create MKCOL request: %w", err)
 	}
 	req.SetBasicAuth(c.Username, c.Password)
 	req.Header.Set("User-Agent", MagentaCloudUserAgent)
@@ -109,22 +118,25 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	mkcolDuration := time.Since(mkcolStart)
 	
 	if err != nil {
-		return fmt.Errorf("MKCOL request failed after %v: %w", mkcolDuration, err)
+		return totalArtificialDelay, fmt.Errorf("MKCOL request failed after %v: %w", mkcolDuration, err)
 	}
 	defer resp.Body.Close()
 	
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("MKCOL for chunks failed with status %s after %v", resp.Status, mkcolDuration)
+		return totalArtificialDelay, fmt.Errorf("MKCOL for chunks failed with status %s after %v", resp.Status, mkcolDuration)
 	}
 
 	// Small delay to ensure the directory is available across all MagentaCLOUD servers
 	// This helps prevent 409 Conflict errors on the first chunk upload
+	delayStart := time.Now()
 	time.Sleep(5 * time.Second)
+	totalArtificialDelay += time.Since(delayStart)
 
 	// 2. Upload file in chunks
-// 2. Upload file in chunks
-	if err := c.uploadChunks(chunkDir, reader, chunkSize, destinationURL); err != nil {
-		return err
+	chunkDelay, err := c.uploadChunksWithMetrics(chunkDir, reader, chunkSize, destinationURL)
+	totalArtificialDelay += chunkDelay
+	if err != nil {
+		return totalArtificialDelay, err
 	}
 
 	// 3. Assemble chunks by moving the directory
@@ -133,7 +145,7 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	fmt.Printf("[MagentaCloud] Starting MOVE operation from %s to %s\n", moveSource, destinationURL)
 	req, err = http.NewRequest("MOVE", moveSource, nil)
 	if err != nil {
-		return fmt.Errorf("could not create MOVE request: %w", err)
+		return totalArtificialDelay, fmt.Errorf("could not create MOVE request: %w", err)
 	}
 	req.SetBasicAuth(c.Username, c.Password)
 	req.Header.Set("User-Agent", MagentaCloudUserAgent)
@@ -160,7 +172,7 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "move", "failed", 
 			fmt.Sprintf("MOVE operation failed after %v: %v", moveDuration, err), 
 			map[string]interface{}{"duration": moveDuration.String(), "error": err.Error()})
-		return fmt.Errorf("MOVE request failed after %v: %w", moveDuration, err)
+		return totalArtificialDelay, fmt.Errorf("MOVE request failed after %v: %w", moveDuration, err)
 	}
 	defer resp.Body.Close()
 
@@ -172,13 +184,13 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 		c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "move", "failed", 
 			fmt.Sprintf("MOVE failed with status %s, response: %s", resp.Status, string(body)), 
 			map[string]interface{}{"status": resp.Status, "response_body": string(body)})
-		return fmt.Errorf("final MOVE to assemble chunks failed with status %s", resp.Status)
+		return totalArtificialDelay, fmt.Errorf("final MOVE to assemble chunks failed with status %s", resp.Status)
 	}
 
 	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "upload", "completed", 
 		fmt.Sprintf("Chunked upload successful for %s", filePath), 
 		map[string]interface{}{"file_path": filePath})
-	return nil
+	return totalArtificialDelay, nil
 }
 
 // uploadChunks uploads the file in chunks to the server
@@ -293,6 +305,130 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 		fmt.Sprintf("Chunk upload summary: %d/%d chunks uploaded successfully", successfulChunks, totalChunks), 
 		map[string]interface{}{"successful_chunks": successfulChunks, "total_chunks": totalChunks})
 	return nil
+}
+
+// uploadChunksWithMetrics uploads the file in chunks to the server and returns artificial delay time
+func (c *Client) uploadChunksWithMetrics(chunkDir string, reader io.Reader, chunkSize int64, destinationURL string) (time.Duration, error) {
+	var totalArtificialDelay time.Duration
+	chunk := make([]byte, chunkSize)
+	totalChunks := 0
+	successfulChunks := 0
+
+	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "start", 
+		fmt.Sprintf("Starting chunk upload to %s (chunk size: %d bytes)", chunkDir, chunkSize), 
+		map[string]interface{}{"chunk_dir": chunkDir, "chunk_size": chunkSize})
+	
+	// CRITICAL: Start chunk numbering at 1, not 0! (Nextcloud requires 1-based indexing like HiDrive)
+	chunkNumber := 1
+	for {
+		bytesRead, readErr := reader.Read(chunk)
+		if bytesRead > 0 {
+			totalChunks++
+			// Use 5-digit padded chunk names like bash script: 00001, 00002, 00003, etc.
+			chunkPath := fmt.Sprintf("%s/%05d", chunkDir, chunkNumber)
+			chunkURL := c.BaseURL + chunkPath
+
+			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "chunk_upload", "chunk_progress", 
+				fmt.Sprintf("Uploading chunk %d: %d bytes to %s", chunkNumber, bytesRead, chunkPath), 
+				map[string]interface{}{"chunk_number": chunkNumber, "bytes": bytesRead, "chunk_path": chunkPath})
+
+			chunkStart := time.Now()
+
+			// Retry logic for individual chunks
+			var resp *http.Response
+			var chunkErr error
+			maxRetries := 3
+			for attempt := 1; attempt <= maxRetries; attempt++ {
+				req, err := http.NewRequest("PUT", chunkURL, bytes.NewReader(chunk[:bytesRead]))
+				if err != nil {
+					c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "request_error", 
+						fmt.Sprintf("Could not create PUT request for chunk %d (attempt %d): %v", chunkNumber, attempt, err), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "error": err.Error()})
+					if attempt == maxRetries {
+						return totalArtificialDelay, fmt.Errorf("could not create PUT request for chunk %d after %d attempts: %w", chunkNumber, maxRetries, err)
+					}
+					continue
+				}
+				req.SetBasicAuth(c.Username, c.Password)
+				req.Header.Set("User-Agent", MagentaCloudUserAgent)
+				req.Header.Set("Accept", "*/*")
+				req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+				req.Header.Set("Connection", "keep-alive")
+				req.Header.Set("Content-Type", "application/octet-stream")
+				// CRITICAL: Add Destination header like bash script does for each chunk!
+				req.Header.Set("Destination", destinationURL)
+				req.ContentLength = int64(bytesRead)
+
+				resp, chunkErr = c.HTTPClient.Do(req)
+				if chunkErr != nil {
+					c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "http_error", 
+						fmt.Sprintf("PUT request for chunk %d failed (attempt %d/%d) after %v: %v", chunkNumber, attempt, maxRetries, time.Since(chunkStart), chunkErr), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "error": chunkErr.Error()})
+					if attempt < maxRetries {
+						// Track backoff delay as artificial delay
+						delayStart := time.Now()
+						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
+						totalArtificialDelay += time.Since(delayStart)
+						continue
+					}
+					return totalArtificialDelay, fmt.Errorf("PUT request for chunk %d failed after %d attempts: %w", chunkNumber, maxRetries, chunkErr)
+				}
+
+				// Check response status - Accept both 201 Created, 200 OK and 204 No Content
+				if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
+					break // Success
+				} else {
+					// Read response body for detailed error information
+					body, _ := io.ReadAll(resp.Body)
+					resp.Body.Close()
+					c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "status_error", 
+						fmt.Sprintf("Chunk %d upload failed (attempt %d/%d) with status %s after %v, response: %s", chunkNumber, attempt, maxRetries, resp.Status, time.Since(chunkStart), string(body)), 
+						map[string]interface{}{"chunk_number": chunkNumber, "attempt": attempt, "max_retries": maxRetries, "status": resp.Status, "response_body": string(body)})
+					if attempt < maxRetries {
+						// Track backoff delay as artificial delay
+						delayStart := time.Now()
+						time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
+						totalArtificialDelay += time.Since(delayStart)
+						continue
+					}
+					return totalArtificialDelay, fmt.Errorf("upload of chunk %d failed with status %s after %d attempts", chunkNumber, resp.Status, maxRetries)
+				}
+			}
+			
+			chunkDuration := time.Since(chunkStart)
+			
+			// Immediately close response body to avoid resource leaks
+			resp.Body.Close()
+			successfulChunks++
+
+			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "chunk_upload", "chunk_success", 
+				fmt.Sprintf("Chunk %d uploaded successfully in %v (status: %s)", chunkNumber, chunkDuration, resp.Status), 
+				map[string]interface{}{"chunk_number": chunkNumber, "duration": chunkDuration.String(), "status": resp.Status})
+			
+			// Small delay between chunk uploads to ensure server is ready for next chunk
+			// This helps prevent 404/409 errors on subsequent chunks
+			// Track this as artificial delay
+			delayStart := time.Now()
+			time.Sleep(1000 * time.Millisecond)
+			totalArtificialDelay += time.Since(delayStart)
+			
+			chunkNumber++ // Increment for next chunk
+		}
+		if readErr == io.EOF {
+			break
+		}
+		if readErr != nil {
+			c.logger.LogOperation(utils.ERROR, "magentacloud", c.BaseURL, "chunk_upload", "read_error", 
+				fmt.Sprintf("Failed to read chunk %d: %v", chunkNumber, readErr), 
+				map[string]interface{}{"chunk_number": chunkNumber, "error": readErr.Error()})
+			return totalArtificialDelay, fmt.Errorf("failed to read chunk %d: %w", chunkNumber, readErr)
+		}
+	}
+
+	c.logger.LogOperation(utils.INFO, "magentacloud", c.BaseURL, "chunk_upload", "completed", 
+		fmt.Sprintf("Chunk upload summary: %d/%d chunks uploaded successfully", successfulChunks, totalChunks), 
+		map[string]interface{}{"successful_chunks": successfulChunks, "total_chunks": totalChunks})
+	return totalArtificialDelay, nil
 }
 
 // DownloadFile downloads a file

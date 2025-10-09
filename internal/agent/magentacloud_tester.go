@@ -55,13 +55,16 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 		"Starting file upload", 
 		WithSize(fileSize))
 		
-	err = client.UploadFile(fullPath, reader, fileSize, chunkSize)
+	artificialDelay, err := client.UploadFileWithMetrics(fullPath, reader, fileSize, chunkSize)
 	uploadDuration := time.Since(startUpload)
 	
+	// Calculate fair upload time by excluding artificial delays
+	fairUploadDuration := uploadDuration - artificialDelay
+	
 	// Record histogram data using actual duration for fair performance comparison
-	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Observe(uploadDuration.Seconds())
-	// Always record actual duration for performance metrics
-	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadDuration.Seconds())
+	TestDurationHistogram.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Observe(fairUploadDuration.Seconds())
+	// Always record fair duration for performance metrics (excluding artificial delays)
+	TestDuration.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(fairUploadDuration.Seconds())
 
 	if err != nil {
 		Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "upload", "error", 
@@ -74,12 +77,13 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(0)
 		// Continue with cleanup attempt
 	} else {
-		uploadSpeed := float64(fileSize) / (1024 * 1024) / uploadDuration.Seconds()
+		// Calculate upload speed using fair duration (excluding artificial delays)
+		uploadSpeed := float64(fileSize) / (1024 * 1024) / fairUploadDuration.Seconds()
 		// Only record speed for successful uploads
 		TestSpeedMbytesPerSec.WithLabelValues(serviceLabel, cfg.InstanceName, "upload").Set(uploadSpeed)
 		Logger.LogOperation(INFO, "magentacloud", cfg.InstanceName, "upload", "success", 
-			fmt.Sprintf("Upload completed in %v", uploadDuration), 
-			WithDuration(uploadDuration),
+			fmt.Sprintf("Upload completed in %v (fair: %v, artificial delay: %v)", uploadDuration, fairUploadDuration, artificialDelay), 
+			WithDuration(fairUploadDuration),
 			WithSize(fileSize),
 			WithSpeed(uploadSpeed))
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", uploadErrCode).Set(1)
