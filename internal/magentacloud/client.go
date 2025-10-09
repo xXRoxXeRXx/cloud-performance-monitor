@@ -117,6 +117,10 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 		return fmt.Errorf("MKCOL for chunks failed with status %s after %v", resp.Status, mkcolDuration)
 	}
 
+	// Small delay to ensure the directory is available across all MagentaCLOUD servers
+	// This helps prevent 409 Conflict errors on the first chunk upload
+	time.Sleep(5 * time.Second)
+
 	// 2. Upload file in chunks
 // 2. Upload file in chunks
 	if err := c.uploadChunks(chunkDir, reader, chunkSize, destinationURL); err != nil {
@@ -124,7 +128,7 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	}
 
 	// 3. Assemble chunks by moving the directory
-	moveSource := c.BaseURL + chunkDir + "/.file"
+	moveSource := c.BaseURL + chunkDir + "/.target"
 
 	fmt.Printf("[MagentaCloud] Starting MOVE operation from %s to %s\n", moveSource, destinationURL)
 	req, err = http.NewRequest("MOVE", moveSource, nil)
@@ -267,6 +271,11 @@ func (c *Client) uploadChunks(chunkDir string, reader io.Reader, chunkSize int64
 			c.logger.LogOperation(utils.DEBUG, "magentacloud", c.BaseURL, "chunk_upload", "chunk_success", 
 				fmt.Sprintf("Chunk %d uploaded successfully in %v (status: %s)", chunkNumber, chunkDuration, resp.Status), 
 				map[string]interface{}{"chunk_number": chunkNumber, "duration": chunkDuration.String(), "status": resp.Status})
+			
+			// Small delay between chunk uploads to ensure server is ready for next chunk
+			// This helps prevent 404/409 errors on subsequent chunks
+			time.Sleep(1000 * time.Millisecond)
+			
 			chunkNumber++ // Increment for next chunk
 		}
 		if readErr == io.EOF {
