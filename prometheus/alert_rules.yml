@@ -46,7 +46,7 @@ groups:
           ) or (
             absent_over_time(cloud_test_success{error_code="none"}[20m])
           )
-        for: 30m
+        for: 1m
         labels:
           severity: critical
           category: reliability
