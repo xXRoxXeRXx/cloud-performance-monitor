@@ -129,7 +129,7 @@ func (c *Client) UploadFileWithMetrics(filePath string, reader io.Reader, size i
 	// Small delay to ensure the directory is available across all MagentaCLOUD servers
 	// This helps prevent 409 Conflict errors on the first chunk upload
 	delayStart := time.Now()
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 	totalArtificialDelay += time.Since(delayStart)
 
 	// 2. Upload file in chunks
