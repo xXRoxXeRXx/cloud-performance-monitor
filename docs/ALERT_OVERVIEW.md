@@ -1,4 +1,8 @@
-# Cloud P| **CriticalUploadDuration** | Upload dauert über 10 Minuten | `cloud_test_duration_seconds{type="upload"} > 600` | 1m | Admin, DevOps |
+# Cloud P| **| **ServiceDown** | Monitor Agent ist offline | `up{job="monitor-agent"} == 0` | 1m | Admin, DevOps |
+| **ServiceTestFailure** | Test-Fehler (alle Fehlertypen) | `cloud_test_success{error_code!="none"} == 0` oder `absent_over_time(cloud_test_success{error_code="none"}[20m])` | 1m | Admin, DevOps |
+| **CriticalErrorRate** | Fehlerrate über 50% in 30min | `rate(cloud_test_errors_total[30m]) > 0.5` | 1m | Admin, DevOps |
+| **CircuitBreakerOpen** | Circuit Breaker ist geöffnet | `nextcloud_circuit_breaker_state > 0` | 0s (sofort) | Admin, DevOps |
+| **SLAViolation95Percent** | 24h Erfolgsrate unter 95% | `success_rate < 0.95` | 2m | Admin, Management |lUploadDuration** | Upload dauert über 10 Minuten | `cloud_test_duration_seconds{type="upload"} > 600` | 1m | Admin, DevOps |
 | **ServiceTestFailure** | Test-Fehler oder keine erfolgreichen Tests in 20min | `cloud_test_success{error_code!="none"} == 0` oder `absent_over_time(cloud_test_success{error_code="none"}[20m])` | 1m | Admin, DevOps |
 | **ServiceUnavailable** | 503/502/500 Server-Fehler | `cloud_test_success{error_code=~"503|502|500"} == 0` | 1m | Admin, DevOps |
 | **CriticalErrorRate** | Fehlerrate über 50% in 30min | `rate(cloud_test_errors_total[30m]) > 0.5` | 1m | Admin, DevOps |
@@ -109,9 +113,18 @@
 - **Timeouts**: > 2 in 45 Minuten
 - **Directory Creation**: > 0 in 30 Minuten
 
-## Entfernte Alarme
+## Entfernte Alarme (Redundanz-Eliminierung)
 - ~~**HighUploadDuration**~~ - Entfernt (war: Upload > 5 Minuten als Warning)
 - ~~**HTTPServerError**~~ - Entfernt (redundant zu ServiceTestFailure)
+- ~~**ServiceUnavailable**~~ - Entfernt (redundant zu ServiceTestFailure)  
+- ~~**HTTPConflictError**~~ - Entfernt (redundant zu ServiceTestFailure)
+- ~~**HTTPPreconditionFailed**~~ - Entfernt (redundant zu ServiceTestFailure)
+- ~~**HTTPRateLimitError**~~ - Entfernt (redundant zu ServiceTestFailure)
+- ~~**HTTPServiceUnavailable**~~ - Entfernt (redundant zu ServiceTestFailure)
+- ~~**DownloadIncompleteError**~~ - Entfernt (redundant zu ServiceTestFailure)
+- ~~**ClientTimeoutErrors**~~ - Entfernt (redundant zu ServiceTestFailure)
+
+**Zentrale Lösung**: `ServiceTestFailure` erfasst ALLE Fehlertypen (`error_code!="none"`)
 
 ## Alert-Wiederholungsintervalle (Alertmanager)
 
@@ -120,7 +133,6 @@
 ### 🔴 **Kritische Alerts** (severity: critical)
 - **Erste Benachrichtigung**: Sofort nach 1-2 Minuten (je nach Alert)
 - **Wiederholung**: Alle 30 Minuten
-- **Zielgruppe**: Admin + DevOps
 - **Zielgruppe**: Admin + DevOps
 
 ### ⚠️ **Performance Alerts** (category: performance)
@@ -151,7 +163,7 @@
 
 ## Alarm-Gruppen
 
-### nextcloud_performance_alerts (24 Alarme)
+### nextcloud_performance_alerts (16 Alarme)
 - Service-Verfügbarkeit, Performance, HTTP-Fehler, Netzwerk-Probleme
 
 ### nextcloud_sla_alerts (2 Alarme)
@@ -160,7 +172,7 @@
 ### nextcloud_meta_alerts (1 Alarm)
 - Meta-Überwachung des Alarm-Systems selbst
 
-## **TOTAL: 28 Alarme**
+## **TOTAL: 19 Alarme** (8 redundante Alerts entfernt)
 
 ## ⏰ **Test-Intervall Anpassungen (15-Minuten-Zyklen)**
 
