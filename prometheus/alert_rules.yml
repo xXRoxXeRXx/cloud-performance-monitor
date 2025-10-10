@@ -42,17 +42,6 @@ groups:
           summary: "Service test failure for {{ $labels.service }} - {{ $labels.instance }}"
           description: "Test failed with error code: {{ $labels.error_code }} for service {{ $labels.service }} on {{ $labels.instance }}"
 
-      - alert: RepeatedServiceFailures
-        expr: increase(cloud_test_errors_total[30m]) > 5
-        for: 2m
-        labels:
-          severity: critical
-          category: reliability
-          error_type: "{{ $labels.error_type }}"
-        annotations:
-          summary: "Repeated failures for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} has failed {{ $value }} times in the last 30 minutes. Error type: {{ $labels.error_type }}"
-
       - alert: HighErrorRate
         expr: rate(cloud_test_errors_total[30m]) > 0.1
         for: 2m
@@ -86,39 +75,6 @@ groups:
         annotations:
           summary: "Directory creation failed for {{ $labels.service }} - {{ $labels.instance }}"
           description: "Service {{ $labels.service }} at {{ $labels.instance }} failed to create test directory {{ $value }} times in the last 30 minutes"
-
-      - alert: RepeatedServiceUnavailableErrors  
-        expr: increase(cloud_test_errors_total{error_type="http_503_unavailable"}[45m]) > 2
-        for: 1m
-        labels:
-          severity: critical
-          category: availability
-          error_type: "http_503_unavailable"
-        annotations:
-          summary: "Repeated HTTP 503 Service Unavailable errors for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} has returned {{ $value }} HTTP 503 Service Unavailable errors in the last 45 minutes, indicating persistent service unavailability"
-
-      - alert: RepeatedConflictErrors
-        expr: increase(cloud_test_errors_total{error_type="http_409_conflict"}[45m]) > 3
-        for: 1m
-        labels:
-          severity: critical
-          category: reliability
-          error_type: "http_409_conflict"
-        annotations:
-          summary: "Repeated HTTP 409 Conflict errors for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} has returned {{ $value }} HTTP 409 Conflict errors in the last 45 minutes, indicating persistent resource conflicts"
-
-      - alert: RepeatedTimeoutErrors
-        expr: increase(cloud_test_errors_total{error_type="network_timeout"}[45m]) > 2
-        for: 1m
-        labels:
-          severity: critical
-          category: network
-          error_type: "network_timeout"
-        annotations:
-          summary: "Repeated timeout errors for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} has experienced {{ $value }} timeout errors in the last 45 minutes, indicating persistent network or performance issues"
 
       # ==== NETWORK ALERTS ====
       - alert: HighNetworkLatency

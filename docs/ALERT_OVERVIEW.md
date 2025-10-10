@@ -113,7 +113,7 @@
 - **Timeouts**: > 2 in 45 Minuten
 - **Directory Creation**: > 0 in 30 Minuten
 
-## Entfernte Alarme (Redundanz-Eliminierung)
+## Entfernte Alarme (Massive Redundanz-Eliminierung)
 - ~~**HighUploadDuration**~~ - Entfernt (war: Upload > 5 Minuten als Warning)
 - ~~**HTTPServerError**~~ - Entfernt (redundant zu ServiceTestFailure)
 - ~~**ServiceUnavailable**~~ - Entfernt (redundant zu ServiceTestFailure)  
@@ -123,8 +123,14 @@
 - ~~**HTTPServiceUnavailable**~~ - Entfernt (redundant zu ServiceTestFailure)
 - ~~**DownloadIncompleteError**~~ - Entfernt (redundant zu ServiceTestFailure)
 - ~~**ClientTimeoutErrors**~~ - Entfernt (redundant zu ServiceTestFailure)
+- ~~**RepeatedServiceFailures**~~ - Entfernt (redundant zu ServiceTestFailure + HighErrorRate)
+- ~~**RepeatedServiceUnavailableErrors**~~ - Entfernt (redundant zu ServiceTestFailure + HighErrorRate)
+- ~~**RepeatedConflictErrors**~~ - Entfernt (redundant zu ServiceTestFailure + HighErrorRate)
+- ~~**RepeatedTimeoutErrors**~~ - Entfernt (redundant zu ServiceTestFailure + HighErrorRate)
 
-**Zentrale Lösung**: `ServiceTestFailure` erfasst ALLE Fehlertypen (`error_code!="none"`)
+**Zentrale Lösung**: 
+- `ServiceTestFailure` erfasst ALLE Einzelfehler (`error_code!="none"`)
+- `HighErrorRate` + `CriticalErrorRate` erfassen Fehlertrends besser als spezifische "Repeated"-Alerts
 
 ## Alert-Wiederholungsintervalle (Alertmanager)
 
@@ -163,8 +169,8 @@
 
 ## Alarm-Gruppen
 
-### nextcloud_performance_alerts (16 Alarme)
-- Service-Verfügbarkeit, Performance, HTTP-Fehler, Netzwerk-Probleme
+### nextcloud_performance_alerts (12 Alarme)
+- Service-Verfügbarkeit, Performance, Netzwerk-Probleme
 
 ### nextcloud_sla_alerts (2 Alarme)
 - SLA-Überwachung (99% und 95% Schwellwerte)
@@ -172,7 +178,7 @@
 ### nextcloud_meta_alerts (1 Alarm)
 - Meta-Überwachung des Alarm-Systems selbst
 
-## **TOTAL: 19 Alarme** (8 redundante Alerts entfernt)
+## **TOTAL: 15 Alarme** (12 redundante Alerts entfernt)
 
 ## ⏰ **Test-Intervall Anpassungen (15-Minuten-Zyklen)**
 
