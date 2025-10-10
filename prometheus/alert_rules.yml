@@ -14,18 +14,6 @@ groups:
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ServiceDown"
 
       # ==== PERFORMANCE ALERTS ====
-      - alert: HighUploadDuration
-        expr: cloud_test_duration_seconds{type="upload"} > 300
-        for: 2m
-        labels:
-          severity: warning
-          category: performance
-          error_code: "{{ $labels.error_code }}"
-        annotations:
-          summary: "High upload duration detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
-          description: "Upload took {{ $value }}s, which is above the 5-minute threshold. Error code: {{ $labels.error_code }}"
-          runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HighUploadDuration"
-
       - alert: CriticalUploadDuration
         expr: cloud_test_duration_seconds{type="upload"} > 600
         for: 1m
