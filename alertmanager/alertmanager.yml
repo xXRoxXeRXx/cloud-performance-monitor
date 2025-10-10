@@ -15,6 +15,7 @@ route:
         severity: critical
       receiver: 'critical-alerts'
       group_wait: 10s
+      group_interval: 30m
       repeat_interval: 30m
     
     # Performance alerts -> batched notification
