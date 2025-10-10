@@ -81,7 +81,7 @@ groups:
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-RepeatedServiceFailures"
 
       - alert: HighErrorRate
-        expr: rate(cloud_test_errors_total[5m]) > 0.1
+        expr: rate(cloud_test_errors_total[30m]) > 0.1
         for: 2m
         labels:
           severity: warning
@@ -89,11 +89,11 @@ groups:
           error_type: "{{ $labels.error_type }}"
         annotations:
           summary: "High error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes. Error type: {{ $labels.error_type }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 30 minutes. Error type: {{ $labels.error_type }}"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HighErrorRate"
 
       - alert: CriticalErrorRate
-        expr: rate(cloud_test_errors_total[5m]) > 0.5
+        expr: rate(cloud_test_errors_total[30m]) > 0.5
         for: 1m
         labels:
           severity: critical
@@ -101,7 +101,7 @@ groups:
           error_type: "{{ $labels.error_type }}"
         annotations:
           summary: "Critical error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes. Error type: {{ $labels.error_type }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 30 minutes. Error type: {{ $labels.error_type }}"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-CriticalErrorRate"
 
       # ==== HTTP ERROR ALERTS ====
@@ -118,7 +118,7 @@ groups:
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPServerError"
 
       - alert: DirectoryCreationFailed
-        expr: increase(cloud_test_errors_total{error_type="directory_creation"}[10m]) > 0
+        expr: increase(cloud_test_errors_total{error_type="directory_creation"}[30m]) > 0
         for: 1m
         labels:
           severity: critical
@@ -126,7 +126,7 @@ groups:
           error_type: "directory_creation"
         annotations:
           summary: "Directory creation failed for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} failed to create test directory {{ $value }} times in the last 10 minutes"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} failed to create test directory {{ $value }} times in the last 30 minutes"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-DirectoryCreationFailed"
 
       - alert: HTTPConflictError
@@ -178,7 +178,7 @@ groups:
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-HTTPServiceUnavailable"
 
       - alert: RepeatedServiceUnavailableErrors  
-        expr: increase(cloud_test_errors_total{error_type="http_503_unavailable"}[15m]) > 2
+        expr: increase(cloud_test_errors_total{error_type="http_503_unavailable"}[45m]) > 2
         for: 1m
         labels:
           severity: critical
@@ -186,7 +186,7 @@ groups:
           error_type: "http_503_unavailable"
         annotations:
           summary: "Repeated HTTP 503 Service Unavailable errors for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} has returned {{ $value }} HTTP 503 Service Unavailable errors in the last 15 minutes, indicating persistent service unavailability"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} has returned {{ $value }} HTTP 503 Service Unavailable errors in the last 45 minutes, indicating persistent service unavailability"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-RepeatedServiceUnavailableErrors"
 
       - alert: HTTPServerError
@@ -214,7 +214,7 @@ groups:
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-DownloadIncompleteError"
 
       - alert: RepeatedConflictErrors
-        expr: increase(cloud_test_errors_total{error_type="http_409_conflict"}[15m]) > 3
+        expr: increase(cloud_test_errors_total{error_type="http_409_conflict"}[45m]) > 3
         for: 2m
         labels:
           severity: critical
@@ -222,7 +222,7 @@ groups:
           error_type: "http_409_conflict"
         annotations:
           summary: "Repeated HTTP 409 Conflict errors for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} has returned {{ $value }} HTTP 409 Conflict errors in the last 15 minutes, indicating persistent resource conflicts"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} has returned {{ $value }} HTTP 409 Conflict errors in the last 45 minutes, indicating persistent resource conflicts"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-RepeatedConflictErrors"
 
       - alert: ClientTimeoutErrors
@@ -238,7 +238,7 @@ groups:
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-ClientTimeoutErrors"
 
       - alert: RepeatedTimeoutErrors
-        expr: increase(cloud_test_errors_total{error_type="network_timeout"}[20m]) > 2
+        expr: increase(cloud_test_errors_total{error_type="network_timeout"}[45m]) > 2
         for: 3m
         labels:
           severity: critical
@@ -246,7 +246,7 @@ groups:
           error_type: "network_timeout"
         annotations:
           summary: "Repeated timeout errors for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} has experienced {{ $value }} timeout errors in the last 20 minutes, indicating persistent network or performance issues"
+          description: "Service {{ $labels.service }} at {{ $labels.instance }} has experienced {{ $value }} timeout errors in the last 45 minutes, indicating persistent network or performance issues"
           runbook_url: "https://github.com/xXRoxXeRXx/cloud-performance-monitor/wiki/Runbook-RepeatedTimeoutErrors"
 
       # ==== NETWORK ALERTS ====
