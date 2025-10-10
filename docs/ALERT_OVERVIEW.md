@@ -1,8 +1,7 @@
 # Cloud P| **| **ServiceDown** | Monitor Agent ist offline | `up{job="monitor-agent"} == 0` | 1m | Admin, DevOps |
 | **ServiceTestFailure** | Test-Fehler (alle Fehlertypen) | `cloud_test_success{error_code!="none"} == 0` oder `absent_over_time(cloud_test_success{error_code="none"}[20m])` | 1m | Admin, DevOps |
 | **CriticalErrorRate** | Fehlerrate über 50% in 30min | `rate(cloud_test_errors_total[30m]) > 0.5` | 1m | Admin, DevOps |
-| **CircuitBreakerOpen** | Circuit Breaker ist geöffnet | `nextcloud_circuit_breaker_state > 0` | 0s (sofort) | Admin, DevOps |
-| **SLAViolation95Percent** | 24h Erfolgsrate unter 95% | `success_rate < 0.95` | 2m | Admin, Management |lUploadDuration** | Upload dauert über 10 Minuten | `cloud_test_duration_seconds{type="upload"} > 600` | 1m | Admin, DevOps |
+| **CircuitBreakerOpen** | Circuit Breaker ist geöffnet | `nextcloud_circuit_breaker_state > 0` | 0s (sofort) | Admin, DevOps |lUploadDuration** | Upload dauert über 10 Minuten | `cloud_test_duration_seconds{type="upload"} > 600` | 1m | Admin, DevOps |
 | **ServiceTestFailure** | Test-Fehler oder keine erfolgreichen Tests in 20min | `cloud_test_success{error_code!="none"} == 0` oder `absent_over_time(cloud_test_success{error_code="none"}[20m])` | 1m | Admin, DevOps |
 | **ServiceUnavailable** | 503/502/500 Server-Fehler | `cloud_test_success{error_code=~"503|502|500"} == 0` | 1m | Admin, DevOps |
 | **CriticalErrorRate** | Fehlerrate über 50% in 30min | `rate(cloud_test_errors_total[30m]) > 0.5` | 1m | Admin, DevOps |
@@ -127,10 +126,13 @@
 - ~~**RepeatedServiceUnavailableErrors**~~ - Entfernt (redundant zu ServiceTestFailure + HighErrorRate)
 - ~~**RepeatedConflictErrors**~~ - Entfernt (redundant zu ServiceTestFailure + HighErrorRate)
 - ~~**RepeatedTimeoutErrors**~~ - Entfernt (redundant zu ServiceTestFailure + HighErrorRate)
+- ~~**SLAViolation99Percent**~~ - Entfernt (überkomplex für einfaches Monitoring)
+- ~~**SLAViolation95Percent**~~ - Entfernt (überkomplex für einfaches Monitoring)
 
 **Zentrale Lösung**: 
 - `ServiceTestFailure` erfasst ALLE Einzelfehler (`error_code!="none"`)
 - `HighErrorRate` + `CriticalErrorRate` erfassen Fehlertrends besser als spezifische "Repeated"-Alerts
+- Einfaches System ohne komplexe SLA-Berechnungen
 
 ## Alert-Wiederholungsintervalle (Alertmanager)
 
@@ -151,12 +153,7 @@
 - **Wiederholung**: Alle 6 Stunden
 - **Zielgruppe**: Network Team
 
-### 📈 **SLA Alerts** (category: sla)
-- **Erste Benachrichtigung**: 5 Minuten group_wait
-- **Wiederholung**: Alle 4 Stunden
-- **Zielgruppe**: Management + Admin
-
-### 🔧 **Meta Alerts** (category: meta)
+###  **Meta Alerts** (category: meta)
 - **Erste Benachrichtigung**: 2 Minuten group_wait
 - **Wiederholung**: Alle 2 Stunden
 - **Zielgruppe**: DevOps
@@ -172,13 +169,10 @@
 ### nextcloud_performance_alerts (12 Alarme)
 - Service-Verfügbarkeit, Performance, Netzwerk-Probleme
 
-### nextcloud_sla_alerts (2 Alarme)
-- SLA-Überwachung (99% und 95% Schwellwerte)
-
 ### nextcloud_meta_alerts (1 Alarm)
 - Meta-Überwachung des Alarm-Systems selbst
 
-## **TOTAL: 15 Alarme** (12 redundante Alerts entfernt)
+## **TOTAL: 13 Alarme** (14 redundante/unnötige Alerts entfernt)
 
 ## ⏰ **Test-Intervall Anpassungen (15-Minuten-Zyklen)**
 

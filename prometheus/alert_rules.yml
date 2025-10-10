@@ -139,37 +139,6 @@ groups:
           summary: "Circuit breaker open for {{ $labels.service }} - {{ $labels.instance }}"
           description: "Circuit breaker state is {{ $value }} (0=closed, 1=open, 2=half-open)."
 
-  - name: nextcloud_sla_alerts
-    rules:
-      # ==== SLA TRACKING ALERTS ====
-      - alert: SLAViolation99Percent
-        expr: |
-          (
-            sum(rate(nextcloud_test_success[24h])) / 
-            sum(rate(nextcloud_test_duration_seconds_count[24h]))
-          ) < 0.99
-        for: 5m
-        labels:
-          severity: warning
-          category: sla
-        annotations:
-          summary: "SLA violation: 99% uptime not met"
-          description: "24h success rate is {{ $value | humanizePercentage }}, below 99% SLA."
-
-      - alert: SLAViolation95Percent
-        expr: |
-          (
-            sum(rate(nextcloud_test_success[24h])) / 
-            sum(rate(nextcloud_test_duration_seconds_count[24h]))
-          ) < 0.95
-        for: 2m
-        labels:
-          severity: critical
-          category: sla
-        annotations:
-          summary: "Critical SLA violation: 95% uptime not met"
-          description: "24h success rate is {{ $value | humanizePercentage }}, below 95% critical SLA."
-
   - name: nextcloud_meta_alerts
     rules:
       # ==== META MONITORING ALERTS ====

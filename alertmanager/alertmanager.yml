@@ -31,13 +31,6 @@ route:
       group_interval: 15m
       repeat_interval: 6h
     
-    # SLA violations -> management notification
-    - match:
-        category: sla
-      receiver: 'sla-alerts'
-      group_wait: 5m
-      repeat_interval: 4h
-    
     # Meta alerts (TooManyAlerts etc.) -> less frequent
     - match:
         category: meta
@@ -79,11 +72,6 @@ receivers:
         send_resolved: true
 
   - name: 'network-alerts'
-    webhook_configs:
-      - url: 'http://webhook-logger:8080/webhook'
-        send_resolved: true
-
-  - name: 'sla-alerts'
     webhook_configs:
       - url: 'http://webhook-logger:8080/webhook'
         send_resolved: true
