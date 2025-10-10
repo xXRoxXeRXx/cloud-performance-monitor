@@ -1,4 +1,9 @@
-# Cloud Performance Monitor - Alert Overview
+# Cloud P| **CriticalUploadDuration** | Upload dauert über 10 Minuten | `cloud_test_duration_seconds{type="upload"} > 600` | 1m | Admin, DevOps |
+| **ServiceTestFailure** | Test-Fehler oder keine erfolgreichen Tests in 20min | `cloud_test_success{error_code!="none"} == 0` oder `absent_over_time(cloud_test_success{error_code="none"}[20m])` | 1m | Admin, DevOps |
+| **ServiceUnavailable** | 503/502/500 Server-Fehler | `cloud_test_success{error_code=~"503|502|500"} == 0` | 1m | Admin, DevOps |
+| **CriticalErrorRate** | Fehlerrate über 50% in 30min | `rate(cloud_test_errors_total[30m]) > 0.5` | 1m | Admin, DevOps |
+| **CircuitBreakerOpen** | Circuit Breaker ist geöffnet | `nextcloud_circuit_breaker_state > 0` | 0s (sofort) | Admin, DevOps |
+| **SLAViolation95Percent** | 24h Erfolgsrate unter 95% | `success_rate < 0.95` | 2m | Admin, Management |ance Monitor - Alert Overview
 
 ## Alarm-Kategorien und Übersicht
 
@@ -110,9 +115,12 @@
 
 ## Alert-Wiederholungsintervalle (Alertmanager)
 
+> **Wichtig**: Die "Dauer" in der Tabelle oben ist die Zeit bis zum ersten Alert-Trigger. Die Wiederholungsintervalle unten steuern, wie oft der Alert danach wiederholt wird.
+
 ### 🔴 **Kritische Alerts** (severity: critical)
-- **Erste Benachrichtigung**: Sofort (10s group_wait)
+- **Erste Benachrichtigung**: Sofort nach 1-2 Minuten (je nach Alert)
 - **Wiederholung**: Alle 30 Minuten
+- **Zielgruppe**: Admin + DevOps
 - **Zielgruppe**: Admin + DevOps
 
 ### ⚠️ **Performance Alerts** (category: performance)
