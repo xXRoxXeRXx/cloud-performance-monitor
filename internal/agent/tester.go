@@ -104,12 +104,14 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	}
 
 	// 4. Cleanup
-	err = ncClient.DeleteFile(fullPath)
-	if err != nil {
-		log.Printf("WARN: Failed to delete test file %s: %v", fullPath, err)
+	cleanupErr := ncClient.DeleteFile(fullPath)
+	if cleanupErr != nil {
+		log.Printf("WARN: Failed to delete test file %s: %v", fullPath, cleanupErr)
 	}
+	
 	// Reset previous error states after successful test
-	if err == nil && downloadErrCode == "none" {
+	// Only reset if both upload and download were successful
+	if downloadErrCode == "none" {
 		for _, errorCode := range GetAllErrorCodes() {
 			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", errorCode).Set(1)
 			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", errorCode).Set(1)

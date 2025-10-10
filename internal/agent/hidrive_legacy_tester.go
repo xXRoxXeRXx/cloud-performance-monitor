@@ -199,16 +199,18 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	Logger.LogOperation(INFO, "hidrive_legacy", cfg.InstanceName, "test", "complete", 
 		"HiDrive Legacy test completed successfully")
 	
-	// Reset any previous error states to prevent false alerts
+	// Reset any previous error states if the test completed successfully
 	// This ensures old failed test metrics don't trigger false alarms
-	for _, errorCode := range GetAllErrorCodes() {
-		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", errorCode).Set(1)
-		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", errorCode).Set(1)
-		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "connection", errorCode).Set(1)
+	if uploadErrCode == "none" && downloadErrCode == "none" {
+		for _, errorCode := range GetAllErrorCodes() {
+			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", errorCode).Set(1)
+			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", errorCode).Set(1)
+			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "connection", errorCode).Set(1)
+		}
+		
+		Logger.LogOperation(DEBUG, "hidrive_legacy", cfg.InstanceName, "metrics", "reset", 
+			"Reset all previous error states to prevent false alarms")
 	}
-	
-	Logger.LogOperation(DEBUG, "hidrive_legacy", cfg.InstanceName, "metrics", "reset", 
-		"Reset all previous error states to prevent false alarms")
 	
 	return nil
 }
