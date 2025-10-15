@@ -8,34 +8,19 @@ import (
 	"sync"
 	"time"
 
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/upload"
 	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
 
-// UploadState represents the persistent state of a chunked upload
-type UploadState struct {
-	TransferID     string    `json:"transfer_id"`
-	FilePath       string    `json:"file_path"`
-	RemotePath     string    `json:"remote_path"`
-	FileSize       int64     `json:"file_size"`
-	ModTime        time.Time `json:"mod_time"`
-	UploadedSize   int64     `json:"uploaded_size"`
-	ChunkSize      int       `json:"chunk_size"`
-	LastChunk      int       `json:"last_chunk"`
-	CreatedAt      time.Time `json:"created_at"`
-	LastUpdated    time.Time `json:"last_updated"`
-	Service        string    `json:"service"`
-	Instance       string    `json:"instance"`
-}
-
-// StateManager manages persistent upload states across restarts
-type StateManager struct {
+// StateManagerImpl implements upload.StateManager interface
+type StateManagerImpl struct {
 	stateFile string
 	mutex     sync.RWMutex
 	logger    utils.ClientLogger
 }
 
 // NewStateManager creates a new state manager with the given state file path
-func NewStateManager(stateFile string, logger utils.ClientLogger) *StateManager {
+func NewStateManager(stateFile string, logger utils.ClientLogger) upload.StateManager {
 	// Ensure directory exists
 	dir := filepath.Dir(stateFile)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -46,18 +31,18 @@ func NewStateManager(stateFile string, logger utils.ClientLogger) *StateManager 
 			})
 	}
 
-	return &StateManager{
+	return &StateManagerImpl{
 		stateFile: stateFile,
 		logger:    logger,
 	}
 }
 
 // SaveUploadState saves the upload state to persistent storage
-func (sm *StateManager) SaveUploadState(state UploadState) error {
+func (sm *StateManagerImpl) SaveUploadState(state upload.UploadState) error {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
-	states := make(map[string]UploadState)
+	states := make(map[string]upload.UploadState)
 	if data, err := os.ReadFile(sm.stateFile); err == nil {
 		if err := json.Unmarshal(data, &states); err != nil {
 			sm.logger.LogOperation(utils.WARN, "state_manager", "local", "unmarshal", "error",
@@ -98,11 +83,11 @@ func (sm *StateManager) SaveUploadState(state UploadState) error {
 }
 
 // GetUploadState retrieves the upload state for a file if it's still valid
-func (sm *StateManager) GetUploadState(service, instance, filePath string, fileSize int64, modTime time.Time) *UploadState {
+func (sm *StateManagerImpl) GetUploadState(service, instance, filePath string, fileSize int64, modTime time.Time) *upload.UploadState {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
 
-	states := make(map[string]UploadState)
+	states := make(map[string]upload.UploadState)
 	if data, err := os.ReadFile(sm.stateFile); err == nil {
 		if err := json.Unmarshal(data, &states); err != nil {
 			sm.logger.LogOperation(utils.WARN, "state_manager", "local", "parse", "error",
@@ -156,11 +141,11 @@ func (sm *StateManager) GetUploadState(service, instance, filePath string, fileS
 }
 
 // RemoveUploadState removes the upload state for a completed upload
-func (sm *StateManager) RemoveUploadState(service, instance, filePath string) error {
+func (sm *StateManagerImpl) RemoveUploadState(service, instance, filePath string) error {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
-	states := make(map[string]UploadState)
+	states := make(map[string]upload.UploadState)
 	if data, err := os.ReadFile(sm.stateFile); err == nil {
 		if err := json.Unmarshal(data, &states); err != nil {
 			return fmt.Errorf("failed to parse state file: %w", err)
@@ -188,8 +173,31 @@ func (sm *StateManager) RemoveUploadState(service, instance, filePath string) er
 	return nil
 }
 
+// ListActiveUploads returns all currently tracked upload states
+func (sm *StateManagerImpl) ListActiveUploads() ([]upload.UploadState, error) {
+	sm.mutex.RLock()
+	defer sm.mutex.RUnlock()
+
+	states := make(map[string]upload.UploadState)
+	if data, err := os.ReadFile(sm.stateFile); err == nil {
+		if err := json.Unmarshal(data, &states); err != nil {
+			return nil, fmt.Errorf("failed to parse state file: %w", err)
+		}
+	}
+
+	var activeStates []upload.UploadState
+	now := time.Now()
+	for _, state := range states {
+		if now.Sub(state.CreatedAt) < 24*time.Hour {
+			activeStates = append(activeStates, state)
+		}
+	}
+
+	return activeStates, nil
+}
+
 // cleanupOldStates removes states older than 24 hours
-func (sm *StateManager) cleanupOldStates(states map[string]UploadState) {
+func (sm *StateManagerImpl) cleanupOldStates(states map[string]upload.UploadState) {
 	now := time.Now()
 	for key, state := range states {
 		if now.Sub(state.CreatedAt) > 24*time.Hour {
@@ -201,27 +209,4 @@ func (sm *StateManager) cleanupOldStates(states map[string]UploadState) {
 				})
 		}
 	}
-}
-
-// ListActiveUploads returns all currently tracked upload states
-func (sm *StateManager) ListActiveUploads() ([]UploadState, error) {
-	sm.mutex.RLock()
-	defer sm.mutex.RUnlock()
-
-	states := make(map[string]UploadState)
-	if data, err := os.ReadFile(sm.stateFile); err == nil {
-		if err := json.Unmarshal(data, &states); err != nil {
-			return nil, fmt.Errorf("failed to parse state file: %w", err)
-		}
-	}
-
-	var activeStates []UploadState
-	now := time.Now()
-	for _, state := range states {
-		if now.Sub(state.CreatedAt) < 24*time.Hour {
-			activeStates = append(activeStates, state)
-		}
-	}
-
-	return activeStates, nil
 }

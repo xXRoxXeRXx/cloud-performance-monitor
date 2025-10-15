@@ -4,11 +4,13 @@ import (
 	"math"
 	"time"
 
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/upload"
 	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
 
 // ChunkSizer manages dynamic chunk sizing based on upload performance
 // Inspired by Nextcloud Desktop Client's dynamic chunk sizing algorithm
+// Implements upload.ChunkSizer interface
 type ChunkSizer struct {
 	targetDuration time.Duration
 	currentSize    int
@@ -29,7 +31,7 @@ type ChunkSizeStats struct {
 }
 
 // NewChunkSizer creates a new dynamic chunk sizer
-func NewChunkSizer(targetDuration time.Duration, service, instance string, logger utils.ClientLogger) *ChunkSizer {
+func NewChunkSizer(targetDuration time.Duration, service, instance string, logger utils.ClientLogger) upload.ChunkSizer {
 	return &ChunkSizer{
 		targetDuration: targetDuration,
 		currentSize:    10 * 1024 * 1024, // 10MB start (like Nextcloud default)
@@ -61,10 +63,10 @@ func NewChunkSizerWithConfig(targetDuration time.Duration, initialSize, minSize,
 // Algorithm inspired by Nextcloud Desktop Client:
 // predictedGoodSize = (currentChunkSize * targetDuration) / actualUploadTime
 // newChunkSize = (oldChunkSize * alpha + predictedGoodSize * (1-alpha))
-func (cs *ChunkSizer) AdjustChunkSize(actualDuration time.Duration, chunkSize int) ChunkSizeStats {
+func (cs *ChunkSizer) AdjustChunkSize(actualDuration time.Duration, chunkSize int) upload.ChunkSizeStats {
 	if cs.targetDuration <= 0 {
 		// Dynamic sizing disabled
-		stats := ChunkSizeStats{
+		stats := upload.ChunkSizeStats{
 			ChunkSize:      chunkSize,
 			UploadTime:     actualDuration,
 			ThroughputMBps: calculateThroughput(chunkSize, actualDuration),
@@ -109,7 +111,7 @@ func (cs *ChunkSizer) AdjustChunkSize(actualDuration time.Duration, chunkSize in
 			"chunk_bytes":         chunkSize,
 		})
 
-	stats := ChunkSizeStats{
+	stats := upload.ChunkSizeStats{
 		ChunkSize:      cs.currentSize,
 		UploadTime:     actualDuration,
 		ThroughputMBps: throughput,
