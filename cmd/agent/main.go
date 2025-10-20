@@ -11,6 +11,7 @@ import (
 	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/agent"
 	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/nextcloud"
 	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/magentacloud"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -27,6 +28,20 @@ func main() {
 	
 	agent.Logger.InfoWithFields("monitor-agent", Version, 
 		"Starting Cloud Performance Monitor", "", "")
+	
+	// Load upload resume configuration
+	uploadResumeConfig := agent.LoadUploadResumeConfig()
+	agent.Logger.InfoWithFields("monitor-agent", "",
+		fmt.Sprintf("Upload resume: enabled=%t, stateDir=%s", 
+			uploadResumeConfig.Enabled, uploadResumeConfig.StateDir), "", "")
+	
+	// Create upload_states directory if it doesn't exist
+	if uploadResumeConfig.Enabled {
+		if err := os.MkdirAll(uploadResumeConfig.StateDir, 0755); err != nil {
+			agent.Logger.Error(fmt.Sprintf("Could not create upload state directory %s", uploadResumeConfig.StateDir), err)
+			os.Exit(1)
+		}
+	}
 	
 	// Create shutdown manager
 	shutdownManager := agent.NewShutdownManager(DefaultShutdownTimeout)
@@ -207,10 +222,20 @@ func runTestForInstance(ctx context.Context, cfg *agent.Config, client interface
 	startTime := time.Now()
 	var err error
 	
+	// Load upload resume configuration
+	uploadResumeConfig := agent.LoadUploadResumeConfig()
+	
 	switch cfg.ServiceType {
 	case "nextcloud":
 		if ncClient, ok := client.(*nextcloud.Client); ok {
-			agent.RunTest(cfg, ncClient)
+			if uploadResumeConfig.Enabled {
+				// Use upload resume functionality
+				logger := &utils.DefaultClientLogger{}
+				agent.RunTestWithResume(cfg, ncClient, logger)
+			} else {
+				// Use traditional upload method
+				agent.RunTest(cfg, ncClient)
+			}
 		} else {
 			err = fmt.Errorf("invalid client type for Nextcloud instance %s", cfg.InstanceName)
 		}

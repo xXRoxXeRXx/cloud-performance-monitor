@@ -387,3 +387,38 @@ func validateConfig(cfg *Config) error {
 
 	return nil
 }
+
+// UploadResumeConfig holds upload resume configuration
+type UploadResumeConfig struct {
+	Enabled               bool
+	StateDir             string
+	CleanupIntervalHours int
+	TargetDurationSec    int
+}
+
+// LoadUploadResumeConfig loads upload resume configuration from environment variables
+func LoadUploadResumeConfig() *UploadResumeConfig {
+	enabled := os.Getenv("UPLOAD_RESUME_ENABLED") == "true"
+	
+	stateDir := os.Getenv("UPLOAD_STATE_DIR")
+	if stateDir == "" {
+		stateDir = "./upload_states"
+	}
+	
+	cleanupHours, err := strconv.Atoi(os.Getenv("UPLOAD_STATE_CLEANUP_HOURS"))
+	if err != nil || cleanupHours <= 0 {
+		cleanupHours = 24
+	}
+	
+	targetDuration, err := strconv.Atoi(os.Getenv("UPLOAD_TARGET_DURATION_SECONDS"))
+	if err != nil || targetDuration <= 0 {
+		targetDuration = 30
+	}
+	
+	return &UploadResumeConfig{
+		Enabled:               enabled,
+		StateDir:             stateDir,
+		CleanupIntervalHours: cleanupHours,
+		TargetDurationSec:    targetDuration,
+	}
+}
