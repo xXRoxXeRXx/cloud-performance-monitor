@@ -107,7 +107,11 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	// Add Destination header like bash script does
 	req.Header.Set("Destination", destinationURL)
 	
-	resp, err := c.HTTPClient.Do(req)
+	// Use HTTP retry logic for chunk directory creation
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	resp, err := httpRetry.DoWithRetryAndLog(req.Context(), c.HTTPClient, req, "create_chunk_directory", "hidrive", c.BaseURL)
 	mkcolDuration := time.Since(mkcolStart)
 	
 	if err != nil {
@@ -167,7 +171,12 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	c.logger.LogOperation(utils.INFO, "hidrive", c.BaseURL, "move", "executing", 
 		"Executing MOVE operation (this may take several minutes for large files)", nil)
 	moveStart := time.Now()
-	resp, err = moveClient.Do(req)
+	
+	// Use HTTP retry logic for MOVE operation with extended timeout
+	moveHttpRetry := utils.NewHTTPRetryConfig()
+	moveHttpRetry.ClientLogger = c.logger
+	
+	resp, err = moveHttpRetry.DoWithRetryAndLog(req.Context(), moveClient, req, "move_chunks", "hidrive", c.BaseURL)
 	moveDuration := time.Since(moveStart)
 	
 	if err != nil {

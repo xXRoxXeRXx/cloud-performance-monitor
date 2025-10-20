@@ -241,56 +241,53 @@ func (c *Client) newAPIRequest(method, endpoint string, body io.Reader) (*http.R
 
 // doRequestWithRetry performs an HTTP request with automatic token refresh on 401 errors
 func (c *Client) doRequestWithRetry(req *http.Request) (*http.Response, error) {
-	// Clone the request to retry if needed
-	originalBody := []byte{}
-	if req.Body != nil {
-		var err error
-		originalBody, err = io.ReadAll(req.Body)
+	var resp *http.Response
+	var err error
+	
+	// Use comprehensive HTTP retry logic with OAuth2 token refresh
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	retryErr := httpRetry.RetryConfig.WithRetry(req.Context(), "hidrive_legacy_api_request", func(ctx context.Context) error {
+		// Clone the request for this attempt
+		reqClone := req.Clone(ctx)
+		
+		// Make the request
+		resp, err = c.HTTPClient.Do(reqClone)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read request body: %v", err)
+			return err
 		}
-		req.Body = io.NopCloser(bytes.NewReader(originalBody))
-	}
 
-	// First attempt
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// If successful or refresh token not available, return response
-	if resp.StatusCode != http.StatusUnauthorized || c.RefreshToken == "" {
-		return resp, nil
-	}
-
-	// Close the response body
-	resp.Body.Close()
-
-	// Try to refresh the token
-	c.logger.LogOperation(utils.INFO, "hidrive_legacy", "auth", "token_refresh", "start", 
-		"Received 401, attempting token refresh", nil)
-	if err := c.RefreshAccessToken(); err != nil {
-		return nil, fmt.Errorf("token refresh failed: %v", err)
-	}
-
-	// Recreate the request with new token
-	newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewReader(originalBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create retry request: %v", err)
-	}
-
-	// Copy headers from original request
-	for key, values := range req.Header {
-		for _, value := range values {
-			newReq.Header.Add(key, value)
+		// If not unauthorized or no refresh token available, return success
+		if resp.StatusCode != http.StatusUnauthorized || c.RefreshToken == "" {
+			return nil
 		}
+
+		// Close the failed response
+		resp.Body.Close()
+
+		// Try to refresh the token
+		c.logger.LogOperation(utils.INFO, "hidrive_legacy", "auth", "token_refresh", "start", 
+			"Received 401, attempting token refresh", nil)
+		if err := c.RefreshAccessToken(); err != nil {
+			return fmt.Errorf("token refresh failed: %v", err)
+		}
+
+		// Update authorization header with new token for retry
+		req.Header.Set("Authorization", "Bearer "+c.AccessToken)
+
+		// Retry the request with refreshed token
+		c.logger.LogOperation(utils.DEBUG, "hidrive_legacy", "auth", "token_refresh", "retry", 
+			"Retrying request with refreshed token", nil)
+		resp, err = c.HTTPClient.Do(req.Clone(ctx))
+		return err
+	})
+	
+	if retryErr != nil {
+		return nil, retryErr
 	}
-
-	// Update authorization header with new token
-	newReq.Header.Set("Authorization", "Bearer "+c.AccessToken)
-
-	// Retry the request
-	return c.HTTPClient.Do(newReq)
+	
+	return resp, nil
 }
 
 // GetUserHome retrieves the user's home directory path
@@ -621,8 +618,8 @@ func (c *Client) uploadChunkPatch(filePath string, chunkData []byte, offset int6
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("Content-Length", strconv.Itoa(len(chunkData)))
 
-	// Execute request
-	resp, err := c.HTTPClient.Do(req)
+	// Execute request with retry logic (includes OAuth2 token refresh)
+	resp, err := c.doRequestWithRetry(req)
 	if err != nil {
 		return fmt.Errorf("PATCH request failed: %v", err)
 	}
@@ -659,7 +656,8 @@ func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("failed to create download request: %v", err)
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	// Use retry logic with OAuth2 token refresh
+	resp, err := c.doRequestWithRetry(req)
 	if err != nil {
 		return nil, fmt.Errorf("download request failed: %v", err)
 	}
@@ -703,7 +701,8 @@ func (c *Client) DeleteFile(filePath string) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.HTTPClient.Do(req)
+	// Use retry logic with OAuth2 token refresh
+	resp, err := c.doRequestWithRetry(req)
 	if err != nil {
 		return fmt.Errorf("delete request failed: %v", err)
 	}
@@ -729,7 +728,8 @@ func (c *Client) GetFileInfo(filePath string) (*FileInfo, error) {
 		return nil, fmt.Errorf("failed to create file info request: %v", err)
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	// Use retry logic with OAuth2 token refresh
+	resp, err := c.doRequestWithRetry(req)
 	if err != nil {
 		return nil, fmt.Errorf("file info request failed: %v", err)
 	}
@@ -755,7 +755,8 @@ func (c *Client) TestConnection() error {
 		return fmt.Errorf("failed to create test request: %v", err)
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	// Use retry logic with OAuth2 token refresh
+	resp, err := c.doRequestWithRetry(req)
 	if err != nil {
 		return fmt.Errorf("test request failed: %v", err)
 	}
