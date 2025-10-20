@@ -197,40 +197,56 @@ func (c *Client) newAPIRequest(method, endpoint string, body io.Reader) (*http.R
 	return req, nil
 }
 
-// doRequestWithRetry performs an HTTP request with automatic token refresh on 401 errors
+// doRequestWithRetry performs an HTTP request with automatic token refresh on 401 errors and comprehensive retry logic
 func (c *Client) doRequestWithRetry(req *http.Request) (*http.Response, error) {
-	// Make the initial request
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, err
+	var resp *http.Response
+	var err error
+	
+	// Use comprehensive retry logic
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	retryErr := httpRetry.RetryConfig.WithRetry(req.Context(), "dropbox_api_request", func(ctx context.Context) error {
+		// Make the request
+		resp, err = c.HTTPClient.Do(req.Clone(ctx))
+		if err != nil {
+			return err
+		}
+
+		// If not unauthorized or no refresh token available, return success
+		if resp.StatusCode != http.StatusUnauthorized || c.RefreshToken == "" {
+			return nil
+		}
+
+		// Close the failed response
+		resp.Body.Close()
+
+		// Attempt to refresh token
+		c.logger.LogOperation(utils.INFO, "dropbox", "oauth", "token", "refresh_attempt", 
+			"Access token expired, attempting refresh...", 
+			map[string]interface{}{})
+		if err := c.RefreshAccessToken(); err != nil {
+			return fmt.Errorf("failed to refresh access token: %v", err)
+		}
+
+		// Update authorization header with new token for retry
+		c.tokenMutex.RLock()
+		req.Header.Set("Authorization", "Bearer "+c.AccessToken)
+		c.tokenMutex.RUnlock()
+
+		// Try again with refreshed token
+		c.logger.LogOperation(utils.DEBUG, "dropbox", "oauth", "token", "retry_request", 
+			"Retrying request with refreshed token...", 
+			map[string]interface{}{})
+		resp, err = c.HTTPClient.Do(req.Clone(ctx))
+		return err
+	})
+	
+	if retryErr != nil {
+		return nil, retryErr
 	}
-
-	// If request succeeded or refresh not available, return response
-	if resp.StatusCode != http.StatusUnauthorized || c.RefreshToken == "" {
-		return resp, nil
-	}
-
-	// Close the failed response
-	resp.Body.Close()
-
-	// Attempt to refresh token
-	c.logger.LogOperation(utils.INFO, "dropbox", "oauth", "token", "refresh_attempt", 
-		"Access token expired, attempting refresh...", 
-		map[string]interface{}{})
-	if err := c.RefreshAccessToken(); err != nil {
-		return nil, fmt.Errorf("failed to refresh access token: %v", err)
-	}
-
-	// Update authorization header with new token
-	c.tokenMutex.RLock()
-	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
-	c.tokenMutex.RUnlock()
-
-	// Retry the request with new token
-	c.logger.LogOperation(utils.DEBUG, "dropbox", "oauth", "token", "retry_request", 
-		"Retrying request with refreshed token...", 
-		map[string]interface{}{})
-	return c.HTTPClient.Do(req)
+	
+	return resp, nil
 }
 
 // newContentRequest creates a new authenticated content request

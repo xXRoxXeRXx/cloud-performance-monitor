@@ -61,7 +61,12 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.HTTPClient.Do(req)
+	
+	// Use HTTP retry logic for directory creation
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	resp, err := httpRetry.DoWithRetryAndLog(req.Context(), c.HTTPClient, req, "ensure_directory", "hidrive", c.BaseURL)
 	if err != nil {
 		return err
 	}
@@ -307,7 +312,12 @@ func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.HTTPClient.Do(req)
+	
+	// Use HTTP retry logic for download
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	resp, err := httpRetry.DoWithRetryAndLog(req.Context(), c.HTTPClient, req, "download_file", "hidrive", c.BaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +335,12 @@ func (c *Client) DeleteFile(filePath string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.HTTPClient.Do(req)
+	
+	// Use HTTP retry logic for file deletion
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	resp, err := httpRetry.DoWithRetryAndLog(req.Context(), c.HTTPClient, req, "delete_file", "hidrive", c.BaseURL)
 	if err != nil {
 		return err
 	}

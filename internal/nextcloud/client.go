@@ -61,7 +61,12 @@ func (c *Client) EnsureDirectory(dirPath string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.HTTPClient.Do(req)
+	
+	// Use HTTP retry logic for directory creation
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	resp, err := httpRetry.DoWithRetryAndLog(req.Context(), c.HTTPClient, req, "ensure_directory", "nextcloud", c.BaseURL)
 	if err != nil {
 		return err
 	}
@@ -143,7 +148,12 @@ func (c *Client) UploadFile(filePath string, reader io.Reader, size int64, chunk
 	
 	fmt.Printf("[Nextcloud] Executing MOVE operation (this may take several minutes for large files)...\n")
 	moveStart := time.Now()
-	resp, err = moveClient.Do(req)
+	
+	// Use HTTP retry logic for MOVE operation with extended timeout
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	resp, err = httpRetry.DoWithRetryAndLog(req.Context(), moveClient, req, "move_chunks", "nextcloud", c.BaseURL)
 	moveDuration := time.Since(moveStart)
 	
 	if err != nil {
@@ -291,7 +301,12 @@ func (c *Client) DownloadFile(filePath string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.HTTPClient.Do(req)
+	
+	// Use HTTP retry logic for download
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	resp, err := httpRetry.DoWithRetryAndLog(req.Context(), c.HTTPClient, req, "download_file", "nextcloud", c.BaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +324,12 @@ func (c *Client) DeleteFile(filePath string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.HTTPClient.Do(req)
+	
+	// Use HTTP retry logic for file deletion
+	httpRetry := utils.NewHTTPRetryConfig()
+	httpRetry.ClientLogger = c.logger
+	
+	resp, err := httpRetry.DoWithRetryAndLog(req.Context(), c.HTTPClient, req, "delete_file", "nextcloud", c.BaseURL)
 	if err != nil {
 		return err
 	}
