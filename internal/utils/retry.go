@@ -24,13 +24,7 @@ func DefaultRetryConfig() *RetryConfig {
 		InitialDelay:  1 * time.Second,
 		MaxDelay:      30 * time.Second,
 		BackoffFactor: 2.0,
-		RetryableErrors: []string{
-			"connection refused",
-			"timeout",
-			"temporary failure",
-			"network is unreachable",
-			"no such host",
-		},
+		RetryableErrors: []string{}, // Not used anymore - all errors are retryable except permanent ones
 		logger: &DefaultClientLogger{},
 	}
 }
@@ -39,18 +33,34 @@ func DefaultRetryConfig() *RetryConfig {
 type RetryableFunc func(ctx context.Context) error
 
 // IsRetryableError checks if an error is retryable
+// By default, all errors are retryable except for explicit permanent errors
 func (rc *RetryConfig) IsRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
 	
 	errStr := err.Error()
-	for _, retryable := range rc.RetryableErrors {
-		if contains(errStr, retryable) {
-			return true
+	
+	// Check for non-retryable errors (permanent failures)
+	nonRetryableErrors := []string{
+		"401", "unauthorized", "authentication failed",
+		"403", "forbidden", "access denied",
+		"404", "not found",
+		"400", "bad request",
+		"invalid credentials",
+		"permission denied",
+		"quota exceeded",
+		"storage full",
+	}
+	
+	for _, nonRetryable := range nonRetryableErrors {
+		if contains(errStr, nonRetryable) {
+			return false
 		}
 	}
-	return false
+	
+	// All other errors are considered retryable (network issues, 5xx errors, timeouts, etc.)
+	return true
 }
 
 // WithRetry executes a function with retry logic

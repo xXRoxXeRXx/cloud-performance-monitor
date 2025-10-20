@@ -34,7 +34,7 @@ func TestRetryWithNonRetryableError(t *testing.T) {
 	
 	err := config.WithRetry(context.Background(), "test_operation", func(ctx context.Context) error {
 		attempts++
-		return errors.New("non retryable error")
+		return errors.New("401 unauthorized")
 	})
 	
 	if err == nil {

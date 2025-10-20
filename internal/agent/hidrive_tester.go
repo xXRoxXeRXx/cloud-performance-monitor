@@ -8,6 +8,7 @@ import (
        "time"
 
        hidrive "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/hidrive"
+       "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
 
 // RunHiDriveTest führt einen Upload/Download-Test für HiDrive Next durch
@@ -24,11 +25,20 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
        testFileName := fmt.Sprintf("testfile_%d.tmp", time.Now().UnixNano())
        fullPath := testDir + "/" + testFileName
 
-       // 0. Ensure directory exists
-       err := client.EnsureDirectory(testDir)
+       // 0. Ensure directory exists with retry logic for network timeouts
+       retryConfig := utils.DefaultRetryConfig()
+       retryConfig.RetryableErrors = append(retryConfig.RetryableErrors, 
+              "TLS handshake timeout", 
+              "i/o timeout",
+              "connection reset by peer",
+              "context deadline exceeded")
+       
+       err := retryConfig.WithRetry(ctx, "ensure_directory", func(ctx context.Context) error {
+              return client.EnsureDirectory(testDir)
+       })
        if err != nil {
               Logger.LogOperation(ERROR, "hidrive", cfg.InstanceName, "directory", "error", 
-                     "Could not create test directory", 
+                     "Could not create test directory after retries", 
                      WithError(err))
               directoryErrCode := ExtractErrorCode(err, "directory")
               TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()

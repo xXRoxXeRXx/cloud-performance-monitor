@@ -8,6 +8,7 @@ import (
 	"time"
 
 	magentacloud "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/magentacloud"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
 
 // RunMagentaCloudTest führt einen Upload/Download-Test für MagentaCLOUD durch
@@ -25,11 +26,14 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 	testFileName := fmt.Sprintf("testfile_%d.tmp", time.Now().UnixNano())
 	fullPath := testDir + "/" + testFileName
 
-	// 0. Ensure directory exists
-	err := client.EnsureDirectory(testDir)
+	// 0. Ensure directory exists with retry logic
+	err := utils.DefaultRetryConfig().WithRetry(ctx, "create_directory", func(retryCtx context.Context) error {
+		return client.EnsureDirectory(testDir)
+	})
+	
 	if err != nil {
 		Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "directory", "error", 
-			"Could not create test directory", 
+			"Could not create test directory after retries", 
 			WithError(err))
 		directoryErrCode := ExtractErrorCode(err, "directory")
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	hidrive_legacy "github.com/xXRoxXeRXx/cloud-performance-monitor/internal/hidrive_legacy"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
 
 // RunHiDriveLegacyTest führt einen Upload/Download-Test für HiDrive Legacy API durch
@@ -52,11 +53,20 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 	testFileName := fmt.Sprintf("testfile_%d.tmp", time.Now().UnixNano())
 	fullPath := testDir + "/" + testFileName
 
-	// 0. Ensure directory exists
-	err = client.EnsureDirectory(testDir)
+	// 0. Ensure directory exists with retry logic for network timeouts
+	retryConfig := utils.DefaultRetryConfig()
+	retryConfig.RetryableErrors = append(retryConfig.RetryableErrors, 
+		"TLS handshake timeout", 
+		"i/o timeout",
+		"connection reset by peer",
+		"context deadline exceeded")
+	
+	err = retryConfig.WithRetry(ctx, "ensure_directory", func(ctx context.Context) error {
+		return client.EnsureDirectory(testDir)
+	})
 	if err != nil {
 		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "directory", "error", 
-			"Could not ensure test directory", 
+			"Could not ensure test directory after retries", 
 			WithError(err))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()
 		return err

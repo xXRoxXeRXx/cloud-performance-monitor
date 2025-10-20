@@ -115,11 +115,20 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 	testFileName := fmt.Sprintf("testfile_%d.tmp", time.Now().UnixNano())
 	fullPath := testDir + "/" + testFileName
 
-	// 0. Ensure directory exists (Dropbox creates directories automatically)
-	err := client.EnsureDirectory(testDir)
+	// 0. Ensure directory exists (Dropbox creates directories automatically) with retry
+	retryConfig := utils.DefaultRetryConfig()
+	retryConfig.RetryableErrors = append(retryConfig.RetryableErrors, 
+		"TLS handshake timeout", 
+		"i/o timeout",
+		"connection reset by peer",
+		"context deadline exceeded")
+	
+	err := retryConfig.WithRetry(ctx, "ensure_directory", func(ctx context.Context) error {
+		return client.EnsureDirectory(testDir)
+	})
 	if err != nil {
 		Logger.LogOperation(ERROR, "dropbox", cfg.InstanceName, "directory", "error", 
-			"Could not validate test directory", 
+			"Could not validate test directory after retries", 
 			WithError(err))
 		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_validation").Inc()
 		return err

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/nextcloud"
+	"github.com/xXRoxXeRXx/cloud-performance-monitor/internal/utils"
 )
 
 // randomReader generates random data on-the-fly to avoid large memory allocations
@@ -24,9 +26,13 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	testFileName := fmt.Sprintf("testfile_%d.tmp", time.Now().UnixNano())
 	fullPath := testDir + "/" + testFileName
 
-	// 0. Ensure directory exists
-	if err := ncClient.EnsureDirectory(testDir); err != nil {
-		log.Printf("ERROR: Could not create test directory for %s: %v", cfg.URL, err)
+	// 0. Ensure directory exists with retry logic
+	dirErr := utils.DefaultRetryConfig().WithRetry(context.Background(), "create_directory", func(ctx context.Context) error {
+		return ncClient.EnsureDirectory(testDir)
+	})
+	
+	if dirErr != nil {
+		log.Printf("ERROR: Could not create test directory for %s after retries: %v", cfg.URL, dirErr)
 		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "directory_creation").Inc()
 		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "setup", "mkdir_error").Set(0)
 		return
