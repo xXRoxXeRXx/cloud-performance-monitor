@@ -30,8 +30,11 @@ groups:
         expr: |
           (
             cloud_test_success{error_code!="none"} == 0
+            and on(instance) up{job="nextcloud-monitor-agent"} == 1
+            and increase(cloud_test_success[5m]) > 0
           ) or (
             absent_over_time(cloud_test_success{error_code="none"}[20m])
+            and on(instance) up{job="nextcloud-monitor-agent"} == 1
           )
         for: 1m
         labels:
