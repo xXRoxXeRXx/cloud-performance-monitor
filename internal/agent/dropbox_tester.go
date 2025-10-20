@@ -272,6 +272,7 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", errorCode).Set(1)
 			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", errorCode).Set(1)
 			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "connection", errorCode).Set(1)
+			TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "setup", errorCode).Set(1)
 		}
 		
 		Logger.LogOperation(DEBUG, "dropbox", cfg.InstanceName, "metrics", "reset", 

@@ -154,6 +154,7 @@ func RunHiDriveTest(ctx context.Context, cfg *Config) error {
                        for _, errorCode := range GetAllErrorCodes() {
                               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", errorCode).Set(1)
                               TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", errorCode).Set(1)
+                              TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "setup", errorCode).Set(1)
                        }
                        Logger.LogOperation(DEBUG, "hidrive", cfg.InstanceName, "metrics", "reset", "Reset all previous error states to prevent false alarms")
                 }

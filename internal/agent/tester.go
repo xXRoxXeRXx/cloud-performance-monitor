@@ -115,6 +115,7 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 		for _, errorCode := range GetAllErrorCodes() {
 			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", errorCode).Set(1)
 			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "download", errorCode).Set(1)
+			TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "setup", errorCode).Set(1)
 		}
 		log.Printf("Reset all previous error states for Nextcloud instance %s", cfg.InstanceName)
 	}
