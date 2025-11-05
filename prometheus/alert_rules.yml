@@ -154,3 +154,30 @@ groups:
         annotations:
           summary: "Too many active alerts"
           description: "{{ $value }} alerts are currently firing. This might indicate a widespread issue."
+
+      # ==== STORAGE ALERTS ====
+      - alert: PrometheusStorageNearFull
+        expr: |
+          (
+            prometheus_tsdb_storage_blocks_bytes / (100 * 1024 * 1024 * 1024)
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "Prometheus storage is 80% full"
+          description: "Prometheus storage is at {{ $value | humanizePercentage }} of 100GB limit. Consider cleaning up old data or increasing retention.size."
+      
+      - alert: PrometheusStorageCritical
+        expr: |
+          (
+            prometheus_tsdb_storage_blocks_bytes / (100 * 1024 * 1024 * 1024)
+          ) > 0.95
+        for: 5m
+        labels:
+          severity: critical
+          category: storage
+        annotations:
+          summary: "Prometheus storage is 95% full - CRITICAL"
+          description: "Prometheus storage is at {{ $value | humanizePercentage }} of 100GB limit. Data loss may occur soon!"
