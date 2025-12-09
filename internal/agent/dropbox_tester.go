@@ -130,7 +130,16 @@ func RunDropboxTest(ctx context.Context, cfg *Config) error {
 		Logger.LogOperation(ERROR, "dropbox", cfg.InstanceName, "directory", "error", 
 			"Could not validate test directory after retries", 
 			WithError(err))
-		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_validation").Inc()
+		// Extract the actual error code (e.g., http_503_unavailable) instead of hardcoding "directory_validation"
+		directoryErrCode := ExtractErrorCode(err, "directory")
+		// If it's a generic error, use directory_validation; otherwise use the specific error code
+		if directoryErrCode == "directory_error" || directoryErrCode == "unknown_error" {
+			directoryErrCode = "directory_validation"
+		}
+		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", directoryErrCode).Inc()
+		// Set failed test metrics to trigger alerts
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", directoryErrCode).Set(0)
+		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", directoryErrCode).Set(0)
 		return err
 	}
 

@@ -31,6 +31,8 @@ alertmanager-data/
 *~
 *.swp
 *.swo
+# Reviews
+*CODE_REVIEW*
 
 # System
 .DS_Store

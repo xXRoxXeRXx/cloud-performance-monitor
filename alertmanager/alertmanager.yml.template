@@ -57,6 +57,22 @@ inhibit_rules:
       alertname: '(HighUploadDuration|SlowUploadSpeed|TestFailures)'
     equal: ['instance']
 
+  # IMPORTANT: If CloudServiceUnavailable (503/502/500) is firing,
+  # suppress all symptom-based alerts like DirectoryCreationFailed
+  # because the root cause is the service itself being unavailable
+  - source_match:
+      alertname: 'CloudServiceUnavailable'
+    target_match_re:
+      alertname: '(DirectoryCreationFailed|ServiceTestFailure|HighErrorRate|SlowUploadSpeed|SlowChunkUploads|HighChunkRetryRate)'
+    equal: ['service', 'exported_instance']
+
+  # CloudServiceUnavailable suppresses CloudServiceDegraded
+  - source_match:
+      alertname: 'CloudServiceUnavailable'
+    target_match:
+      alertname: 'CloudServiceDegraded'
+    equal: ['service', 'exported_instance']
+
 # Alert receivers/notification channels
 receivers:
   - name: 'default'

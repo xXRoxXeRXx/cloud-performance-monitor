@@ -68,7 +68,13 @@ func RunHiDriveLegacyTest(ctx context.Context, cfg *Config) error {
 		Logger.LogOperation(ERROR, "hidrive_legacy", cfg.InstanceName, "directory", "error", 
 			"Could not ensure test directory after retries", 
 			WithError(err))
-		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()
+		// Extract the actual error code (e.g., http_503_unavailable) instead of hardcoding "directory_creation"
+		directoryErrCode := ExtractErrorCode(err, "directory")
+		// If it's a generic error, use directory_creation; otherwise use the specific error code
+		if directoryErrCode == "directory_error" || directoryErrCode == "unknown_error" {
+			directoryErrCode = "directory_creation"
+		}
+		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", directoryErrCode).Inc()
 		return err
 	}
 

@@ -2,6 +2,7 @@ groups:
   - name: nextcloud_performance_alerts
     rules:
       # ==== SERVICE AVAILABILITY ALERTS ====
+      # Priority 1: Monitor Agent selbst ist down
       - alert: ServiceDown
         expr: up{job="monitor-agent"} == 0
         for: 1m
@@ -11,6 +12,49 @@ groups:
         annotations:
           summary: "Nextcloud Performance Monitor is down"
           description: "The monitor agent has been down for more than 1 minute."
+
+      # Priority 2: Cloud-Dienst antwortet mit 5xx Server-Fehlern (503/502/500)
+      # Dies ist der ROOT CAUSE Alert - alle anderen Fehler sind Symptome davon
+      - alert: CloudServiceUnavailable
+        expr: |
+          increase(cloud_test_errors_total{error_type=~"http_503_unavailable|http_502_bad_gateway|http_500_server_error|http_504_timeout"}[15m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+          root_cause: "true"
+        annotations:
+          summary: "🚨 Cloud-Dienst {{ $labels.service }} nicht erreichbar ({{ $labels.error_type }})"
+          description: |
+            Der Cloud-Dienst {{ $labels.service }} ({{ $labels.exported_instance }}) antwortet mit Server-Fehlern.
+            
+            Fehlertyp: {{ $labels.error_type }}
+            Betroffene Operation: {{ $labels.type }}
+            
+            Dies ist ein serverseitiges Problem - der Cloud-Anbieter ist momentan nicht verfügbar.
+            Alle nachfolgenden Fehler (Upload/Download/Directory) sind Symptome dieses Problems.
+            
+            Empfehlung: Status-Seite des Cloud-Anbieters prüfen.
+
+      # Priority 3: Cloud-Dienst ist degradiert (hohe Fehlerrate, aber nicht komplett down)
+      - alert: CloudServiceDegraded
+        expr: |
+          (
+            sum by (service, exported_instance) (increase(cloud_test_errors_total[30m])) 
+            / 
+            sum by (service, exported_instance) (increase(cloud_test_success[30m]) + increase(cloud_test_errors_total[30m]))
+          ) > 0.3
+          and
+          sum by (service, exported_instance) (increase(cloud_test_success[30m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+          category: availability
+        annotations:
+          summary: "⚠️ Cloud-Dienst {{ $labels.service }} ist degradiert"
+          description: |
+            Der Cloud-Dienst {{ $labels.service }} ({{ $labels.exported_instance }}) hat eine hohe Fehlerrate von {{ $value | humanizePercentage }}.
+            Der Dienst ist erreichbar, aber instabil.
 
       # ==== PERFORMANCE ALERTS ====
 
@@ -68,16 +112,30 @@ groups:
           description: "Error rate is {{ $value | humanizePercentage }} over the last 30 minutes. Error type: {{ $labels.error_type }}"
 
       # ==== RELIABILITY ALERTS ====
+      # Hinweis: Dieser Alert feuert nur wenn der Dienst erreichbar ist aber Directory-Erstellung fehlschlägt
+      # Bei 503/502/500 Fehlern wird stattdessen CloudServiceUnavailable gefeuert
       - alert: DirectoryCreationFailed
-        expr: increase(cloud_test_errors_total{error_type="directory_creation"}[30m]) > 0
+        expr: |
+          increase(cloud_test_errors_total{error_type="directory_creation"}[30m]) > 0
+          unless on(service, exported_instance) 
+          increase(cloud_test_errors_total{error_type=~"http_503_unavailable|http_502_bad_gateway|http_500_server_error"}[30m]) > 0
         for: 1m
         labels:
-          severity: critical
+          severity: warning
           category: reliability
           error_type: "directory_creation"
         annotations:
-          summary: "Directory creation failed for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Service {{ $labels.service }} at {{ $labels.instance }} failed to create test directory {{ $value }} times in the last 30 minutes"
+          summary: "Directory-Erstellung fehlgeschlagen für {{ $labels.service }} - {{ $labels.exported_instance }}"
+          description: |
+            Die Erstellung des Test-Verzeichnisses auf {{ $labels.service }} ({{ $labels.exported_instance }}) ist fehlgeschlagen.
+            Fehleranzahl in den letzten 30 Minuten: {{ $value }}
+            
+            Mögliche Ursachen:
+            - Berechtigungsproblem für den Test-Benutzer
+            - Quota/Speicherplatz erschöpft
+            - WebDAV-Konfiguration fehlerhaft
+            
+            Hinweis: Bei Server-Fehlern (503/502/500) wird stattdessen CloudServiceUnavailable Alert ausgelöst.
 
       # ==== NETWORK ALERTS ====
       - alert: HighNetworkLatency

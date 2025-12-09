@@ -33,8 +33,14 @@ func RunTest(cfg *Config, ncClient *nextcloud.Client) {
 	
 	if dirErr != nil {
 		log.Printf("ERROR: Could not create test directory for %s after retries: %v", cfg.URL, dirErr)
-		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", "directory_creation").Inc()
-		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "setup", "mkdir_error").Set(0)
+		// Extract the actual error code (e.g., http_503_unavailable) instead of hardcoding "directory_creation"
+		dirErrCode := ExtractErrorCode(dirErr, "directory")
+		// If it's a server error (5xx), use that specific code; otherwise use directory_creation
+		if dirErrCode == "directory_error" || dirErrCode == "unknown_error" {
+			dirErrCode = "directory_creation"
+		}
+		TestErrors.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "upload", dirErrCode).Inc()
+		TestSuccess.WithLabelValues(cfg.ServiceType, cfg.InstanceName, "setup", dirErrCode).Set(0)
 		return
 	}
 

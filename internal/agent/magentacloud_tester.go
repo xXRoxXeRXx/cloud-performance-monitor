@@ -35,8 +35,13 @@ func RunMagentaCloudTest(ctx context.Context, cfg *Config) error {
 		Logger.LogOperation(ERROR, "magentacloud", cfg.InstanceName, "directory", "error", 
 			"Could not create test directory after retries", 
 			WithError(err))
+		// Extract the actual error code (e.g., http_503_unavailable) instead of hardcoding "directory_creation"
 		directoryErrCode := ExtractErrorCode(err, "directory")
-		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", "directory_creation").Inc()
+		// If it's a generic error, use directory_creation; otherwise use the specific error code
+		if directoryErrCode == "directory_error" || directoryErrCode == "unknown_error" {
+			directoryErrCode = "directory_creation"
+		}
+		TestErrors.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", directoryErrCode).Inc()
 		// Set failed test metrics to trigger alerts
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "upload", directoryErrCode).Set(0)
 		TestSuccess.WithLabelValues(serviceLabel, cfg.InstanceName, "download", directoryErrCode).Set(0)
