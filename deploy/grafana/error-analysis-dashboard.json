@@ -1,1194 +1,2639 @@
-{
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
-  },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": null,
-  "links": [],
-  "liveNow": false,
-  "panels": [
+{{
+
+  "annotations": {  "annotations": {
+
+    "list": [    "list": [
+
+      {      {
+
+        "builtIn": 1,        "builtIn": 1,
+
+        "datasource": {        "datasource": {
+
+          "type": "grafana",          "type": "grafana",
+
+          "uid": "-- Grafana --"          "uid": "-- Grafana --"
+
+        },        },
+
+        "enable": true,        "enable": true,
+
+        "hide": true,        "hide": true,
+
+        "iconColor": "rgba(0, 211, 255, 1)",        "iconColor": "rgba(0, 211, 255, 1)",
+
+        "name": "Annotations & Alerts",        "name": "Annotations & Alerts",
+
+        "type": "dashboard"        "type": "dashboard"
+
+      }      }
+
+    ]    ]
+
+  },  },
+
+  "editable": true,  "editable": true,
+
+  "fiscalYearStartMonth": 0,  "fiscalYearStartMonth": 0,
+
+  "graphTooltip": 1,  "graphTooltip": 0,
+
+  "id": null,  "id": null,
+
+  "links": [],  "links": [],
+
+  "liveNow": false,  "liveNow": false,
+
+  "panels": [  "panels": [
+
+    {    {
+
+      "collapsed": false,      "datasource": {
+
+      "gridPos": {        "type": "prometheus",
+
+        "h": 1,        "uid": "PBFA97CFB590B2093"
+
+        "w": 24,      },
+
+        "x": 0,      "fieldConfig": {
+
+        "y": 0        "defaults": {
+
+      },          "color": {
+
+      "id": 100,            "mode": "palette-classic"
+
+      "title": "🚨 Error Overview",          },
+
+      "type": "row"          "custom": {
+
+    },            "hideFrom": {
+
+    {              "legend": false,
+
+      "datasource": {              "tooltip": false,
+
+        "type": "prometheus",              "vis": false
+
+        "uid": "PBFA97CFB590B2093"            }
+
+      },          },
+
+      "fieldConfig": {          "mappings": [],
+
+        "defaults": {          "unit": "short"
+
+          "color": {        },
+
+            "mode": "thresholds"        "overrides": [
+
+          },          {
+
+          "mappings": [],            "matcher": {
+
+          "thresholds": {              "id": "byName",
+
+            "mode": "absolute",              "options": "none"
+
+            "steps": [            },
+
+              {            "properties": [
+
+                "color": "green",              {
+
+                "value": null                "id": "color",
+
+              },                "value": {
+
+              {                  "mode": "fixed",
+
+                "color": "yellow",                  "fixedColor": "green"
+
+                "value": 1                }
+
+              },              }
+
+              {            ]
+
+                "color": "red",          },
+
+                "value": 5          {
+
+              }            "matcher": {
+
+            ]              "id": "byRegex",
+
+          },              "options": "http_5.*"
+
+          "unit": "short"            },
+
+        },            "properties": [
+
+        "overrides": []              {
+
+      },                "id": "color",
+
+      "gridPos": {                "value": {
+
+        "h": 4,                  "mode": "fixed",
+
+        "w": 4,                  "fixedColor": "red"
+
+        "x": 0,                }
+
+        "y": 1              }
+
+      },            ]
+
+      "id": 1,          },
+
+      "options": {          {
+
+        "colorMode": "value",            "matcher": {
+
+        "graphMode": "area",              "id": "byRegex",
+
+        "justifyMode": "auto",              "options": "http_4.*"
+
+        "orientation": "auto",            },
+
+        "reduceOptions": {            "properties": [
+
+          "calcs": ["lastNotNull"],              {
+
+          "fields": "",                "id": "color",
+
+          "values": false                "value": {
+
+        },                  "mode": "fixed",
+
+        "showPercentChange": false,                  "fixedColor": "orange"
+
+        "textMode": "auto",                }
+
+        "wideLayout": true              }
+
+      },            ]
+
+      "pluginVersion": "11.0.0",          },
+
+      "targets": [          {
+
+        {            "matcher": {
+
+          "datasource": {              "id": "byRegex",
+
+            "type": "prometheus",              "options": "network_.*"
+
+            "uid": "PBFA97CFB590B2093"            },
+
+          },            "properties": [
+
+          "expr": "sum(increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type!=\"none\"}[$__range]))",              {
+
+          "legendFormat": "Total Errors",                "id": "color",
+
+          "refId": "A"                "value": {
+
+        }                  "mode": "fixed",
+
+      ],                  "fixedColor": "purple"
+
+      "title": "Errors in Time Range",                }
+
+      "type": "stat"              }
+
+    },            ]
+
+    {          },
+
+      "datasource": {          {
+
+        "type": "prometheus",            "matcher": {
+
+        "uid": "PBFA97CFB590B2093"              "id": "byRegex",
+
+      },              "options": "auth_.*|token_.*"
+
+      "fieldConfig": {            },
+
+        "defaults": {            "properties": [
+
+          "color": {              {
+
+            "mode": "thresholds"                "id": "color",
+
+          },                "value": {
+
+          "mappings": [],                  "mode": "fixed",
+
+          "thresholds": {                  "fixedColor": "yellow"
+
+            "mode": "absolute",                }
+
+            "steps": [              }
+
+              {            ]
+
+                "color": "green",          }
+
+                "value": null        ]
+
+              },      },
+
+              {      "gridPos": {
+
+                "color": "yellow",        "h": 8,
+
+                "value": 1        "w": 12,
+
+              },        "x": 0,
+
+              {        "y": 0
+
+                "color": "red",      },
+
+                "value": 3      "id": 1,
+
+              }      "options": {
+
+            ]        "displayLabels": [
+
+          },          "name",
+
+          "unit": "short"          "percent"
+
+        },        ],
+
+        "overrides": []        "legend": {
+
+      },          "displayMode": "table",
+
+      "gridPos": {          "placement": "right",
+
+        "h": 4,          "showLegend": true,
+
+        "w": 4,          "values": [
+
+        "x": 4,            "value",
+
+        "y": 1            "percent"
+
+      },          ]
+
+      "id": 2,        },
+
+      "options": {        "pieType": "pie",
+
+        "colorMode": "value",        "reduceOptions": {
+
+        "graphMode": "area",          "calcs": [
+
+        "justifyMode": "auto",            "lastNotNull"
+
+        "orientation": "auto",          ],
+
+        "reduceOptions": {          "fields": "",
+
+          "calcs": ["lastNotNull"],          "values": false
+
+          "fields": "",        },
+
+          "values": false        "tooltip": {
+
+        },          "mode": "single",
+
+        "showPercentChange": false,          "sort": "none"
+
+        "textMode": "auto",        }
+
+        "wideLayout": true      },
+
+      },      "pluginVersion": "10.0.0",
+
+      "pluginVersion": "11.0.0",      "targets": [
+
+      "targets": [        {
+
+        {          "datasource": {
+
+          "datasource": {            "type": "prometheus",
+
+            "type": "prometheus",            "uid": "PBFA97CFB590B2093"
+
+            "uid": "PBFA97CFB590B2093"          },
+
+          },          "expr": "sum by (error_type) (cloud_test_errors_total{error_type!=\"none\"})",
+
+          "expr": "sum(increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type=~\"http_5.*\"}[$__range]))",          "format": "time_series",
+
+          "legendFormat": "5xx Errors",          "legendFormat": "{{error_type}}",
+
+          "refId": "A"          "refId": "A"
+
+        }        }
+
+      ],      ],
+
+      "title": "Server Errors (5xx)",      "title": "Error Distribution by Type",
+
+      "type": "stat"      "type": "piechart"
+
+    },    },
+
+    {    {
+
+      "datasource": {      "datasource": {
+
+        "type": "prometheus",        "type": "prometheus",
+
+        "uid": "PBFA97CFB590B2093"        "uid": "PBFA97CFB590B2093"
+
+      },      },
+
+      "fieldConfig": {      "fieldConfig": {
+
+        "defaults": {        "defaults": {
+
+          "color": {          "color": {
+
+            "mode": "thresholds"            "mode": "thresholds"
+
+          },          },
+
+          "mappings": [],          "custom": {
+
+          "thresholds": {            "align": "auto",
+
+            "mode": "absolute",            "cellOptions": {
+
+            "steps": [              "type": "auto"
+
+              {            },
+
+                "color": "green",            "inspect": false
+
+                "value": null          },
+
+              },          "mappings": [],
+
+              {          "thresholds": {
+
+                "color": "orange",            "mode": "absolute",
+
+                "value": 1            "steps": [
+
+              },              {
+
+              {                "color": "green",
+
+                "color": "red",                "value": null
+
+                "value": 5              },
+
+              }              {
+
+            ]                "color": "red",
+
+          },                "value": 1
+
+          "unit": "short"              }
+
+        },            ]
+
+        "overrides": []          },
+
+      },          "unit": "short"
+
+      "gridPos": {        },
+
+        "h": 4,        "overrides": [
+
+        "w": 4,          {
+
+        "x": 8,            "matcher": {
+
+        "y": 1              "id": "byName",
+
+      },              "options": "Error Code"
+
+      "id": 3,            },
+
+      "options": {            "properties": [
+
+        "colorMode": "value",              {
+
+        "graphMode": "area",                "id": "custom.width",
+
+        "justifyMode": "auto",                "value": 200
+
+        "orientation": "auto",              }
+
+        "reduceOptions": {            ]
+
+          "calcs": ["lastNotNull"],          },
+
+          "fields": "",          {
+
+          "values": false            "matcher": {
+
+        },              "id": "byName",
+
+        "showPercentChange": false,              "options": "Service"
+
+        "textMode": "auto",            },
+
+        "wideLayout": true            "properties": [
+
+      },              {
+
+      "pluginVersion": "11.0.0",                "id": "custom.width",
+
+      "targets": [                "value": 120
+
+        {              }
+
+          "datasource": {            ]
+
+            "type": "prometheus",          },
+
+            "uid": "PBFA97CFB590B2093"          {
+
+          },            "matcher": {
+
+          "expr": "sum(increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type=~\"network_.*|connection_.*\"}[$__range]))",              "id": "byName",
+
+          "legendFormat": "Network Errors",              "options": "Instance"
+
+          "refId": "A"            },
+
+        }            "properties": [
+
+      ],              {
+
+      "title": "Network Errors",                "id": "custom.width",
+
+      "type": "stat"                "value": 300
+
+    },              }
+
+    {            ]
+
+      "datasource": {          }
+
+        "type": "prometheus",        ]
+
+        "uid": "PBFA97CFB590B2093"      },
+
+      },      "gridPos": {
+
+      "fieldConfig": {        "h": 8,
+
+        "defaults": {        "w": 12,
+
+          "color": {        "x": 12,
+
+            "mode": "thresholds"        "y": 0
+
+          },      },
+
+          "mappings": [],      "id": 2,
+
+          "thresholds": {      "options": {
+
+            "mode": "absolute",        "cellHeight": "sm",
+
+            "steps": [        "footer": {
+
+              {          "countRows": false,
+
+                "color": "green",          "fields": "",
+
+                "value": null          "reducer": [
+
+              },            "sum"
+
+              {          ],
+
+                "color": "yellow",          "show": false
+
+                "value": 1        },
+
+              },        "showHeader": true,
+
+              {        "sortBy": [
+
+                "color": "red",          {
+
+                "value": 3            "desc": true,
+
+              }            "displayName": "Count"
+
+            ]          }
+
+          },        ]
+
+          "unit": "short"      },
+
+        },      "pluginVersion": "10.0.0",
+
+        "overrides": []      "targets": [
+
+      },        {
+
+      "gridPos": {          "datasource": {
+
+        "h": 4,            "type": "prometheus",
+
+        "w": 4,            "uid": "PBFA97CFB590B2093"
+
+        "x": 12,          },
+
+        "y": 1          "expr": "sum by (error_type, service, exported_instance) (cloud_test_errors_total{error_type!=\"none\"})",
+
+      },          "format": "table",
+
+      "id": 4,          "instant": true,
+
+      "options": {          "refId": "A"
+
+        "colorMode": "value",        }
+
+        "graphMode": "area",      ],
+
+        "justifyMode": "auto",      "title": "Current Active Errors",
+
+        "orientation": "auto",      "transformations": [
+
+        "reduceOptions": {        {
+
+          "calcs": ["lastNotNull"],          "id": "organize",
+
+          "fields": "",          "options": {
+
+          "values": false            "excludeByName": {
+
+        },              "Time": true
+
+        "showPercentChange": false,            },
+
+        "textMode": "auto",            "indexByName": {},
+
+        "wideLayout": true            "renameByName": {
+
+      },              "Value": "Count",
+
+      "pluginVersion": "11.0.0",              "error_type": "Error Type",
+
+      "targets": [              "instance": "Instance",
+
+        {              "service": "Service"
+
+          "datasource": {            }
+
+            "type": "prometheus",          }
+
+            "uid": "PBFA97CFB590B2093"        }
+
+          },      ],
+
+          "expr": "sum(increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type=~\"auth_.*|token_.*\"}[$__range]))",      "type": "table"
+
+          "legendFormat": "Auth Errors",    },
+
+          "refId": "A"    {
+
+        }      "datasource": {
+
+      ],        "type": "prometheus",
+
+      "title": "Auth/Token Errors",        "uid": "PBFA97CFB590B2093"
+
+      "type": "stat"      },
+
+    },      "fieldConfig": {
+
+    {        "defaults": {
+
+      "datasource": {          "color": {
+
+        "type": "prometheus",            "mode": "palette-classic"
+
+        "uid": "PBFA97CFB590B2093"          },
+
+      },          "custom": {
+
+      "fieldConfig": {            "axisCenteredZero": false,
+
+        "defaults": {            "axisColorMode": "text",
+
+          "color": {            "axisLabel": "",
+
+            "mode": "thresholds"            "axisPlacement": "auto",
+
+          },            "barAlignment": 0,
+
+          "decimals": 1,            "drawStyle": "line",
+
+          "mappings": [],            "fillOpacity": 10,
+
+          "max": 100,            "gradientMode": "none",
+
+          "min": 0,            "hideFrom": {
+
+          "thresholds": {              "legend": false,
+
+            "mode": "absolute",              "tooltip": false,
+
+            "steps": [              "vis": false
+
+              {            },
+
+                "color": "red",            "insertNulls": false,
+
+                "value": null            "lineInterpolation": "linear",
+
+              },            "lineWidth": 1,
+
+              {            "pointSize": 5,
+
+                "color": "yellow",            "scaleDistribution": {
+
+                "value": 95              "type": "linear"
+
+              },            },
+
+              {            "showPoints": "never",
+
+                "color": "green",            "spanNulls": false,
+
+                "value": 99            "stacking": {
+
+              }              "group": "A",
+
+            ]              "mode": "none"
+
+          },            },
+
+          "unit": "percent"            "thresholdsStyle": {
+
+        },              "mode": "off"
+
+        "overrides": []            }
+
+      },          },
+
+      "gridPos": {          "mappings": [],
+
+        "h": 4,          "thresholds": {
+
+        "w": 4,            "mode": "absolute",
+
+        "x": 16,            "steps": [
+
+        "y": 1              {
+
+      },                "color": "green",
+
+      "id": 5,                "value": null
+
+      "options": {              },
+
+        "colorMode": "value",              {
+
+        "graphMode": "area",                "color": "red",
+
+        "justifyMode": "auto",                "value": 80
+
+        "orientation": "auto",              }
+
+        "reduceOptions": {            ]
+
+          "calcs": ["lastNotNull"],          },
+
+          "fields": "",          "unit": "percent"
+
+          "values": false        },
+
+        },        "overrides": []
+
+        "showPercentChange": false,      },
+
+        "textMode": "auto",      "gridPos": {
+
+        "wideLayout": true        "h": 8,
+
+      },        "w": 24,
+
+      "pluginVersion": "11.0.0",        "x": 0,
+
+      "targets": [        "y": 8
+
+        {      },
+
+          "datasource": {      "id": 3,
+
+            "type": "prometheus",      "options": {
+
+            "uid": "PBFA97CFB590B2093"        "legend": {
+
+          },          "calcs": [],
+
+          "expr": "(\n  sum(avg_over_time(cloud_test_success{service=~\"$service\", exported_instance=~\"$exported_instance\", error_code=\"none\"}[$__range]))\n  /\n  sum(avg_over_time(cloud_test_success{service=~\"$service\", exported_instance=~\"$exported_instance\"}[$__range]))\n) * 100",          "displayMode": "list",
+
+          "legendFormat": "Success Rate",          "placement": "bottom",
+
+          "refId": "A"          "showLegend": true
+
+        }        },
+
+      ],        "tooltip": {
+
+      "title": "Success Rate",          "mode": "single",
+
+      "type": "stat"          "sort": "none"
+
+    },        }
+
+    {      },
+
+      "datasource": {      "pluginVersion": "10.0.0",
+
+        "type": "prometheus",      "targets": [
+
+        "uid": "PBFA97CFB590B2093"        {
+
+      },          "datasource": {
+
+      "fieldConfig": {            "type": "prometheus",
+
+        "defaults": {            "uid": "PBFA97CFB590B2093"
+
+          "color": {          },
+
+            "mode": "thresholds"          "expr": "(\n  sum by (service, exported_instance) (cloud_test_success{error_code=\"none\"})\n  /\n  sum by (service, exported_instance) (cloud_test_success)\n) * 100",
+
+          },          "legendFormat": "{{service}} - {{exported_instance}}",
+
+          "mappings": [],          "refId": "A"
+
+          "thresholds": {        }
+
+            "mode": "absolute",      ],
+
+            "steps": [      "title": "Success Rate Over Time",
+
+              {      "type": "timeseries"
+
+                "color": "blue",    },
+
+                "value": null    {
+
+              }      "datasource": {
+
+            ]        "type": "prometheus",
+
+          },        "uid": "PBFA97CFB590B2093"
+
+          "unit": "short"      },
+
+        },      "fieldConfig": {
+
+        "overrides": []        "defaults": {
+
+      },          "color": {
+
+      "gridPos": {            "mode": "palette-classic"
+
+        "h": 4,          },
+
+        "w": 4,          "custom": {
+
+        "x": 20,            "axisCenteredZero": false,
+
+        "y": 1            "axisColorMode": "text",
+
+      },            "axisLabel": "",
+
+      "id": 6,            "axisPlacement": "auto",
+
+      "options": {            "barAlignment": 0,
+
+        "colorMode": "value",            "drawStyle": "bars",
+
+        "graphMode": "area",            "fillOpacity": 80,
+
+        "justifyMode": "auto",            "gradientMode": "none",
+
+        "orientation": "auto",            "hideFrom": {
+
+        "reduceOptions": {              "legend": false,
+
+          "calcs": ["lastNotNull"],              "tooltip": false,
+
+          "fields": "",              "vis": false
+
+          "values": false            },
+
+        },            "insertNulls": false,
+
+        "showPercentChange": false,            "lineInterpolation": "linear",
+
+        "textMode": "auto",            "lineWidth": 1,
+
+        "wideLayout": true            "pointSize": 5,
+
+      },            "scaleDistribution": {
+
+      "pluginVersion": "11.0.0",              "type": "linear"
+
+      "targets": [            },
+
+        {            "showPoints": "never",
+
+          "datasource": {            "spanNulls": false,
+
+            "type": "prometheus",            "stacking": {
+
+            "uid": "PBFA97CFB590B2093"              "group": "A",
+
+          },              "mode": "normal"
+
+          "expr": "count(count by (error_type) (cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type!=\"none\"}))",            },
+
+          "legendFormat": "Error Types",            "thresholdsStyle": {
+
+          "refId": "A"              "mode": "off"
+
+        }            }
+
+      ],          },
+
+      "title": "Distinct Error Types",          "mappings": [],
+
+      "type": "stat"          "thresholds": {
+
+    },            "mode": "absolute",
+
+    {            "steps": [
+
+      "collapsed": false,              {
+
+      "gridPos": {                "color": "green",
+
+        "h": 1,                "value": null
+
+        "w": 24,              },
+
+        "x": 0,              {
+
+        "y": 5                "color": "red",
+
+      },                "value": 1
+
+      "id": 101,              }
+
+      "title": "📈 Error Timeline - When Did Errors Occur?",            ]
+
+      "type": "row"          },
+
+    },          "unit": "short"
+
+    {        },
+
+      "datasource": {        "overrides": [
+
+        "type": "prometheus",          {
+
+        "uid": "PBFA97CFB590B2093"            "matcher": {
+
+      },              "id": "byRegex",
+
+      "description": "Shows when errors occurred over time. Each bar represents errors in that time interval.",              "options": ".*http_5.*"
+
+      "fieldConfig": {            },
+
+        "defaults": {            "properties": [
+
+          "color": {              {
+
+            "mode": "palette-classic"                "id": "color",
+
+          },                "value": {
+
+          "custom": {                  "mode": "fixed",
+
+            "axisBorderShow": false,                  "fixedColor": "red"
+
+            "axisCenteredZero": false,                }
+
+            "axisColorMode": "text",              }
+
+            "axisLabel": "Error Count",            ]
+
+            "axisPlacement": "auto",          },
+
+            "barAlignment": 0,          {
+
+            "drawStyle": "bars",            "matcher": {
+
+            "fillOpacity": 80,              "id": "byRegex",
+
+            "gradientMode": "none",              "options": ".*http_4.*"
+
+            "hideFrom": {            },
+
+              "legend": false,            "properties": [
+
+              "tooltip": false,              {
+
+              "viz": false                "id": "color",
+
+            },                "value": {
+
+            "insertNulls": false,                  "mode": "fixed",
+
+            "lineInterpolation": "linear",                  "fixedColor": "orange"
+
+            "lineWidth": 1,                }
+
+            "pointSize": 5,              }
+
+            "scaleDistribution": {            ]
+
+              "type": "linear"          },
+
+            },          {
+
+            "showPoints": "never",            "matcher": {
+
+            "spanNulls": false,              "id": "byRegex",
+
+            "stacking": {              "options": ".*network_.*"
+
+              "group": "A",            },
+
+              "mode": "normal"            "properties": [
+
+            },              {
+
+            "thresholdsStyle": {                "id": "color",
+
+              "mode": "off"                "value": {
+
+            }                  "mode": "fixed",
+
+          },                  "fixedColor": "purple"
+
+          "mappings": [],                }
+
+          "min": 0,              }
+
+          "thresholds": {            ]
+
+            "mode": "absolute",          }
+
+            "steps": [        ]
+
+              {      },
+
+                "color": "green",      "gridPos": {
+
+                "value": null        "h": 8,
+
+              }        "w": 12,
+
+            ]        "x": 0,
+
+          },        "y": 16
+
+          "unit": "short"      },
+
+        },      "id": 4,
+
+        "overrides": [      "options": {
+
+          {        "legend": {
+
+            "matcher": {          "calcs": [],
+
+              "id": "byRegex",          "displayMode": "list",
+
+              "options": ".*http_5.*"          "placement": "bottom",
+
+            },          "showLegend": true
+
+            "properties": [        },
+
+              {        "tooltip": {
+
+                "id": "color",          "mode": "single",
+
+                "value": {          "sort": "none"
+
+                  "mode": "fixed",        }
+
+                  "fixedColor": "red"      },
+
+                }      "pluginVersion": "10.0.0",
+
+              }      "targets": [
+
+            ]        {
+
+          },          "datasource": {
+
+          {            "type": "prometheus",
+
+            "matcher": {            "uid": "PBFA97CFB590B2093"
+
+              "id": "byRegex",          },
+
+              "options": ".*http_4.*"          "expr": "rate(cloud_test_errors_total{error_type!=\"none\"}[5m])",
+
+            },          "legendFormat": "{{service}} - {{error_type}}",
+
+            "properties": [          "refId": "A"
+
+              {        }
+
+                "id": "color",      ],
+
+                "value": {      "title": "Error Rate by Type",
+
+                  "mode": "fixed",      "type": "timeseries"
+
+                  "fixedColor": "orange"    },
+
+                }    {
+
+              }      "datasource": {
+
+            ]        "type": "prometheus",
+
+          },        "uid": "PBFA97CFB590B2093"
+
+          {      },
+
+            "matcher": {      "fieldConfig": {
+
+              "id": "byRegex",        "defaults": {
+
+              "options": ".*network_.*|.*connection_.*|.*timeout.*"          "color": {
+
+            },            "mode": "palette-classic"
+
+            "properties": [          },
+
+              {          "custom": {
+
+                "id": "color",            "hideFrom": {
+
+                "value": {              "legend": false,
+
+                  "mode": "fixed",              "tooltip": false,
+
+                  "fixedColor": "purple"              "vis": false
+
+                }            }
+
+              }          },
+
+            ]          "mappings": [],
+
+          },          "unit": "short"
+
+          {        },
+
+            "matcher": {        "overrides": [
+
+              "id": "byRegex",          {
+
+              "options": ".*auth_.*|.*token_.*"            "matcher": {
+
+            },              "id": "byRegex",
+
+            "properties": [              "options": "HTTP 5xx.*"
+
+              {            },
+
+                "id": "color",            "properties": [
+
+                "value": {              {
+
+                  "mode": "fixed",                "id": "color",
+
+                  "fixedColor": "yellow"                "value": {
+
+                }                  "mode": "fixed",
+
+              }                  "fixedColor": "red"
+
+            ]                }
+
+          }              }
+
+        ]            ]
+
+      },          },
+
+      "gridPos": {          {
+
+        "h": 8,            "matcher": {
+
+        "w": 24,              "id": "byRegex",
+
+        "x": 0,              "options": "HTTP 4xx.*"
+
+        "y": 6            },
+
+      },            "properties": [
+
+      "id": 10,              {
+
+      "options": {                "id": "color",
+
+        "legend": {                "value": {
+
+          "calcs": ["sum"],                  "mode": "fixed",
+
+          "displayMode": "table",                  "fixedColor": "orange"
+
+          "placement": "right",                }
+
+          "showLegend": true,              }
+
+          "sortBy": "Total",            ]
+
+          "sortDesc": true          },
+
+        },          {
+
+        "tooltip": {            "matcher": {
+
+          "maxHeight": 600,              "id": "byName",
+
+          "mode": "multi",              "options": "Network Errors"
+
+          "sort": "desc"            },
+
+        }            "properties": [
+
+      },              {
+
+      "pluginVersion": "11.0.0",                "id": "color",
+
+      "targets": [                "value": {
+
+        {                  "mode": "fixed",
+
+          "datasource": {                  "fixedColor": "purple"
+
+            "type": "prometheus",                }
+
+            "uid": "PBFA97CFB590B2093"              }
+
+          },            ]
+
+          "editorMode": "code",          },
+
+          "expr": "increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type!=\"none\"}[$__interval]) > 0",          {
+
+          "legendFormat": "{{exported_instance}} - {{error_type}}",            "matcher": {
+
+          "range": true,              "id": "byName",
+
+          "refId": "A"              "options": "Auth Errors"
+
+        }            },
+
+      ],            "properties": [
+
+      "title": "Error Events Timeline",              {
+
+      "type": "timeseries"                "id": "color",
+
+    },                "value": {
+
+    {                  "mode": "fixed",
+
+      "datasource": {                  "fixedColor": "yellow"
+
+        "type": "prometheus",                }
+
+        "uid": "PBFA97CFB590B2093"              }
+
+      },            ]
+
+      "description": "Success status over time: 1 = Success, 0 = Failure. Drops indicate test failures.",          },
+
+      "fieldConfig": {          {
+
+        "defaults": {            "matcher": {
+
+          "color": {              "id": "byName",
+
+            "mode": "thresholds"              "options": "File Errors"
+
+          },            },
+
+          "custom": {            "properties": [
+
+            "axisBorderShow": false,              {
+
+            "axisCenteredZero": false,                "id": "color",
+
+            "axisColorMode": "text",                "value": {
+
+            "axisLabel": "",                  "mode": "fixed",
+
+            "axisPlacement": "auto",                  "fixedColor": "blue"
+
+            "barAlignment": 0,                }
+
+            "drawStyle": "line",              }
+
+            "fillOpacity": 30,            ]
+
+            "gradientMode": "none",          }
+
+            "hideFrom": {        ]
+
+              "legend": false,      },
+
+              "tooltip": false,      "gridPos": {
+
+              "viz": false        "h": 8,
+
+            },        "w": 12,
+
+            "insertNulls": false,        "x": 12,
+
+            "lineInterpolation": "stepAfter",        "y": 16
+
+            "lineWidth": 2,      },
+
+            "pointSize": 5,      "id": 5,
+
+            "scaleDistribution": {      "options": {
+
+              "type": "linear"        "displayLabels": [
+
+            },          "name",
+
+            "showPoints": "auto",          "value"
+
+            "spanNulls": false,        ],
+
+            "stacking": {        "legend": {
+
+              "group": "A",          "displayMode": "table",
+
+              "mode": "none"          "placement": "right",
+
+            },          "showLegend": true,
+
+            "thresholdsStyle": {          "values": [
+
+              "mode": "area"            "value",
+
+            }            "percent"
+
+          },          ]
+
+          "mappings": [        },
+
+            {        "pieType": "donut",
+
+              "options": {        "reduceOptions": {
+
+                "0": {          "calcs": [
+
+                  "color": "red",            "lastNotNull"
+
+                  "index": 1,          ],
+
+                  "text": "FAILED"          "fields": "",
+
+                },          "values": false
+
+                "1": {        },
+
+                  "color": "green",        "tooltip": {
+
+                  "index": 0,          "mode": "single",
+
+                  "text": "OK"          "sort": "none"
+
+                }        }
+
+              },      },
+
+              "type": "value"      "pluginVersion": "10.0.0",
+
+            }      "targets": [
+
+          ],        {
+
+          "max": 1,          "datasource": {
+
+          "min": 0,            "type": "prometheus",
+
+          "thresholds": {            "uid": "PBFA97CFB590B2093"
+
+            "mode": "absolute",          },
+
+            "steps": [          "expr": "sum(cloud_test_errors_total{error_type=~\"http_5.*\"})",
+
+              {          "legendFormat": "HTTP 5xx Errors",
+
+                "color": "red",          "refId": "A"
+
+                "value": null        },
+
+              },        {
+
+              {          "datasource": {
+
+                "color": "green",            "type": "prometheus",
+
+                "value": 1            "uid": "PBFA97CFB590B2093"
+
+              }          },
+
+            ]          "expr": "sum(cloud_test_errors_total{error_type=~\"http_4.*\"})",
+
+          },          "legendFormat": "HTTP 4xx Errors",
+
+          "unit": "short"          "refId": "B"
+
+        },        },
+
+        "overrides": []        {
+
+      },          "datasource": {
+
+      "gridPos": {            "type": "prometheus",
+
+        "h": 6,            "uid": "PBFA97CFB590B2093"
+
+        "w": 24,          },
+
+        "x": 0,          "expr": "sum(cloud_test_errors_total{error_type=~\"network_.*\"})",
+
+        "y": 14          "legendFormat": "Network Errors",
+
+      },          "refId": "C"
+
+      "id": 11,        },
+
+      "options": {        {
+
+        "legend": {          "datasource": {
+
+          "calcs": ["min", "mean"],            "type": "prometheus",
+
+          "displayMode": "table",            "uid": "PBFA97CFB590B2093"
+
+          "placement": "right",          },
+
+          "showLegend": true          "expr": "sum(cloud_test_errors_total{error_type=~\"auth_.*|token_.*\"})",
+
+        },          "legendFormat": "Auth Errors",
+
+        "tooltip": {          "refId": "D"
+
+          "maxHeight": 600,        },
+
+          "mode": "multi",        {
+
+          "sort": "none"          "datasource": {
+
+        }            "type": "prometheus",
+
+      },            "uid": "PBFA97CFB590B2093"
+
+      "pluginVersion": "11.0.0",          },
+
+      "targets": [          "expr": "sum(cloud_test_errors_total{error_type=~\".*upload.*|.*download.*|.*file.*|.*permission.*|.*quota.*|size_mismatch|read_error\"})",
+
+        {          "legendFormat": "File Errors",
+
+          "datasource": {          "refId": "E"
+
+            "type": "prometheus",        },
+
+            "uid": "PBFA97CFB590B2093"        {
+
+          },          "datasource": {
+
+          "editorMode": "code",            "type": "prometheus",
+
+          "expr": "cloud_test_success{service=~\"$service\", exported_instance=~\"$exported_instance\", error_code=\"none\"}",            "uid": "PBFA97CFB590B2093"
+
+          "legendFormat": "{{exported_instance}} ({{type}})",          },
+
+          "range": true,          "expr": "sum(cloud_test_errors_total{error_type=~\"webdav_.*|chunk_.*\"})",
+
+          "refId": "A"          "legendFormat": "WebDAV Errors",
+
+        }          "refId": "F"
+
+      ],        }
+
+      "title": "Test Success Status (1=OK, 0=Failed)",      ],
+
+      "type": "timeseries"      "title": "Error Categories Distribution",
+
+    },      "type": "piechart"
+
+    {    },
+
+      "collapsed": false,    {
+
+      "gridPos": {      "datasource": {
+
+        "h": 1,        "type": "prometheus",
+
+        "w": 24,        "uid": "PBFA97CFB590B2093"
+
+        "x": 0,      },
+
+        "y": 20      "fieldConfig": {
+
+      },        "defaults": {
+
+      "id": 102,          "color": {
+
+      "title": "📊 Error Distribution",            "mode": "thresholds"
+
+      "type": "row"          },
+
+    },          "custom": {
+
+    {            "align": "auto",
+
+      "datasource": {            "cellOptions": {
+
+        "type": "prometheus",              "type": "auto"
+
+        "uid": "PBFA97CFB590B2093"            },
+
+      },            "inspect": false
+
+      "description": "Distribution of errors by type in the selected time range.",          },
+
+      "fieldConfig": {          "mappings": [],
+
+        "defaults": {          "thresholds": {
+
+          "color": {            "mode": "absolute",
+
+            "mode": "palette-classic"            "steps": [
+
+          },              {
+
+          "custom": {                "color": "green",
+
+            "hideFrom": {                "value": null
+
+              "legend": false,              },
+
+              "tooltip": false,              {
+
+              "vis": false                "color": "yellow",
+
+            }                "value": 1
+
+          },              },
+
+          "mappings": [],              {
+
+          "unit": "short"                "color": "red",
+
+        },                "value": 5
+
+        "overrides": [              }
+
+          {            ]
+
+            "matcher": {          },
+
+              "id": "byRegex",          "unit": "short"
+
+              "options": "http_5.*"        },
+
+            },        "overrides": [
+
+            "properties": [          {
+
+              {            "matcher": {
+
+                "id": "color",              "id": "byName",
+
+                "value": {              "options": "Error Code"
+
+                  "mode": "fixed",            },
+
+                  "fixedColor": "red"            "properties": [
+
+                }              {
+
+              }                "id": "custom.width",
+
+            ]                "value": 200
+
+          },              }
+
+          {            ]
+
+            "matcher": {          },
+
+              "id": "byRegex",          {
+
+              "options": "http_4.*"            "matcher": {
+
+            },              "id": "byName",
+
+            "properties": [              "options": "Description"
+
+              {            },
+
+                "id": "color",            "properties": [
+
+                "value": {              {
+
+                  "mode": "fixed",                "id": "custom.width",
+
+                  "fixedColor": "orange"                "value": 400
+
+                }              }
+
+              }            ]
+
+            ]          },
+
+          },          {
+
+          {            "matcher": {
+
+            "matcher": {              "id": "byName",
+
+              "id": "byRegex",              "options": "Severity"
+
+              "options": "network_.*|connection_.*"            },
+
+            },            "properties": [
+
+            "properties": [              {
+
+              {                "id": "custom.width",
+
+                "id": "color",                "value": 100
+
+                "value": {              },
+
+                  "mode": "fixed",              {
+
+                  "fixedColor": "purple"                "id": "mappings",
+
+                }                "value": [
+
+              }                  {
+
+            ]                    "options": {
+
+          },                      "Critical": {
+
+          {                        "color": "red",
+
+            "matcher": {                        "index": 0
+
+              "id": "byRegex",                      },
+
+              "options": "auth_.*|token_.*"                      "Warning": {
+
+            },                        "color": "yellow",
+
+            "properties": [                        "index": 1
+
+              {                      },
+
+                "id": "color",                      "Info": {
+
+                "value": {                        "color": "blue",
+
+                  "mode": "fixed",                        "index": 2
+
+                  "fixedColor": "yellow"                      }
+
+                }                    },
+
+              }                    "type": "value"
+
+            ]                  }
+
+          }                ]
+
+        ]              }
+
+      },            ]
+
+      "gridPos": {          }
+
+        "h": 8,        ]
+
+        "w": 8,      },
+
+        "x": 0,      "gridPos": {
+
+        "y": 21        "h": 8,
+
+      },        "w": 24,
+
+      "id": 20,        "x": 0,
+
+      "options": {        "y": 24
+
+        "displayLabels": ["name", "percent"],      },
+
+        "legend": {      "id": 6,
+
+          "displayMode": "table",      "options": {
+
+          "placement": "right",        "cellHeight": "sm",
+
+          "showLegend": true,        "footer": {
+
+          "values": ["value", "percent"]          "countRows": false,
+
+        },          "fields": "",
+
+        "pieType": "donut",          "reducer": [
+
+        "reduceOptions": {            "sum"
+
+          "calcs": ["sum"],          ],
+
+          "fields": "",          "show": false
+
+          "values": false        },
+
+        },        "showHeader": true,
+
+        "tooltip": {        "sortBy": [
+
+          "mode": "single",          {
+
+          "sort": "none"            "desc": true,
+
+        }            "displayName": "Total Count"
+
+      },          }
+
+      "pluginVersion": "11.0.0",        ]
+
+      "targets": [      },
+
+        {      "pluginVersion": "10.0.0",
+
+          "datasource": {      "targets": [
+
+            "type": "prometheus",        {
+
+            "uid": "PBFA97CFB590B2093"          "datasource": {
+
+          },            "type": "prometheus",
+
+          "editorMode": "code",            "uid": "PBFA97CFB590B2093"
+
+          "expr": "sum by (error_type) (increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type!=\"none\"}[$__range]))",          },
+
+          "legendFormat": "{{error_type}}",          "expr": "topk(20, sum by (error_type) (cloud_test_errors_total{error_type!=\"none\"}))",
+
+          "range": true,          "format": "table",
+
+          "refId": "A"          "instant": true,
+
+        }          "refId": "A"
+
+      ],        }
+
+      "title": "Errors by Type",      ],
+
+      "type": "piechart"      "title": "Top 20 Error Codes",
+
+    },      "transformations": [
+
+    {        {
+
+      "datasource": {          "id": "organize",
+
+        "type": "prometheus",          "options": {
+
+        "uid": "PBFA97CFB590B2093"            "excludeByName": {
+
+      },              "Time": true
+
+      "description": "Distribution of errors by service in the selected time range.",            },
+
+      "fieldConfig": {            "indexByName": {},
+
+        "defaults": {            "renameByName": {
+
+          "color": {              "Value": "Total Count",
+
+            "mode": "palette-classic"              "error_type": "Error Type"
+
+          },            }
+
+          "custom": {          }
+
+            "hideFrom": {        },
+
+              "legend": false,        {
+
+              "tooltip": false,          "id": "joinByField",
+
+              "vis": false          "options": {
+
+            }            "byField": "Error Code",
+
+          },            "mode": "outer"
+
+          "mappings": [],          }
+
+          "unit": "short"        },
+
+        },        {
+
+        "overrides": []          "id": "calculateField",
+
+      },          "options": {
+
+      "gridPos": {            "alias": "Description",
+
+        "h": 8,            "binary": {
+
+        "w": 8,              "left": "Error Code",
+
+        "x": 8,              "operator": "+",
+
+        "y": 21              "reducer": "sum",
+
+      },              "right": ""
+
+      "id": 21,            },
+
+      "options": {            "mode": "reduceRow",
+
+        "displayLabels": ["name", "percent"],            "reduce": {
+
+        "legend": {              "include": [
+
+          "displayMode": "table",                "Error Code"
+
+          "placement": "right",              ],
+
+          "showLegend": true,              "reducer": "lastNotNull"
+
+          "values": ["value", "percent"]            },
+
+        },            "replaceFields": false
+
+        "pieType": "donut",          }
+
+        "reduceOptions": {        },
+
+          "calcs": ["sum"],        {
+
+          "fields": "",          "id": "calculateField",
+
+          "values": false          "options": {
+
+        },            "alias": "Severity",
+
+        "tooltip": {            "binary": {
+
+          "mode": "single",              "left": "Error Code",
+
+          "sort": "none"              "operator": "+",
+
+        }              "reducer": "sum",
+
+      },              "right": ""
+
+      "pluginVersion": "11.0.0",            },
+
+      "targets": [            "mode": "reduceRow",
+
+        {            "reduce": {
+
+          "datasource": {              "include": [
+
+            "type": "prometheus",                "Error Code"
+
+            "uid": "PBFA97CFB590B2093"              ],
+
+          },              "reducer": "lastNotNull"
+
+          "editorMode": "code",            },
+
+          "expr": "sum by (service) (increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type!=\"none\"}[$__range]))",            "replaceFields": false
+
+          "legendFormat": "{{service}}",          }
+
+          "range": true,        }
+
+          "refId": "A"      ],
+
+        }      "type": "table"
+
+      ],    },
+
+      "title": "Errors by Service",    {
+
+      "type": "piechart"      "datasource": {
+
+    },        "type": "prometheus",
+
+    {        "uid": "PBFA97CFB590B2093"
+
+      "datasource": {      },
+
+        "type": "prometheus",      "fieldConfig": {
+
+        "uid": "PBFA97CFB590B2093"        "defaults": {
+
+      },          "color": {
+
+      "description": "Distribution of errors by instance in the selected time range.",            "mode": "thresholds"
+
+      "fieldConfig": {          },
+
+        "defaults": {          "mappings": [],
+
+          "color": {          "thresholds": {
+
+            "mode": "palette-classic"            "mode": "absolute",
+
+          },            "steps": [
+
+          "custom": {              {
+
+            "hideFrom": {                "color": "green",
+
+              "legend": false,                "value": null
+
+              "tooltip": false,              },
+
+              "vis": false              {
+
+            }                "color": "red",
+
+          },                "value": 80
+
+          "mappings": [],              }
+
+          "unit": "short"            ]
+
+        },          },
+
+        "overrides": []          "unit": "short"
+
+      },        },
+
+      "gridPos": {        "overrides": []
+
+        "h": 8,      },
+
+        "w": 8,      "gridPos": {
+
+        "x": 16,        "h": 4,
+
+        "y": 21        "w": 6,
+
+      },        "x": 0,
+
+      "id": 22,        "y": 32
+
+      "options": {      },
+
+        "displayLabels": ["name", "percent"],      "id": 7,
+
+        "legend": {      "options": {
+
+          "displayMode": "table",        "colorMode": "background",
+
+          "placement": "right",        "graphMode": "area",
+
+          "showLegend": true,        "justifyMode": "auto",
+
+          "values": ["value", "percent"]        "orientation": "auto",
+
+        },        "reduceOptions": {
+
+        "pieType": "donut",          "calcs": [
+
+        "reduceOptions": {            "lastNotNull"
+
+          "calcs": ["sum"],          ],
+
+          "fields": "",          "fields": "",
+
+          "values": false          "values": false
+
+        },        },
+
+        "tooltip": {        "textMode": "auto",
+
+          "mode": "single",        "wideLayout": true
+
+          "sort": "none"      },
+
+        }      "pluginVersion": "10.0.0",
+
+      },      "targets": [
+
+      "pluginVersion": "11.0.0",        {
+
+      "targets": [          "datasource": {
+
+        {            "type": "prometheus",
+
+          "datasource": {            "uid": "PBFA97CFB590B2093"
+
+            "type": "prometheus",          },
+
+            "uid": "PBFA97CFB590B2093"          "expr": "sum(cloud_test_errors_total{error_type!=\"none\"})",
+
+          },          "refId": "A"
+
+          "editorMode": "code",        }
+
+          "expr": "sum by (exported_instance) (increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type!=\"none\"}[$__range]))",      ],
+
+          "legendFormat": "{{exported_instance}}",      "title": "Total Active Errors",
+
+          "range": true,      "type": "stat"
+
+          "refId": "A"    },
+
+        }    {
+
+      ],      "datasource": {
+
+      "title": "Errors by Instance",        "type": "prometheus",
+
+      "type": "piechart"        "uid": "PBFA97CFB590B2093"
+
+    },      },
+
+    {      "fieldConfig": {
+
+      "collapsed": false,        "defaults": {
+
+      "gridPos": {          "color": {
+
+        "h": 1,            "mode": "thresholds"
+
+        "w": 24,          },
+
+        "x": 0,          "mappings": [],
+
+        "y": 29          "thresholds": {
+
+      },            "mode": "absolute",
+
+      "id": 103,            "steps": [
+
+      "title": "📋 Error Details",              {
+
+      "type": "row"                "color": "red",
+
+    },                "value": null
+
+    {              },
+
+      "datasource": {              {
+
+        "type": "prometheus",                "color": "yellow",
+
+        "uid": "PBFA97CFB590B2093"                "value": 90
+
+      },              },
+
+      "description": "Detailed breakdown of all errors with counts.",              {
+
+      "fieldConfig": {                "color": "green",
+
+        "defaults": {                "value": 95
+
+          "color": {              }
+
+            "mode": "thresholds"            ]
+
+          },          },
+
+          "custom": {          "unit": "percent"
+
+            "align": "auto",        },
+
+            "cellOptions": {        "overrides": []
+
+              "type": "auto"      },
+
+            },      "gridPos": {
+
+            "filterable": true,        "h": 4,
+
+            "inspect": false        "w": 6,
+
+          },        "x": 6,
+
+          "mappings": [],        "y": 32
+
+          "thresholds": {      },
+
+            "mode": "absolute",      "id": 8,
+
+            "steps": [      "options": {
+
+              {        "colorMode": "background",
+
+                "color": "green",        "graphMode": "area",
+
+                "value": null        "justifyMode": "auto",
+
+              },        "orientation": "auto",
+
+              {        "reduceOptions": {
+
+                "color": "yellow",          "calcs": [
+
+                "value": 1            "lastNotNull"
+
+              },          ],
+
+              {          "fields": "",
+
+                "color": "red",          "values": false
+
+                "value": 5        },
+
+              }        "textMode": "auto",
+
+            ]        "wideLayout": true
+
+          },      },
+
+          "unit": "short"      "pluginVersion": "10.0.0",
+
+        },      "targets": [
+
+        "overrides": [        {
+
+          {          "datasource": {
+
+            "matcher": {            "type": "prometheus",
+
+              "id": "byName",            "uid": "PBFA97CFB590B2093"
+
+              "options": "Service"          },
+
+            },          "expr": "(\n  sum(cloud_test_success{error_code=\"none\"})\n  /\n  sum(cloud_test_success)\n) * 100",
+
+            "properties": [          "refId": "A"
+
+              {        }
+
+                "id": "custom.width",      ],
+
+                "value": 120      "title": "Overall Success Rate",
+
+              }      "type": "stat"
+
+            ]    },
+
+          },    {
+
+          {      "datasource": {
+
+            "matcher": {        "type": "prometheus",
+
+              "id": "byName",        "uid": "PBFA97CFB590B2093"
+
+              "options": "Instance"      },
+
+            },      "fieldConfig": {
+
+            "properties": [        "defaults": {
+
+              {          "color": {
+
+                "id": "custom.width",            "mode": "thresholds"
+
+                "value": 250          },
+
+              }          "mappings": [],
+
+            ]          "thresholds": {
+
+          },            "mode": "absolute",
+
+          {            "steps": [
+
+            "matcher": {              {
+
+              "id": "byName",                "color": "green",
+
+              "options": "Error Type"                "value": null
+
+            },              },
+
+            "properties": [              {
+
+              {                "color": "red",
+
+                "id": "custom.width",                "value": 1
+
+                "value": 200              }
+
+              }            ]
+
+            ]          },
+
+          },          "unit": "short"
+
+          {        },
+
+            "matcher": {        "overrides": []
+
+              "id": "byName",      },
+
+              "options": "Operation"      "gridPos": {
+
+            },        "h": 4,
+
+            "properties": [        "w": 6,
+
+              {        "x": 12,
+
+                "id": "custom.width",        "y": 32
+
+                "value": 100      },
+
+              }      "id": 9,
+
+            ]      "options": {
+
+          },        "colorMode": "background",
+
+          {        "graphMode": "area",
+
+            "matcher": {        "justifyMode": "auto",
+
+              "id": "byName",        "orientation": "auto",
+
+              "options": "Count"        "reduceOptions": {
+
+            },          "calcs": [
+
+            "properties": [            "lastNotNull"
+
+              {          ],
+
+                "id": "custom.width",          "fields": "",
+
+                "value": 80          "values": false
+
+              },        },
+
+              {        "textMode": "auto",
+
+                "id": "custom.cellOptions",        "wideLayout": true
+
+                "value": {      },
+
+                  "mode": "gradient",      "pluginVersion": "10.0.0",
+
+                  "type": "color-background"      "targets": [
+
+                }        {
+
+              }          "datasource": {
+
+            ]            "type": "prometheus",
+
+          }            "uid": "PBFA97CFB590B2093"
+
+        ]          },
+
+      },          "expr": "count(count by (error_type) (cloud_test_errors_total{error_type!=\"none\"}))",
+
+      "gridPos": {          "refId": "A"
+
+        "h": 10,        }
+
+        "w": 24,      ],
+
+        "x": 0,      "title": "Unique Error Types",
+
+        "y": 30      "type": "stat"
+
+      },    },
+
+      "id": 30,    {
+
+      "options": {      "datasource": {
+
+        "cellHeight": "sm",        "type": "prometheus",
+
+        "footer": {        "uid": "PBFA97CFB590B2093"
+
+          "countRows": false,      },
+
+          "fields": ["Count"],      "fieldConfig": {
+
+          "reducer": ["sum"],        "defaults": {
+
+          "show": true          "color": {
+
+        },            "mode": "thresholds"
+
+        "showHeader": true,          },
+
+        "sortBy": [          "mappings": [],
+
+          {          "thresholds": {
+
+            "desc": true,            "mode": "absolute",
+
+            "displayName": "Count"            "steps": [
+
+          }              {
+
+        ]                "color": "green",
+
+      },                "value": null
+
+      "pluginVersion": "11.0.0",              },
+
+      "targets": [              {
+
+        {                "color": "red",
+
+          "datasource": {                "value": 1
+
+            "type": "prometheus",              }
+
+            "uid": "PBFA97CFB590B2093"            ]
+
+          },          },
+
+          "editorMode": "code",          "unit": "short"
+
+          "expr": "sum by (service, exported_instance, error_type, type) (increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type!=\"none\"}[$__range])) > 0",        },
+
+          "format": "table",        "overrides": []
+
+          "instant": true,      },
+
+          "refId": "A"      "gridPos": {
+
+        }        "h": 4,
+
+      ],        "w": 6,
+
+      "title": "Error Details Table",        "x": 18,
+
+      "transformations": [        "y": 32
+
+        {      },
+
+          "id": "organize",      "id": 10,
+
+          "options": {      "options": {
+
+            "excludeByName": {        "colorMode": "background",
+
+              "Time": true        "graphMode": "area",
+
+            },        "justifyMode": "auto",
+
+            "indexByName": {        "orientation": "auto",
+
+              "Time": 0,        "reduceOptions": {
+
+              "Value": 5,          "calcs": [
+
+              "error_type": 3,            "lastNotNull"
+
+              "exported_instance": 2,          ],
+
+              "service": 1,          "fields": "",
+
+              "type": 4          "values": false
+
+            },        },
+
+            "renameByName": {        "textMode": "auto",
+
+              "Value": "Count",        "wideLayout": true
+
+              "error_type": "Error Type",      },
+
+              "exported_instance": "Instance",      "pluginVersion": "10.0.0",
+
+              "service": "Service",      "targets": [
+
+              "type": "Operation"        {
+
+            }          "datasource": {
+
+          }            "type": "prometheus",
+
+        }            "uid": "PBFA97CFB590B2093"
+
+      ],          },
+
+      "type": "table"          "expr": "sum(cloud_test_errors_total{error_type=~\"http_5.*\"})",
+
+    },          "refId": "A"
+
+    {        }
+
+      "collapsed": false,      ],
+
+      "gridPos": {      "title": "Critical Errors (5xx)",
+
+        "h": 1,      "type": "stat"
+
+        "w": 24,    }
+
+        "x": 0,  ],
+
+        "y": 40  "refresh": "30s",
+
+      },  "schemaVersion": 38,
+
+      "id": 104,  "style": "dark",
+
+      "title": "🔥 Error Heatmap by Service",  "tags": [
+
+      "type": "row"    "cloud-monitor",
+
+    },    "errors",
+
+    {    "troubleshooting"
+
+      "datasource": {  ],
+
+        "type": "prometheus",  "templating": {
+
+        "uid": "PBFA97CFB590B2093"    "list": [
+
+      },      {
+
+      "description": "Shows error intensity per service over time. Darker colors indicate more errors.",        "current": {
+
+      "fieldConfig": {          "selected": false,
+
+        "defaults": {          "text": "All",
+
+          "color": {          "value": "$__all"
+
+            "mode": "palette-classic"        },
+
+          },        "datasource": {
+
+          "custom": {          "type": "prometheus",
+
+            "axisBorderShow": false,          "uid": "PBFA97CFB590B2093"
+
+            "axisCenteredZero": false,        },
+
+            "axisColorMode": "text",        "definition": "label_values(cloud_test_success, service)",
+
+            "axisLabel": "Errors",        "hide": 0,
+
+            "axisPlacement": "auto",        "includeAll": true,
+
+            "barAlignment": 0,        "label": "Service",
+
+            "drawStyle": "bars",        "multi": true,
+
+            "fillOpacity": 100,        "name": "service",
+
+            "gradientMode": "scheme",        "options": [],
+
+            "hideFrom": {        "query": {
+
+              "legend": false,          "query": "label_values(cloud_test_success, service)",
+
+              "tooltip": false,          "refId": "StandardVariableQuery"
+
+              "viz": false        },
+
+            },        "refresh": 1,
+
+            "insertNulls": false,        "regex": "",
+
+            "lineInterpolation": "linear",        "skipUrlSync": false,
+
+            "lineWidth": 0,        "sort": 0,
+
+            "pointSize": 5,        "type": "query"
+
+            "scaleDistribution": {      },
+
+              "type": "linear"      {
+
+            },        "current": {
+
+            "showPoints": "never",          "selected": false,
+
+            "spanNulls": false,          "text": "All",
+
+            "stacking": {          "value": "$__all"
+
+              "group": "A",        },
+
+              "mode": "none"        "datasource": {
+
+            },          "type": "prometheus",
+
+            "thresholdsStyle": {          "uid": "PBFA97CFB590B2093"
+
+              "mode": "off"        },
+
+            }        "definition": "label_values(cloud_test_success{service=~\"$service\"}, exported_instance)",
+
+          },        "hide": 0,
+
+          "mappings": [],        "includeAll": true,
+
+          "min": 0,        "label": "Instance",
+
+          "thresholds": {        "multi": true,
+
+            "mode": "absolute",        "name": "exported_instance",
+
+            "steps": [        "options": [],
+
+              {        "query": {
+
+                "color": "green",          "query": "label_values(cloud_test_success{service=~\"$service\"}, exported_instance)",
+
+                "value": null          "refId": "StandardVariableQuery"
+
+              },        },
+
+              {        "refresh": 1,
+
+                "color": "yellow",        "regex": "",
+
+                "value": 1        "skipUrlSync": false,
+
+              },        "sort": 0,
+
+              {        "type": "query"
+
+                "color": "orange",      },
+
+                "value": 3      {
+
+              },        "current": {
+
+              {          "selected": false,
+
+                "color": "red",          "text": "All",
+
+                "value": 5          "value": "$__all"
+
+              }        },
+
+            ]        "datasource": {
+
+          },          "type": "prometheus",
+
+          "unit": "short"          "uid": "PBFA97CFB590B2093"
+
+        },        },
+
+        "overrides": []        "definition": "label_values(cloud_test_errors_total{error_type!=\"none\"}, error_type)",
+
+      },        "hide": 0,
+
+      "gridPos": {        "includeAll": true,
+
+        "h": 8,        "label": "Error Type",
+
+        "w": 24,        "multi": true,
+
+        "x": 0,        "name": "error_type",
+
+        "y": 41        "options": [],
+
+      },        "query": {
+
+      "id": 40,          "query": "label_values(cloud_test_errors_total{error_type!=\"none\"}, error_type)",
+
+      "options": {          "refId": "StandardVariableQuery"
+
+        "legend": {        },
+
+          "calcs": ["sum", "max"],        "refresh": 1,
+
+          "displayMode": "table",        "regex": "",
+
+          "placement": "right",        "skipUrlSync": false,
+
+          "showLegend": true,        "sort": 0,
+
+          "sortBy": "Total",        "type": "query"
+
+          "sortDesc": true      }
+
+        },    ]
+
+        "tooltip": {  },
+
+          "maxHeight": 600,  "time": {
+
+          "mode": "multi",    "from": "now-1h",
+
+          "sort": "desc"    "to": "now"
+
+        }  },
+
+      },  "timepicker": {},
+
+      "pluginVersion": "11.0.0",  "timezone": "",
+
+      "targets": [  "title": "Cloud Performance Monitor - Error Analysis",
+
+        {  "uid": "error-analysis",
+
+          "datasource": {  "version": 1,
+
+            "type": "prometheus",  "weekStart": ""
+
+            "uid": "PBFA97CFB590B2093"}
+
+          },
+
+          "editorMode": "code",
+          "expr": "sum by (service) (increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\", error_type!=\"none\"}[$__interval]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Errors per Service Over Time",
+      "type": "timeseries"
+    },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            }
-          },
-          "mappings": [],
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "none"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "green"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": "http_5.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "red"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": "http_4.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "orange"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": "network_.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "purple"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": "auth_.*|token_.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "yellow"
-                }
-              }
-            ]
-          }
-        ]
-      },
+      "collapsed": false,
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 1,
+        "w": 24,
         "x": 0,
-        "y": 0
+        "y": 49
       },
-      "id": 1,
-      "options": {
-        "displayLabels": [
-          "name",
-          "percent"
-        ],
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
-          "values": [
-            "value",
-            "percent"
-          ]
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum by (error_type) (cloud_test_errors_total{error_type!=\"none\"})",
-          "format": "time_series",
-          "legendFormat": "{{error_type}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Error Distribution by Type",
-      "type": "piechart"
+      "id": 105,
+      "title": "📖 Error Code Reference",
+      "type": "row"
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Error Code"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 200
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Service"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 120
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Instance"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 300
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Count"
-          }
-        ]
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum by (error_type, service, exported_instance) (cloud_test_errors_total{error_type!=\"none\"})",
-          "format": "table",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Current Active Errors",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true
-            },
-            "indexByName": {},
-            "renameByName": {
-              "Value": "Count",
-              "error_type": "Error Type",
-              "instance": "Instance",
-              "service": "Service"
-            }
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
+        "type": "datasource",
+        "uid": "-- Dashboard --"
       },
       "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 50
       },
-      "id": 3,
+      "id": 50,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "content": "## Error Type Reference\n\n| Error Type | Category | Description | Typical Cause |\n|------------|----------|-------------|---------------|\n| `http_500` - `http_599` | 🔴 Server Error | Cloud service returned 5xx error | Server overload, maintenance, or internal error |\n| `http_400` - `http_499` | 🟠 Client Error | Cloud service returned 4xx error | Authentication issues, invalid request, or permissions |\n| `http_503` | 🔴 Service Unavailable | Service temporarily unavailable | Maintenance or overload |\n| `http_401` / `http_403` | 🟠 Auth Error | Authentication/Authorization failed | Invalid credentials or expired token |\n| `network_timeout` | 🟣 Network | Connection or operation timeout | Network issues or server not responding |\n| `network_error` | 🟣 Network | General network failure | DNS, routing, or connectivity issues |\n| `connection_refused` | 🟣 Network | Server refused connection | Server down or firewall blocking |\n| `auth_failed` | 🟡 Auth | Authentication failed | Wrong username/password |\n| `token_expired` | 🟡 Auth | OAuth token expired | Token needs refresh |\n| `token_refresh_failed` | 🟡 Auth | Failed to refresh token | Invalid refresh token or service error |\n| `webdav_error` | 🔵 Protocol | WebDAV protocol error | Incompatible WebDAV implementation |\n| `chunk_upload_failed` | 🔵 Protocol | Chunked upload failed | File too large or upload interrupted |\n| `size_mismatch` | 🔵 Data | Downloaded size doesn't match | Incomplete transfer or corruption |\n| `quota_exceeded` | 🟠 Limit | Storage quota exceeded | Account storage limit reached |\n\n### Troubleshooting Tips\n\n1. **5xx Errors**: Usually temporary - wait and retry. If persistent, check cloud service status page.\n2. **Auth Errors**: Verify credentials in `.env` file. For OAuth services, regenerate refresh token.\n3. **Network Errors**: Check internet connectivity, DNS resolution, and firewall settings.\n4. **Timeout Errors**: May indicate slow network or overloaded server. Consider increasing timeout settings.",
+        "mode": "markdown"
       },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "(\n  sum by (service, exported_instance) (cloud_test_success{error_code=\"none\"})\n  /\n  sum by (service, exported_instance) (cloud_test_success)\n) * 100",
-          "legendFormat": "{{service}} - {{exported_instance}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Success Rate Over Time",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": ".*http_5.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "red"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": ".*http_4.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "orange"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": ".*network_.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "purple"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "rate(cloud_test_errors_total{error_type!=\"none\"}[5m])",
-          "legendFormat": "{{service}} - {{error_type}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Error Rate by Type",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            }
-          },
-          "mappings": [],
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": "HTTP 5xx.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "red"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegex",
-              "options": "HTTP 4xx.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "orange"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Network Errors"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "purple"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Auth Errors"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "yellow"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "File Errors"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "blue"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "id": 5,
-      "options": {
-        "displayLabels": [
-          "name",
-          "value"
-        ],
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
-          "values": [
-            "value",
-            "percent"
-          ]
-        },
-        "pieType": "donut",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(cloud_test_errors_total{error_type=~\"http_5.*\"})",
-          "legendFormat": "HTTP 5xx Errors",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(cloud_test_errors_total{error_type=~\"http_4.*\"})",
-          "legendFormat": "HTTP 4xx Errors",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(cloud_test_errors_total{error_type=~\"network_.*\"})",
-          "legendFormat": "Network Errors",
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(cloud_test_errors_total{error_type=~\"auth_.*|token_.*\"})",
-          "legendFormat": "Auth Errors",
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(cloud_test_errors_total{error_type=~\".*upload.*|.*download.*|.*file.*|.*permission.*|.*quota.*|size_mismatch|read_error\"})",
-          "legendFormat": "File Errors",
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(cloud_test_errors_total{error_type=~\"webdav_.*|chunk_.*\"})",
-          "legendFormat": "WebDAV Errors",
-          "refId": "F"
-        }
-      ],
-      "title": "Error Categories Distribution",
-      "type": "piechart"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Error Code"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 200
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Description"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 400
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Severity"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 100
-              },
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "Critical": {
-                        "color": "red",
-                        "index": 0
-                      },
-                      "Warning": {
-                        "color": "yellow",
-                        "index": 1
-                      },
-                      "Info": {
-                        "color": "blue",
-                        "index": 2
-                      }
-                    },
-                    "type": "value"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 6,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Total Count"
-          }
-        ]
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "topk(20, sum by (error_type) (cloud_test_errors_total{error_type!=\"none\"}))",
-          "format": "table",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Top 20 Error Codes",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true
-            },
-            "indexByName": {},
-            "renameByName": {
-              "Value": "Total Count",
-              "error_type": "Error Type"
-            }
-          }
-        },
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "Error Code",
-            "mode": "outer"
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "Description",
-            "binary": {
-              "left": "Error Code",
-              "operator": "+",
-              "reducer": "sum",
-              "right": ""
-            },
-            "mode": "reduceRow",
-            "reduce": {
-              "include": [
-                "Error Code"
-              ],
-              "reducer": "lastNotNull"
-            },
-            "replaceFields": false
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "Severity",
-            "binary": {
-              "left": "Error Code",
-              "operator": "+",
-              "reducer": "sum",
-              "right": ""
-            },
-            "mode": "reduceRow",
-            "reduce": {
-              "include": [
-                "Error Code"
-              ],
-              "reducer": "lastNotNull"
-            },
-            "replaceFields": false
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 32
-      },
-      "id": 7,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(cloud_test_errors_total{error_type!=\"none\"})",
-          "refId": "A"
-        }
-      ],
-      "title": "Total Active Errors",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 90
-              },
-              {
-                "color": "green",
-                "value": 95
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 32
-      },
-      "id": 8,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "(\n  sum(cloud_test_success{error_code=\"none\"})\n  /\n  sum(cloud_test_success)\n) * 100",
-          "refId": "A"
-        }
-      ],
-      "title": "Overall Success Rate",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 32
-      },
-      "id": 9,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "count(count by (error_type) (cloud_test_errors_total{error_type!=\"none\"}))",
-          "refId": "A"
-        }
-      ],
-      "title": "Unique Error Types",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 32
-      },
-      "id": 10,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(cloud_test_errors_total{error_type=~\"http_5.*\"})",
-          "refId": "A"
-        }
-      ],
-      "title": "Critical Errors (5xx)",
-      "type": "stat"
+      "pluginVersion": "11.0.0",
+      "title": "Error Code Reference",
+      "type": "text"
     }
   ],
   "refresh": "30s",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 39,
   "tags": [
     "cloud-monitor",
     "errors",
@@ -1249,45 +2694,28 @@
         "skipUrlSync": false,
         "sort": 0,
         "type": "query"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "PBFA97CFB590B2093"
-        },
-        "definition": "label_values(cloud_test_errors_total{error_type!=\"none\"}, error_type)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Error Type",
-        "multi": true,
-        "name": "error_type",
-        "options": [],
-        "query": {
-          "query": "label_values(cloud_test_errors_total{error_type!=\"none\"}, error_type)",
-          "refId": "StandardVariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
       }
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-24h",
     "to": "now"
   },
-  "timepicker": {},
-  "timezone": "",
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h"
+    ]
+  },
+  "timezone": "browser",
   "title": "Cloud Performance Monitor - Error Analysis",
   "uid": "error-analysis",
   "version": 1,
   "weekStart": ""
 }
-
