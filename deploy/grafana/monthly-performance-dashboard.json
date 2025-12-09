@@ -38,7 +38,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Monthly average upload speed per service over the retention period",
+      "description": "Monthly average upload speed per instance over the retention period",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -117,8 +117,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[$__range])",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[$__range])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -131,7 +131,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Monthly average download speed per service over the retention period",
+      "description": "Monthly average download speed per instance over the retention period",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -210,8 +210,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[$__range])",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[$__range])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -236,7 +236,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Upload speed trend over selected time range with weekly moving average",
+      "description": "Upload and download speed trend over selected time range with daily moving average",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -315,8 +315,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[1d])",
-          "legendFormat": "Upload: {{service}} ({{instance}})",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[1d])",
+          "legendFormat": "Upload: {{exported_instance}}",
           "range": true,
           "refId": "A"
         },
@@ -326,8 +326,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[1d])",
-          "legendFormat": "Download: {{service}} ({{instance}})",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[1d])",
+          "legendFormat": "Download: {{exported_instance}}",
           "range": true,
           "refId": "B"
         }
@@ -344,7 +344,7 @@
         "y": 20
       },
       "id": 6,
-      "title": "🏆 Service Comparison - Monthly Averages",
+      "title": "🏆 Instance Comparison - Monthly Averages",
       "type": "row"
     },
     {
@@ -352,7 +352,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Compare monthly average upload speeds across all services",
+      "description": "Compare monthly average upload speeds across all instances",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -411,8 +411,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[30d])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -425,7 +425,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Compare monthly average download speeds across all services",
+      "description": "Compare monthly average download speeds across all instances",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -484,8 +484,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[30d])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -588,8 +588,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
-          "legendFormat": "Current Month - {{service}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[30d])",
+          "legendFormat": "Current: {{exported_instance}}",
           "range": true,
           "refId": "A"
         },
@@ -599,8 +599,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d] offset 30d)",
-          "legendFormat": "Previous Month - {{service}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[30d] offset 30d)",
+          "legendFormat": "Previous: {{exported_instance}}",
           "range": true,
           "refId": "B"
         }
@@ -691,8 +691,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
-          "legendFormat": "Current Month - {{service}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[30d])",
+          "legendFormat": "Current: {{exported_instance}}",
           "range": true,
           "refId": "A"
         },
@@ -702,8 +702,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d] offset 30d)",
-          "legendFormat": "Previous Month - {{service}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[30d] offset 30d)",
+          "legendFormat": "Previous: {{exported_instance}}",
           "range": true,
           "refId": "B"
         }
@@ -815,8 +815,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[1d])",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[1d])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -916,8 +916,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[1d])",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[1d])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -942,7 +942,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Monthly success rate percentage per service",
+      "description": "Monthly success rate percentage per instance",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1000,8 +1000,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "(\n  sum by (service, instance) (sum_over_time(cloud_test_success{service=~\"$service\", instance=~\"$instance\", error_code=\"none\"}[30d]))\n  /\n  sum by (service, instance) (count_over_time(cloud_test_success{service=~\"$service\", instance=~\"$instance\"}[30d]))\n) * 100",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "(\n  sum by (service, exported_instance) (sum_over_time(cloud_test_success{service=~\"$service\", exported_instance=~\"$exported_instance\", error_code=\"none\"}[30d]))\n  /\n  sum by (service, exported_instance) (count_over_time(cloud_test_success{service=~\"$service\", exported_instance=~\"$exported_instance\"}[30d]))\n) * 100",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -1063,8 +1063,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (service) (count_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\"}[30d]))",
-          "legendFormat": "{{service}}",
+          "expr": "sum by (exported_instance) (count_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$exported_instance\"}[30d]))",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -1077,7 +1077,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Total errors per month by service and error type",
+      "description": "Total errors per month by instance and error type",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1134,8 +1134,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (service, error_type) (increase(cloud_test_errors_total{service=~\"$service\", instance=~\"$instance\"}[30d]))",
-          "legendFormat": "{{service}}: {{error_type}}",
+          "expr": "sum by (exported_instance, error_type) (increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\"}[30d]))",
+          "legendFormat": "{{exported_instance}}: {{error_type}}",
           "range": true,
           "refId": "A"
         }
@@ -1316,7 +1316,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[30d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1330,7 +1330,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[30d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1350,14 +1350,14 @@
             "excludeByName": {
               "Time": true,
               "__name__": true,
-              "exported_instance": true,
+              "instance": true,
               "job": true,
               "type": true
             },
             "renameByName": {
               "Value #Upload": "Avg Upload (MB/s)",
               "Value #Download": "Avg Download (MB/s)",
-              "instance": "Instance",
+              "exported_instance": "Instance",
               "service": "Service"
             }
           }
@@ -1409,16 +1409,16 @@
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
-        "definition": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, instance)",
+        "definition": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, exported_instance)",
         "hide": 0,
         "includeAll": true,
         "label": "Instance",
         "multi": true,
-        "name": "instance",
+        "name": "exported_instance",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, instance)",
+          "query": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, exported_instance)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
