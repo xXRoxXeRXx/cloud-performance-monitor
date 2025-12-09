@@ -97,9 +97,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[5m]) / 1024 / 1024",
+          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[5m]) / 1024 / 1024",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -170,9 +170,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[5m]) / 1024 / 1024",
+          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[5m]) / 1024 / 1024",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -245,7 +245,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "(sum(rate(cloud_test_success_total{service=~\"$service\", instance=~\"$instance\"}[24h])) / sum(rate(cloud_test_duration_seconds_count{service=~\"$service\", instance=~\"$instance\"}[24h]))) * 100",
+          "expr": "(sum(rate(cloud_test_success_total{service=~\"$service\", exported_instance=~\"$exported_instance\"}[24h])) / sum(rate(cloud_test_duration_seconds_count{service=~\"$service\", exported_instance=~\"$exported_instance\"}[24h]))) * 100",
           "instant": false,
           "legendFormat": "Success Rate",
           "range": true,
@@ -314,7 +314,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(increase(cloud_test_duration_seconds_count{service=~\"$service\", instance=~\"$instance\"}[24h]))",
+          "expr": "sum(increase(cloud_test_duration_seconds_count{service=~\"$service\", exported_instance=~\"$exported_instance\"}[24h]))",
           "instant": false,
           "legendFormat": "Tests Today",
           "range": true,
@@ -423,9 +423,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}",
+          "expr": "cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}} (Upload)",
+          "legendFormat": "{{service}} - {{exported_instance}} (Upload)",
           "range": true,
           "refId": "A"
         }
@@ -520,9 +520,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\", type=\"download\"}",
+          "expr": "cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}} (Download)",
+          "legendFormat": "{{service}} - {{exported_instance}} (Download)",
           "range": true,
           "refId": "A"
         }
@@ -617,9 +617,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[5m]) / 1024 / 1024",
+          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[5m]) / 1024 / 1024",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}} (Upload)",
+          "legendFormat": "{{service}} - {{exported_instance}} (Upload)",
           "range": true,
           "refId": "A"
         }
@@ -714,9 +714,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[5m]) / 1024 / 1024",
+          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[5m]) / 1024 / 1024",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}} (Download)",
+          "legendFormat": "{{service}} - {{exported_instance}} (Download)",
           "range": true,
           "refId": "A"
         }
@@ -822,9 +822,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "(sum by (service, instance) (rate(cloud_test_success_total{service=~\"$service\", instance=~\"$instance\"}[1h])) / sum by (service, instance) (rate(cloud_test_duration_seconds_count{service=~\"$service\", instance=~\"$instance\"}[1h]))) * 100",
+          "expr": "(sum by (service, exported_instance) (rate(cloud_test_success_total{service=~\"$service\", exported_instance=~\"$exported_instance\"}[1h])) / sum by (service, exported_instance) (rate(cloud_test_duration_seconds_count{service=~\"$service\", exported_instance=~\"$exported_instance\"}[1h]))) * 100",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -918,9 +918,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(cloud_test_duration_seconds_count{service=~\"$service\", instance=~\"$instance\"}[5m]) - rate(cloud_test_success_total{service=~\"$service\", instance=~\"$instance\"}[5m])",
+          "expr": "rate(cloud_test_duration_seconds_count{service=~\"$service\", exported_instance=~\"$exported_instance\"}[5m]) - rate(cloud_test_success_total{service=~\"$service\", exported_instance=~\"$exported_instance\"}[5m])",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}} (Errors)",
+          "legendFormat": "{{service}} - {{exported_instance}} (Errors)",
           "range": true,
           "refId": "A"
         }
@@ -1030,9 +1030,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time((rate(cloud_test_bytes_total{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[5m]) / 1024 / 1024)[1h:])",
+          "expr": "avg_over_time((rate(cloud_test_bytes_total{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[5m]) / 1024 / 1024)[1h:])",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}} (Upload Avg)",
+          "legendFormat": "{{service}} - {{exported_instance}} (Upload Avg)",
           "range": true,
           "refId": "A"
         },
@@ -1042,9 +1042,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time((rate(cloud_test_bytes_total{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[5m]) / 1024 / 1024)[1h:])",
+          "expr": "avg_over_time((rate(cloud_test_bytes_total{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[5m]) / 1024 / 1024)[1h:])",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}} (Download Avg)",
+          "legendFormat": "{{service}} - {{exported_instance}} (Download Avg)",
           "range": true,
           "refId": "B"
         }
@@ -1126,10 +1126,10 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[5m]) / 1024 / 1024",
+          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[5m]) / 1024 / 1024",
           "format": "time_series",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -1211,10 +1211,10 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[5m]) / 1024 / 1024",
+          "expr": "rate(cloud_test_bytes_total{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[5m]) / 1024 / 1024",
           "format": "time_series",
           "instant": false,
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -1281,16 +1281,16 @@
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
-        "definition": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, instance)",
+        "definition": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, exported_instance)",
         "hide": 0,
         "includeAll": true,
         "label": "Instance",
         "multi": true,
-        "name": "instance",
+        "name": "exported_instance",
         "options": [],
         "query": {
           "qryType": "",
-          "query": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, instance)",
+          "query": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, exported_instance)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -1312,6 +1312,7 @@
   "version": 1,
   "weekStart": ""
 }
+
 
 
 

@@ -100,7 +100,7 @@
         {
           "expr": "cloud_test_errors_total",
           "interval": "",
-          "legendFormat": "{{service}} - {{instance}} - {{error_type}}",
+          "legendFormat": "{{service}} - {{exported_instance}} - {{error_type}}",
           "refId": "A"
         }
       ],
@@ -254,7 +254,7 @@
         {
           "expr": "rate(cloud_test_errors_total[5m])",
           "interval": "",
-          "legendFormat": "{{service}} - {{instance}} - {{error_type}} (rate)",
+          "legendFormat": "{{service}} - {{exported_instance}} - {{error_type}} (rate)",
           "refId": "A"
         }
       ],
