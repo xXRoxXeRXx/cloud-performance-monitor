@@ -24,6 +24,9 @@ prometheus-data/
 grafana-data/
 alertmanager-data/
 
+# Upload state files
+upload_states/
+
 # Editor/IDE
 .vscode/
 .idea/

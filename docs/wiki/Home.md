@@ -1,53 +1,104 @@
-# Cloud Performance Monitor - Wiki
+# Cloud Performance Monitor - Wiki# Cloud Performance Monitor - Wiki
 
-Welcome to the Cloud Performance Monitor Wiki! This contains comprehensive runbooks and troubleshooting guides for all monitoring alerts.
 
-## 📋 Quick Navigation
 
-### 🚨 Critical Alerts
+Welcome to the Cloud Performance Monitor Wiki! This contains runbooks and troubleshooting guides.Welcome to the Cloud Performance Monitor Wiki! This contains comprehensive runbooks and troubleshooting guides for all monitoring alerts.
+
+
+
+## 📋 Quick Navigation## 📋 Quick Navigation
+
+
+
+### 🚨 Alerts (6 Total)### 🚨 Critical Alerts
+
 - [Service Down](Runbook-ServiceDown) - Monitor agent is not responding
-- [Critical Upload Duration](Runbook-CriticalUploadDuration) - Uploads taking longer than 10 minutes
-- [Service Test Failure](Runbook-ServiceTestFailure) - Complete test failures with error codes
-- [Critical Error Rate](Runbook-CriticalErrorRate) - Error rate above 50%
-- [Critical Network Latency](Runbook-CriticalNetworkLatency) - Network latency above 500ms
-- [Circuit Breaker Open](Runbook-CircuitBreakerOpen) - Service protection activated
-- [Critical SLA Violation](Runbook-CriticalSLAViolation) - Below 95% uptime
 
-### ⚠️ Warning Alerts
+| Alert | Severity | Description |- [Critical Upload Duration](Runbook-CriticalUploadDuration) - Uploads taking longer than 10 minutes
+
+|-------|----------|-------------|- [Service Test Failure](Runbook-ServiceTestFailure) - Complete test failures with error codes
+
+| [ServiceDown](Runbook-ServiceDown) | Critical | Monitor agent not responding |- [Critical Error Rate](Runbook-CriticalErrorRate) - Error rate above 50%
+
+| CloudServiceUnavailable | Warning | No successful tests in 15 minutes |- [Critical Network Latency](Runbook-CriticalNetworkLatency) - Network latency above 500ms
+
+| SlowUploadSpeed | Warning | Upload speed below 1 MB/s |- [Circuit Breaker Open](Runbook-CircuitBreakerOpen) - Service protection activated
+
+| HighErrorRate | Warning | Error rate above 20% in last hour |- [Critical SLA Violation](Runbook-CriticalSLAViolation) - Below 95% uptime
+
+| CircuitBreakerOpen | Warning | Service protection activated |
+
+| PrometheusStorageNearFull | Warning | Prometheus storage > 80% full |### ⚠️ Warning Alerts
+
 - [High Upload Duration](Runbook-HighUploadDuration) - Uploads taking longer than 5 minutes
-- [Slow Upload Speed](Runbook-SlowUploadSpeed) - Upload speeds below 1 MB/s
-- [High Error Rate](Runbook-HighErrorRate) - Error rate above 10%
+
+### 📖 Reference Documentation- [Slow Upload Speed](Runbook-SlowUploadSpeed) - Upload speeds below 1 MB/s
+
+- [Error Code Reference](Error-Code-Reference) - Error code catalog with descriptions- [High Error Rate](Runbook-HighErrorRate) - Error rate above 10%
+
 - [High Network Latency](Runbook-HighNetworkLatency) - Network latency above 100ms
-- [Connection Timeouts](Runbook-ConnectionTimeouts) - Frequent connection failures
+
+## 🛠️ General Troubleshooting- [Connection Timeouts](Runbook-ConnectionTimeouts) - Frequent connection failures
+
 - [Slow Chunk Uploads](Runbook-SlowChunkUploads) - Chunk uploads taking too long
-- [High Chunk Retry Rate](Runbook-HighChunkRetryRate) - Many chunk upload retries
-- [SLA Violation 99%](Runbook-SLAViolation) - Below 99% uptime
-- [Too Many Alerts](Runbook-TooManyAlerts) - Multiple alerts firing simultaneously
 
-### 📊 Monitoring Categories
+### Common First Steps- [High Chunk Retry Rate](Runbook-HighChunkRetryRate) - Many chunk upload retries
+
+1. **Check Service Status**: `docker compose ps`- [SLA Violation 99%](Runbook-SLAViolation) - Below 99% uptime
+
+2. **View Logs**: `docker compose logs monitor-agent --tail=100`- [Too Many Alerts](Runbook-TooManyAlerts) - Multiple alerts firing simultaneously
+
+3. **Check Metrics**: http://localhost:9090 (Prometheus)
+
+4. **View Dashboards**: http://localhost:3000 (Grafana)### 📊 Monitoring Categories
+
 - **Availability**: Service uptime and responsiveness
-- **Performance**: Upload/download speeds and durations
-- **Reliability**: Error rates and test failures
 
-### 📖 Reference Documentation
+### Useful Commands- **Performance**: Upload/download speeds and durations
+
+```bash- **Reliability**: Error rates and test failures
+
+# Service status
+
+docker compose ps### 📖 Reference Documentation
+
 - [Error Code Reference](Error-Code-Reference) - Complete error code catalog with descriptions
-- [Prometheus Metrics](Prometheus-Metrics) - All available metrics and their meanings
-- [Configuration Guide](Configuration-Guide) - Environment variables and settings
+
+# View agent logs- [Prometheus Metrics](Prometheus-Metrics) - All available metrics and their meanings
+
+docker compose logs monitor-agent- [Configuration Guide](Configuration-Guide) - Environment variables and settings
+
 - **Network**: Latency and connectivity issues
-- **SLA**: Service level agreement compliance
+
+# Restart services- **SLA**: Service level agreement compliance
+
+docker compose restart
 
 ## 🛠️ General Troubleshooting
 
-### Common First Steps
-1. **Check Service Status**: `docker compose ps`
-2. **View Logs**: `docker compose logs [service-name]`
-3. **Check Network**: Test connectivity to cloud services
-4. **Verify Configuration**: Ensure .env settings are correct
+# Rebuild and restart
 
-### Useful Commands
+docker compose up -d --force-recreate### Common First Steps
+
+1. **Check Service Status**: `docker compose ps`
+
+# Check Prometheus targets2. **View Logs**: `docker compose logs [service-name]`
+
+curl http://localhost:9090/api/v1/targets3. **Check Network**: Test connectivity to cloud services
+
+```4. **Verify Configuration**: Ensure .env settings are correct
+
+
+
+## 📊 Available Dashboards### Useful Commands
+
 ```bash
-# Service status
-docker compose ps
+
+- **Daily Performance** - Upload/download speeds over 24 hours# Service status
+
+- **Monthly Performance** - 30-day trends and statisticsdocker compose ps
+
+- **Errors** - Error tracking and analysis
 
 # View all logs
 docker compose logs
