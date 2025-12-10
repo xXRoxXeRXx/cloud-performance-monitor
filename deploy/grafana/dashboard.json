@@ -1,4 +1,4 @@
-{
+﻿{
   "annotations": {
     "list": [
       {
@@ -78,7 +78,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\",type=\"upload\"}[5m])",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -143,7 +143,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\",type=\"download\"}[5m])",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -208,7 +208,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[5m])",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -273,7 +273,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[5m])",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -340,7 +340,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_success{service=~\"$service\",type=~\"upload|download\"}[5m]) * 100",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -431,7 +431,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[1m])",
-          "legendFormat": "Upload - {{exported_instance}}",
+          "legendFormat": "Upload - {{instance}}",
           "refId": "A"
         },
         {
@@ -440,7 +440,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[1m])",
-          "legendFormat": "Download - {{exported_instance}}",
+          "legendFormat": "Download - {{instance}}",
           "refId": "B"
         }
       ],

@@ -1,4 +1,4 @@
-{
+﻿{
   "annotations": {
     "list": [
       {
@@ -117,8 +117,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[$__range])",
-          "legendFormat": "{{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[$__range])",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -210,8 +210,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[$__range])",
-          "legendFormat": "{{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[$__range])",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -315,8 +315,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[1d])",
-          "legendFormat": "Upload: {{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[1d])",
+          "legendFormat": "Upload: {{instance}}",
           "range": true,
           "refId": "A"
         },
@@ -326,8 +326,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[1d])",
-          "legendFormat": "Download: {{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[1d])",
+          "legendFormat": "Download: {{instance}}",
           "range": true,
           "refId": "B"
         }
@@ -411,8 +411,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[30d])",
-          "legendFormat": "{{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -484,8 +484,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[30d])",
-          "legendFormat": "{{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -588,8 +588,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[30d])",
-          "legendFormat": "Current: {{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
+          "legendFormat": "Current: {{instance}}",
           "range": true,
           "refId": "A"
         },
@@ -599,8 +599,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[30d] offset 30d)",
-          "legendFormat": "Previous: {{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d] offset 30d)",
+          "legendFormat": "Previous: {{instance}}",
           "range": true,
           "refId": "B"
         }
@@ -691,8 +691,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[30d])",
-          "legendFormat": "Current: {{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
+          "legendFormat": "Current: {{instance}}",
           "range": true,
           "refId": "A"
         },
@@ -702,8 +702,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[30d] offset 30d)",
-          "legendFormat": "Previous: {{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d] offset 30d)",
+          "legendFormat": "Previous: {{instance}}",
           "range": true,
           "refId": "B"
         }
@@ -815,8 +815,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[1d])",
-          "legendFormat": "{{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[1d])",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -916,8 +916,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[1d])",
-          "legendFormat": "{{exported_instance}}",
+          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[1d])",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -1000,8 +1000,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "(\n  sum by (service, exported_instance) (sum_over_time(cloud_test_success{service=~\"$service\", exported_instance=~\"$exported_instance\", error_code=\"none\"}[30d]))\n  /\n  sum by (service, exported_instance) (count_over_time(cloud_test_success{service=~\"$service\", exported_instance=~\"$exported_instance\"}[30d]))\n) * 100",
-          "legendFormat": "{{exported_instance}}",
+          "expr": "(\n  sum by (service, instance) (sum_over_time(cloud_test_success{service=~\"$service\", instance=~\"$instance\", error_code=\"none\"}[30d]))\n  /\n  sum by (service, instance) (count_over_time(cloud_test_success{service=~\"$service\", instance=~\"$instance\"}[30d]))\n) * 100",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -1063,8 +1063,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (exported_instance) (count_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$exported_instance\"}[30d]))",
-          "legendFormat": "{{exported_instance}}",
+          "expr": "sum by (instance) (count_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\"}[30d]))",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -1134,8 +1134,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (exported_instance, error_type) (increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$exported_instance\"}[30d]))",
-          "legendFormat": "{{exported_instance}}: {{error_type}}",
+          "expr": "sum by (instance, error_type) (increase(cloud_test_errors_total{service=~\"$service\", instance=~\"$instance\"}[30d]))",
+          "legendFormat": "{{instance}}: {{error_type}}",
           "range": true,
           "refId": "A"
         }
@@ -1316,7 +1316,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"upload\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1330,7 +1330,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$exported_instance\", type=\"download\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1357,7 +1357,7 @@
             "renameByName": {
               "Value #Upload": "Avg Upload (MB/s)",
               "Value #Download": "Avg Download (MB/s)",
-              "exported_instance": "Instance",
+              "instance": "Instance",
               "service": "Service"
             }
           }
@@ -1409,16 +1409,16 @@
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
-        "definition": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, exported_instance)",
+        "definition": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, instance)",
         "hide": 0,
         "includeAll": true,
         "label": "Instance",
         "multi": true,
-        "name": "exported_instance",
+        "name": "instance",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, exported_instance)",
+          "query": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, instance)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,

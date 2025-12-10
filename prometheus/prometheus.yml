@@ -16,13 +16,6 @@ scrape_configs:
   - job_name: 'nextcloud-monitor-agent'
     static_configs:
       - targets: ['monitor-agent:8080']
-    # Relabel 'instance' from metrics to 'exported_instance' to avoid collision
-    # with Prometheus's automatic 'instance' label (which is the scrape target)
-    metric_relabel_configs:
-      - source_labels: [instance]
-        target_label: exported_instance
-      - regex: 'instance'
-        action: labeldrop
   
   - job_name: 'prometheus'
     static_configs:

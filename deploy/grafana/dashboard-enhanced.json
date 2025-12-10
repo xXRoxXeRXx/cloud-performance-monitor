@@ -1,4 +1,4 @@
-{
+﻿{
   "annotations": {
     "list": [
       {
@@ -96,7 +96,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[5m])",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -168,7 +168,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[5m])",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -245,7 +245,7 @@
           "expr": "cloud_daily_success_rate_percent{service=~\"$service\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -390,7 +390,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -457,7 +457,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -536,7 +536,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -603,7 +603,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "{{exported_instance}}",
+          "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
@@ -699,7 +699,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_monthly_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "Upload - {{exported_instance}}",
+          "legendFormat": "Upload - {{instance}}",
           "range": true,
           "refId": "A"
         },
@@ -710,7 +710,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_monthly_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "Download - {{exported_instance}}",
+          "legendFormat": "Download - {{instance}}",
           "range": true,
           "refId": "B"
         }
@@ -806,7 +806,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"upload\"}[1m])",
-          "legendFormat": "Current Upload - {{exported_instance}}",
+          "legendFormat": "Current Upload - {{instance}}",
           "range": true,
           "refId": "A"
         },
@@ -817,7 +817,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_daily_average_upload_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "Daily Avg Upload - {{exported_instance}}",
+          "legendFormat": "Daily Avg Upload - {{instance}}",
           "range": true,
           "refId": "B"
         },
@@ -828,7 +828,7 @@
           },
           "editorMode": "code",
           "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\",type=\"download\"}[1m])",
-          "legendFormat": "Current Download - {{exported_instance}}",
+          "legendFormat": "Current Download - {{instance}}",
           "range": true,
           "refId": "C"
         },
@@ -839,7 +839,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_daily_average_download_speed_mbytes_per_sec{service=~\"$service\"}",
-          "legendFormat": "Daily Avg Download - {{exported_instance}}",
+          "legendFormat": "Daily Avg Download - {{instance}}",
           "range": true,
           "refId": "D"
         }
