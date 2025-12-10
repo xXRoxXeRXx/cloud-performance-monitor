@@ -38,18 +38,11 @@ Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Ü
 
 ## 🚀 Quick Start
 
-### Automatischer Setup (Empfohlen)
 ```bash
 # Repository klonen
 git clone https://github.com/xXRoxXeRXx/cloud-performance-monitor.git
 cd cloud-performance-monitor
 
-# Automatischer Quick Start (alles in einem)
-make quick-start
-```
-
-### Manueller Setup
-```bash
 # 1. Konfiguration erstellen
 cp .env.example .env
 
@@ -57,11 +50,10 @@ cp .env.example .env
 nano .env
 
 # 3. Stack bauen und starten  
-make build
-make run
+make dev
 
-# 4. Test-Alert senden
-make test-alert
+# 4. Grafana öffnen
+make dashboards
 ```
 
 ## ⚙️ Konfiguration
@@ -82,9 +74,6 @@ SMTP_REQUIRE_TLS=true
 
 # E-Mail-Empfänger
 EMAIL_ADMIN=admin@your-domain.com
-EMAIL_DEVOPS=devops@your-domain.com
-EMAIL_NETWORK=network@your-domain.com
-EMAIL_MANAGEMENT=management@your-domain.com
 
 # Nextcloud Instanzen
 NC_INSTANCE_1_URL=https://cloud.example.com
@@ -124,7 +113,7 @@ DROPBOX_INSTANCE_1_NAME=user@example.com
 | **HiDrive Next** | WebDAV | Username/Password | Optimiert für IONOS HiDrive |
 | **MagentaCLOUD** | WebDAV | Username/Password/ANID | [📖 MagentaCLOUD Setup Guide](docs/MAGENTACLOUD_SETUP.md) |
 | **HiDrive Legacy** | OAuth2 REST API | Refresh Token | [📖 HiDrive OAuth2 Setup Guide](docs/HIDRIVE_OAUTH2_SETUP.md) |
-| **Dropbox** | OAuth2 REST API | Refresh Token | [📖 Dropbox Setup Guide](docs/DROPBOX_SETUP.md) |
+| **Dropbox** | OAuth2 REST API | Refresh Token | [📖 Dropbox Setup Guide](docs/DROPBOX_OAUTH2_SETUP.md) |
 
 ### E-Mail Provider Konfiguration
 Unterstützte Provider: **Gmail**, **Outlook**, **Yahoo**, **Strato**, und andere SMTP-Server.
@@ -150,25 +139,16 @@ Nach dem Start stehen folgende Interfaces zur Verfügung:
 ## 🛠️ Development Commands
 
 ```bash
-# 🏗️ Building
-make build              # Alle Docker Images bauen
-
-# 🚀 Running  
-make run                # Stack starten
-make stop               # Stack stoppen
-make restart            # Stack neustarten
-make status             # Service-Status anzeigen
-
-# 📊 Monitoring
-make dashboards         # Grafana öffnen
-make logs               # Logs aller Services
-
-# 🧪 Testing
-make test               # Go Tests ausführen
-make test-alert         # Test-Alert senden
-
-# 🧹 Maintenance
-make clean              # Container und Volumes entfernen
+make dev        # Setup & start (first time)
+make run        # Start monitoring stack
+make stop       # Stop all services
+make logs       # Show live logs
+make test       # Run Go tests
+make clean      # Remove containers & data
+make build      # Rebuild Docker images
+make restart    # Restart services
+make status     # Show service status
+make dashboards # Open Grafana
 ```
 
 ## API Endpoints
@@ -286,10 +266,12 @@ docker exec monitor-agent curl http://localhost:8080/health
 
 ## 📚 Documentation
 
-- 📋 [Project Structure](docs/PROJECT_STRUCTURE.md) - Complete directory layout and component overview
-- 📧 [Email Configuration](docs/EMAIL_CONFIGURATION.md) - Detailed SMTP setup guide
-- 🚀 [Quick Start Guide](#-quick-start) - Get up and running in minutes
-- 🔧 [Development Guide](#-development-commands) - Commands for developers
+- � [Email Configuration](docs/EMAIL_CONFIGURATION.md) - SMTP setup guide
+- 🔒 [Port Security](docs/PORT_SECURITY.md) - Security documentation
+- � [Data Retention](docs/DATA_RETENTION.md) - Prometheus storage guide
+- � [Dropbox OAuth2](docs/DROPBOX_OAUTH2_SETUP.md) - Dropbox setup
+- 🔐 [HiDrive OAuth2](docs/HIDRIVE_OAUTH2_SETUP.md) - HiDrive Legacy setup
+- � [MagentaCLOUD](docs/MAGENTACLOUD_SETUP.md) - MagentaCLOUD setup
 
 ## 🔧 Requirements
 
@@ -304,79 +286,38 @@ docker exec monitor-agent curl http://localhost:8080/health
 
 **Services not starting?**
 ```bash
-make status              # Check service status
-make logs               # View logs
-docker system prune     # Clean up Docker
+make status         # Check service status
+make logs          # View logs
+docker system prune # Clean up Docker
 ```
 
 **No metrics in Grafana?**
 ```bash
-make logs-agent         # Check agent logs
-# Test metrics endpoint via Docker internal network:
+make logs          # Check agent logs
 docker exec prometheus wget -qO- http://monitor-agent:8080/metrics | head -10
 ```
 
 **Email notifications not working?**
 ```bash
-make logs-alerts        # Check alertmanager logs
-make test-alert         # Send test alert
+docker compose logs alertmanager
 # Check docs/EMAIL_CONFIGURATION.md for provider-specific settings
 ```
 
-### Performance Tuning
+## 🧪 Testing
 
-**Adjust test frequency:**
 ```bash
-# In .env file
-TEST_INTERVAL_SECONDS=600    # Test every 10 minutes instead of 5
-TEST_FILE_SIZE_MB=50         # Smaller test files
-```
-
-**Scale for high volume:**
-```bash
-# Monitor many instances
-NC_INSTANCE_1_URL=...
-NC_INSTANCE_2_URL=...
-# ... up to NC_INSTANCE_N_URL
-```
-
-## Testing & Quality Assurance
-
-### Unit Tests
-```bash
-# Run all unit tests
+# Run all tests
 make test
 
 # Run specific package tests
 go test ./internal/agent/
 go test ./internal/nextcloud/
-go test ./internal/dropbox/
 
 # Run with coverage
-make test-coverage
+go test -cover ./...
 ```
 
-### Integration Tests
-```bash
-# Run integration tests (requires build tags)
-go test -tags=integration ./internal/agent/
-
-# Build and test everything
-make test-all
-```
-
-### Test Coverage
-- **Unit Tests**: 100% coverage for all client packages
-- **Integration Tests**: End-to-end upload/download cycle testing with mock servers
-- **OAuth2 Resilience**: Retry logic testing for token refresh operations
-
-### Code Quality Features
-- **Structured Logging**: JSON/text format with configurable levels
-- **OAuth2 Retry Logic**: Exponential backoff for token refresh failures
-- **Circuit Breaker Pattern**: Automatic failure detection and recovery
-- **Health Checks**: Comprehensive monitoring endpoints
-
-## �🤝 Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
