@@ -1,48 +1,93 @@
-# Grafana Dashboards - Cloud Performance Monitor
+# Grafana Dashboards# Grafana Dashboards - Cloud Performance Monitor
 
-Dieses Verzeichnis enthält alle Grafana-Dashboards für das Cloud Performance Monitor System.
 
-## 📊 Verfügbare Dashboards
 
-### 1. Main Dashboard (`dashboard.json`)
-**Zweck**: Haupt-Performance-Übersicht
+## 📊 Available Dashboards (3)Dieses Verzeichnis enthält alle Grafana-Dashboards für das Cloud Performance Monitor System.
+
+
+
+### 1. Daily Performance (`daily-performance-dashboard.json`)## 📊 Verfügbare Dashboards
+
+- Current upload/download speeds
+
+- Real-time performance metrics### 1. Main Dashboard (`dashboard.json`)
+
+- 24-hour view**Zweck**: Haupt-Performance-Übersicht
+
 - Service-Verfügbarkeit und Uptime
-- Upload/Download Performance-Metriken
-- Netzwerk-Latenz Monitoring
-- Test-Duration Trends
-- Service-Vergleiche
 
-### 2. Enhanced Dashboard (`enhanced-dashboard.json`)
-**Zweck**: Erweiterte Analysen und historische Trends
-- Detaillierte Performance-Analysen
-- Historische Datenanalyse
+### 2. Monthly Performance (`monthly-performance-dashboard.json`)- Upload/Download Performance-Metriken
+
+- 30-day trends and averages- Netzwerk-Latenz Monitoring
+
+- Long-term performance analysis- Test-Duration Trends
+
+- SLA compliance monitoring- Service-Vergleiche
+
+
+
+### 3. Errors (`errors-dashboard.json`)### 2. Enhanced Dashboard (`enhanced-dashboard.json`)
+
+- Error tracking and categorization**Zweck**: Erweiterte Analysen und historische Trends
+
+- Success rate monitoring- Detaillierte Performance-Analysen
+
+- Error code analysis- Historische Datenanalyse
+
 - Trend-Analysen
-- Detaillierte Service-Aufschlüsselungen
 
-### 3. Enhanced Alt (`dashboard-enhanced.json`)
-**Zweck**: Alternative erweiterte Ansicht
-- Zusätzliche Visualisierungen
-- Erweiterte Metriken
+## 🔍 Filters- Detaillierte Service-Aufschlüsselungen
 
-### 4. Error Analysis Dashboard (`errors-dashboard.json`)
+
+
+All dashboards support:### 3. Enhanced Alt (`dashboard-enhanced.json`)
+
+- **Service**: nextcloud, hidrive, magentacloud, dropbox, hidrive_legacy**Zweck**: Alternative erweiterte Ansicht
+
+- **Instance**: Specific URLs/names- Zusätzliche Visualisierungen
+
+- **Time Range**: Adjustable- Erweiterte Metriken
+
+
+
+## 📈 Key Metrics### 4. Error Analysis Dashboard (`errors-dashboard.json`)
+
 **Zweck**: Fehlerüberwachung und Troubleshooting
-- Echtzeit Fehler-Tracking
-- Fehler-Kategorisierung und Trends
-- Success Rate Monitoring
+
+```promql- Echtzeit Fehler-Tracking
+
+# Duration- Fehler-Kategorisierung und Trends
+
+cloud_test_duration_seconds{service="...", type="upload|download"}- Success Rate Monitoring
+
 - Error Code Analyse
 
-**Fehler-Kategorien**:
-- **HTTP 5xx Errors**: Server-seitige Probleme (rot)
-- **HTTP 4xx Errors**: Client-seitige Probleme (orange)
-- **Network Errors**: Verbindungsprobleme (lila)
-- **Authentication Errors**: Auth/Token-Probleme (gelb)
-- **File Operation Errors**: Upload/Download-Probleme (blau)
-- **WebDAV Errors**: Protokoll-spezifische Probleme (grün)
+# Speed
 
-### 5. Daily Performance Dashboard (`daily-performance-dashboard.json`)
-**Zweck**: Tägliche Rohdaten ohne Aggregation
+cloud_test_speed_mbytes_per_sec{service="...", type="upload|download"}**Fehler-Kategorien**:
+
+- **HTTP 5xx Errors**: Server-seitige Probleme (rot)
+
+# Success- **HTTP 4xx Errors**: Client-seitige Probleme (orange)
+
+cloud_test_success{service="...", error_code="..."}- **Network Errors**: Verbindungsprobleme (lila)
+
+```- **Authentication Errors**: Auth/Token-Probleme (gelb)
+
+- **File Operation Errors**: Upload/Download-Probleme (blau)
+
+## 🚀 Access- **WebDAV Errors**: Protokoll-spezifische Probleme (grün)
+
+
+
+- **URL**: http://localhost:3003### 5. Daily Performance Dashboard (`daily-performance-dashboard.json`)
+
+- **Login**: admin / admin**Zweck**: Tägliche Rohdaten ohne Aggregation
+
 - Aktuelle Performance-Werte
-- Rohdaten-Visualisierung
+
+Dashboards are auto-provisioned on startup via `provisioning/`.- Rohdaten-Visualisierung
+
 - Keine zeitliche Aggregation
 - Ideal für kurzfristige Analysen
 
