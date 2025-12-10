@@ -1,90 +1,177 @@
-# Datenspeicherung & Retention - Cloud Performance Monitor
+# Data Retention - Cloud Performance Monitor# Datenspeicherung & Retention - Cloud Performance Monitor
 
-## 📊 Aktuelle Speicherdauer
 
-### **Rohmetriken (Raw Metrics)**
-- **Default**: 15 Tage (Prometheus Standard)
-- **Speicherort**: Docker Volume `prometheus-data`
+
+## Default Configuration## 📊 Aktuelle Speicherdauer
+
+
+
+- **Retention**: 15 days (Prometheus default)### **Rohmetriken (Raw Metrics)**
+
+- **Storage**: Docker volume `prometheus-data`- **Default**: 15 Tage (Prometheus Standard)
+
+- **Scrape Interval**: 15 seconds- **Speicherort**: Docker Volume `prometheus-data`
+
 - **Granularität**: Volle Details alle 15 Sekunden
 
+## Configure Retention
+
 ### **Aggregierte Metriken (Recording Rules)**
-- **Daily Averages**: Basierend auf letzten 24h (verfügbar für 15 Tage)
+
+### Option 1: Extended Retention (Recommended)- **Daily Averages**: Basierend auf letzten 24h (verfügbar für 15 Tage)
+
 - **Monthly Averages**: Basierend auf letzten 30 Tagen (verfügbar für 15 Tage)
+
+For **90 days** data retention:
 
 ## ⚙️ Retention konfigurieren
 
-### **Option 1: Längere Speicherdauer (Empfohlen)**
-
-Für **90 Tage** Datenspeicherung:
-
 ```yaml
-# docker-compose.yml
+
+# docker-compose.yml### **Option 1: Längere Speicherdauer (Empfohlen)**
+
 services:
-  prometheus:
+
+  prometheus:Für **90 Tage** Datenspeicherung:
+
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
+
+      - '--config.file=/etc/prometheus/prometheus.yml'```yaml
+
+      - '--storage.tsdb.path=/prometheus'# docker-compose.yml
+
+      - '--storage.tsdb.retention.time=90d'services:
+
+      - '--storage.tsdb.retention.size=50GB'  prometheus:
+
+      - '--web.enable-lifecycle'    command:
+
+```      - '--config.file=/etc/prometheus/prometheus.yml'
+
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=90d'  # 90 Tage
+
+### Option 2: Size-Based Only      - '--storage.tsdb.retention.time=90d'  # 90 Tage
+
       - '--storage.tsdb.retention.size=50GB'  # Max 50GB
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-```
 
-**Speicherplatz-Kalkulation:**
+```yaml      - '--web.enable-lifecycle'
+
+command:      - '--web.enable-admin-api'
+
+  - '--storage.tsdb.retention.size=100GB'```
+
+  # No time limit - data kept until disk is full
+
+```**Speicherplatz-Kalkulation:**
+
 - **15 Sekunden Interval** = 4 Messungen/Minute
-- **10 Services** mit je ~20 Metriken = 200 Metriken
+
+### Option 3: Minimal (Homelab)- **10 Services** mit je ~20 Metriken = 200 Metriken
+
 - **Prometheus Kompression** ~1.5 Bytes/Sample
-- **90 Tage**: ca. **15-20 GB**
 
-### **Option 2: Unbegrenzte Dauer (Nur Size-Limit)**
+```yaml- **90 Tage**: ca. **15-20 GB**
 
-```yaml
 command:
-  - '--storage.tsdb.retention.size=100GB'  # Nur Size-basiert
+
+  - '--storage.tsdb.retention.time=30d'### **Option 2: Unbegrenzte Dauer (Nur Size-Limit)**
+
+  - '--storage.tsdb.retention.size=10GB'
+
+``````yaml
+
+command:
+
+## Storage Calculation  - '--storage.tsdb.retention.size=100GB'  # Nur Size-basiert
+
   # Kein time-limit = unbegrenzt bis Plattenplatz voll
-```
 
-### **Option 3: Kurze Retention + Langzeit-Speicher**
+``````
 
-Für **sehr lange Speicherung** (Jahre):
+Assumptions:
+
+- 5 services, 15s scrape interval, ~25 metrics/service### **Option 3: Kurze Retention + Langzeit-Speicher**
+
+
+
+Daily samples = (86400s / 15s) × 5 × 25 = 720,000 samplesFür **sehr lange Speicherung** (Jahre):
+
+Daily storage = ~1 MB (compressed)
 
 ```yaml
-services:
-  # ... existing services ...
-  
-  thanos-sidecar:
-    image: quay.io/thanos/thanos:v0.35.0
+
+Realistic estimates (with TSDB overhead):services:
+
+- 30 days: ~500 MB - 1 GB  # ... existing services ...
+
+- 90 days: ~2-5 GB  
+
+- 365 days: ~10-20 GB  thanos-sidecar:
+
+```    image: quay.io/thanos/thanos:v0.35.0
+
     container_name: thanos-sidecar
-    command:
+
+## Backup & Restore    command:
+
       - 'sidecar'
-      - '--tsdb.path=/prometheus'
-      - '--prometheus.url=http://prometheus:9090'
-      - '--objstore.config-file=/etc/thanos/bucket.yml'
-      - '--grpc-address=0.0.0.0:10901'
-      - '--http-address=0.0.0.0:10902'
-    volumes:
+
+```bash      - '--tsdb.path=/prometheus'
+
+# Backup      - '--prometheus.url=http://prometheus:9090'
+
+docker run --rm \      - '--objstore.config-file=/etc/thanos/bucket.yml'
+
+  -v prometheus-data:/data \      - '--grpc-address=0.0.0.0:10901'
+
+  -v $(pwd)/backup:/backup \      - '--http-address=0.0.0.0:10902'
+
+  alpine tar czf /backup/prometheus-$(date +%Y%m%d).tar.gz -C /data .    volumes:
+
       - prometheus-data:/prometheus:ro
-      - ./thanos/bucket.yml:/etc/thanos/bucket.yml
-    networks:
-      - monitor-net
 
-  thanos-store:
-    image: quay.io/thanos/thanos:v0.35.0
+# Restore      - ./thanos/bucket.yml:/etc/thanos/bucket.yml
+
+docker run --rm \    networks:
+
+  -v prometheus-data:/data \      - monitor-net
+
+  -v $(pwd)/backup:/backup \
+
+  alpine tar xzf /backup/prometheus-20251210.tar.gz -C /data  thanos-store:
+
+```    image: quay.io/thanos/thanos:v0.35.0
+
     container_name: thanos-store
-    command:
-      - 'store'
-      - '--objstore.config-file=/etc/thanos/bucket.yml'
-      - '--grpc-address=0.0.0.0:10901'
-      - '--http-address=0.0.0.0:10902'
-    volumes:
-      - ./thanos/bucket.yml:/etc/thanos/bucket.yml
-    networks:
-      - monitor-net
-```
 
-**Thanos Bucket Config** (`thanos/bucket.yml`):
+## Quick Setup    command:
+
+      - 'store'
+
+```bash      - '--objstore.config-file=/etc/thanos/bucket.yml'
+
+# 1. Edit docker-compose.yml (add retention flags)      - '--grpc-address=0.0.0.0:10901'
+
+# 2. Restart stack      - '--http-address=0.0.0.0:10902'
+
+docker compose down && docker compose up -d    volumes:
+
+      - ./thanos/bucket.yml:/etc/thanos/bucket.yml
+
+# 3. Verify    networks:
+
+docker exec prometheus promtool tsdb analyze /prometheus      - monitor-net
+
+``````
+
+
+
+## References**Thanos Bucket Config** (`thanos/bucket.yml`):
+
 ```yaml
-type: S3
+
+- [Prometheus Storage](https://prometheus.io/docs/prometheus/latest/storage/)type: S3
+
 config:
   bucket: "cloud-monitor-metrics"
   endpoint: "s3.amazonaws.com"
