@@ -1,3 +1,6 @@
+﻿# Alertmanager Configuration - Production with Email
+# Simplified for non-enterprise use
+
 global:
   smtp_smarthost: '${SMTP_SMARTHOST}'
   smtp_from: '${SMTP_FROM}'
@@ -5,250 +8,77 @@ global:
   smtp_auth_password: '${SMTP_AUTH_PASSWORD}'
   smtp_require_tls: ${SMTP_REQUIRE_TLS}
 
-# Routing configuration
 route:
-  group_by: ['alertname', 'cluster', 'service']
+  group_by: ['alertname', 'service']
   group_wait: 30s
   group_interval: 5m
-  repeat_interval: 12h
-  receiver: 'default'
+  repeat_interval: 4h
+  receiver: 'email-alerts'
   routes:
-    # Critical alerts -> immediate notification
     - match:
         severity: critical
-      receiver: 'critical-alerts'
+      receiver: 'email-alerts'
       group_wait: 10s
-      repeat_interval: 5m
-    
-    # Performance alerts -> batched notification
-    - match:
-        category: performance
-      receiver: 'performance-alerts'
-      group_interval: 10m
-      repeat_interval: 4h
-    
-    # Network alerts -> network team
-    - match:
-        category: network
-      receiver: 'network-alerts'
-      group_interval: 15m
-      repeat_interval: 6h
-    
-    # SLA violations -> management notification
-    - match:
-        category: sla
-      receiver: 'sla-alerts'
-      group_wait: 5m
-      repeat_interval: 2h
+      repeat_interval: 1h
 
-# Inhibition rules - suppress redundant alerts
 inhibit_rules:
-  # Suppress warning if critical alert is firing
   - source_match:
       severity: 'critical'
     target_match:
       severity: 'warning'
-    equal: ['alertname', 'instance']
+    equal: ['alertname', 'service']
   
-  # Suppress individual alerts if circuit breaker is open
   - source_match:
       alertname: 'CircuitBreakerOpen'
     target_match_re:
-      alertname: '(HighUploadDuration|SlowUploadSpeed|TestFailures)'
-    equal: ['instance']
+      alertname: '(SlowUploadSpeed|HighErrorRate)'
+    equal: ['service']
 
-  # IMPORTANT: If CloudServiceUnavailable (503/502/500) is firing,
-  # suppress all symptom-based alerts like DirectoryCreationFailed
-  # because the root cause is the service itself being unavailable
-  - source_match:
-      alertname: 'CloudServiceUnavailable'
-    target_match_re:
-      alertname: '(DirectoryCreationFailed|ServiceTestFailure|HighErrorRate|SlowUploadSpeed|SlowChunkUploads|HighChunkRetryRate)'
-    equal: ['service', 'exported_instance']
-
-  # CloudServiceUnavailable suppresses CloudServiceDegraded
-  - source_match:
-      alertname: 'CloudServiceUnavailable'
-    target_match:
-      alertname: 'CloudServiceDegraded'
-    equal: ['service', 'exported_instance']
-
-# Alert receivers/notification channels
 receivers:
-  - name: 'default'
-    webhook_configs:
-      - url: 'http://webhook-logger:8080/webhook'
-        send_resolved: true
-
-  - name: 'critical-alerts'
-    # E-Mail-Benachrichtigung für kritische Alerts
+  - name: 'email-alerts'
     email_configs:
       - to: '${EMAIL_ADMIN}'
-        headers:
-          Subject: '🚨 CRITICAL Alert - Cloud Performance Monitor'
-        text: |
-          🚨 CRITICAL ALERT DETECTED 🚨
-          
-          {{ range .Alerts -}}
-          ==========================================
-          ALERT: {{ .Annotations.summary }}
-          ==========================================
-          
-          📋 Alert Information:
-          • Description: {{ .Annotations.description }}
-          • Instance: {{ .Labels.exported_instance }}
-          • Service: {{ .Labels.service }}
-          • Severity: {{ .Labels.severity }}
-          • Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          • Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
-          
-          🔍 Error Details:
-          {{ if .Labels.error_code }}• Error Code: {{ .Labels.error_code }}{{ else }}• Error Code: Not available{{ end }}
-          {{ if .Labels.type }}• Test Type: {{ .Labels.type }}{{ end }}
-          {{ if .Labels.category }}• Category: {{ .Labels.category }}{{ end }}
-          
-          🔧 Troubleshooting:
-          {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ else }}⚠️ No runbook available{{ end }}
-          
-          📊 Full Alert Labels:
-          {{- range $key, $value := .Labels }}
-          • {{ $key }}: {{ $value }}
-          {{- end }}
-          
-          ==========================================
-          {{ end }}
-          
-          🚨 Please take immediate action to resolve this issue!
-    
-    # Webhook für kritische Alerts
-    webhook_configs:
-      - url: 'http://webhook-logger:8080/webhook/critical'
         send_resolved: true
-
-  - name: 'performance-alerts'
-    email_configs:
-      - to: '${EMAIL_DEVOPS}'
         headers:
-          Subject: '⚠️ Performance Alert - Cloud Performance Monitor'
-        text: |
-          ⚠️ PERFORMANCE ALERT ⚠️
-          
-          {{ range .Alerts -}}
-          ==========================================
-          PERFORMANCE ISSUE: {{ .Annotations.summary }}
-          ==========================================
-          
-          📋 Performance Details:
-          • Description: {{ .Annotations.description }}
-          • Instance: {{ .Labels.exported_instance }}
-          • Service: {{ .Labels.service }}
-          • Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          • Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
-          
-          🔍 Error Analysis:
-          {{ if .Labels.error_code }}• Error Code: {{ .Labels.error_code }}{{ else }}• Error Code: none (performance degradation){{ end }}
-          {{ if .Labels.type }}• Test Type: {{ .Labels.type }}{{ end }}
-          {{ if .Labels.category }}• Category: {{ .Labels.category }}{{ end }}
-          
-          📊 Performance Metrics:
-          {{- range $key, $value := .Labels }}
-          {{- if or (eq $key "duration") (eq $key "speed") (eq $key "latency") }}
-          • {{ $key }}: {{ $value }}
-          {{- end }}
-          {{- end }}
-          
-          🔧 Troubleshooting:
-          {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ else }}⚠️ No runbook available{{ end }}
-          
-          ==========================================
-          {{ end }}
-    
-    webhook_configs:
-      - url: 'http://webhook-logger:8080/webhook'
-        send_resolved: true
-
-  - name: 'network-alerts'
-    email_configs:
-      - to: '${EMAIL_NETWORK}'
-        headers:
-          Subject: '🌐 Network Alert - Cloud Performance Monitor'
-        text: |
-          🌐 NETWORK ALERT 🌐
-          
-          {{ range .Alerts -}}
-          ==========================================
-          NETWORK ISSUE: {{ .Annotations.summary }}
-          ==========================================
-          
-          📋 Network Details:
-          • Description: {{ .Annotations.description }}
-          • Instance: {{ .Labels.exported_instance }}
-          • Service: {{ .Labels.service }}
-          • Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          
-          🔍 Network Analysis:
-          {{ if .Labels.error_code }}• Error Code: {{ .Labels.error_code }}{{ else }}• Error Code: network_issue{{ end }}
-          {{ if .Labels.latency }}• Current Latency: {{ .Labels.latency }}ms{{ end }}
-          {{ if .Labels.type }}• Test Type: {{ .Labels.type }}{{ end }}
-          
-          🌐 Common Network Error Codes:
-          • http_504_timeout: Gateway timeout
-          • connection_refused: Service unavailable
-          • network_timeout: Network connectivity issue
-          • dns_resolution_failed: DNS problem
-          
-          🔧 Troubleshooting:
-          {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ else }}⚠️ No runbook available{{ end }}
-          
-          ==========================================
-          {{ end }}
-    
-    webhook_configs:
-      - url: 'http://webhook-logger:8080/webhook'
-        send_resolved: true
-
-  - name: 'sla-alerts'
-    email_configs:
-      - to: '${EMAIL_MANAGEMENT},${EMAIL_DEVOPS}'
-        headers:
-          Subject: '📊 SLA Violation - Cloud Performance Monitor'
-        text: |
-          📊 SLA VIOLATION DETECTED 📊
-          
-          {{ range .Alerts -}}
-          ==========================================
-          SLA BREACH: {{ .Annotations.summary }}
-          ==========================================
-          
-          📋 SLA Violation Details:
-          • Service: {{ .Labels.service }}
-          • Instance: {{ .Labels.exported_instance }}
-          • Description: {{ .Annotations.description }}
-          • Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          • Duration: {{ if .EndsAt.IsZero }}ongoing{{ else }}{{ (.EndsAt.Sub .StartsAt).String }}{{ end }}
-          
-          🔍 Root Cause Analysis:
-          {{ if .Labels.error_code }}• Primary Error Code: {{ .Labels.error_code }}{{ else }}• Error Code: sla_violation{{ end }}
-          {{ if .Labels.type }}• Test Type: {{ .Labels.type }}{{ end }}
-          {{ if .Labels.category }}• Category: {{ .Labels.category }}{{ end }}
-          
-          📊 Business Impact:
-          • Service Level Agreement breach detected
-          • Customer experience may be impacted
-          • Immediate corrective action required
-          
-          🔧 Escalation Path:
-          {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ else }}⚠️ No runbook available{{ end }}
-          
-          📈 All SLA Metrics:
-          {{- range $key, $value := .Labels }}
-          • {{ $key }}: {{ $value }}
-          {{- end }}
-          
-          ==========================================
-          
-          Please review the service performance and take corrective action.
-          {{ end }}
+          Subject: '{{ if eq .Status "firing" }}Alert{{ else }}Resolved{{ end }} - Cloud Monitor: {{ .CommonLabels.alertname }}'
+        html: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; }
+              .header { padding: 20px; color: white; }
+              .header.firing { background: #dc3545; }
+              .header.resolved { background: #28a745; }
+              .content { padding: 20px; }
+              .alert-box { background: #f8f9fa; border-left: 4px solid #007bff; padding: 15px; margin: 10px 0; }
+              .alert-box.critical { border-color: #dc3545; }
+              .alert-box.warning { border-color: #ffc107; }
+              .footer { padding: 15px; background: #f8f9fa; font-size: 12px; color: #666; text-align: center; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header {{ if eq .Status "firing" }}firing{{ else }}resolved{{ end }}">
+                <h1>{{ if eq .Status "firing" }}Alert Firing{{ else }}Alert Resolved{{ end }}</h1>
+              </div>
+              <div class="content">
+                {{ range .Alerts }}
+                <div class="alert-box {{ .Labels.severity }}">
+                  <h3>{{ .Labels.alertname }}</h3>
+                  <p><b>Service:</b> {{ .Labels.service }}</p>
+                  <p><b>Instance:</b> {{ .Labels.exported_instance }}</p>
+                  <p><b>Summary:</b> {{ .Annotations.summary }}</p>
+                  <p><b>Description:</b> {{ .Annotations.description }}</p>
+                  <p><b>Time:</b> {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}</p>
+                </div>
+                {{ end }}
+              </div>
+              <div class="footer">Cloud Performance Monitor</div>
+            </div>
+          </body>
+          </html>
     
     webhook_configs:
       - url: 'http://webhook-logger:8080/webhook'

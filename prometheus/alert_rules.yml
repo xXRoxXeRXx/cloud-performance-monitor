@@ -1,241 +1,78 @@
+# Cloud Performance Monitor - Simplified Alert Rules
+# 6 essential alerts for non-enterprise monitoring
+#
+# Alerts:
+# 1. ServiceDown - Monitor agent offline
+# 2. CloudServiceUnavailable - Cloud service returning 5xx errors
+# 3. SlowUploadSpeed - Upload speed below threshold
+# 4. HighErrorRate - Test error rate too high
+# 5. CircuitBreakerOpen - Circuit breaker triggered
+# 6. PrometheusStorageNearFull - Storage running low
+
 groups:
-  - name: nextcloud_performance_alerts
+  - name: cloud_performance_alerts
     rules:
-      # ==== SERVICE AVAILABILITY ALERTS ====
-      # Priority 1: Monitor Agent selbst ist down
+      # Monitor Agent offline - most critical
       - alert: ServiceDown
         expr: up{job="monitor-agent"} == 0
-        for: 1m
+        for: 2m
         labels:
           severity: critical
-          category: availability
         annotations:
-          summary: "Nextcloud Performance Monitor is down"
-          description: "The monitor agent has been down for more than 1 minute."
+          summary: "Monitor Agent ist offline"
+          description: "Der Cloud Performance Monitor ist seit mehr als 2 Minuten nicht erreichbar."
 
-      # Priority 2: Cloud-Dienst antwortet mit 5xx Server-Fehlern (503/502/500)
-      # Dies ist der ROOT CAUSE Alert - alle anderen Fehler sind Symptome davon
+      # Cloud service returning server errors (503/502/500/504)
       - alert: CloudServiceUnavailable
-        expr: |
-          increase(cloud_test_errors_total{error_type=~"http_503_unavailable|http_502_bad_gateway|http_500_server_error|http_504_timeout"}[15m]) > 0
+        expr: increase(cloud_test_errors_total{error_type=~"http_5...*"}[15m]) > 0
         for: 1m
         labels:
           severity: critical
-          category: availability
-          root_cause: "true"
         annotations:
-          summary: "🚨 Cloud-Dienst {{ $labels.service }} nicht erreichbar ({{ $labels.error_type }})"
-          description: |
-            Der Cloud-Dienst {{ $labels.service }} ({{ $labels.exported_instance }}) antwortet mit Server-Fehlern.
-            
-            Fehlertyp: {{ $labels.error_type }}
-            Betroffene Operation: {{ $labels.type }}
-            
-            Dies ist ein serverseitiges Problem - der Cloud-Anbieter ist momentan nicht verfügbar.
-            Alle nachfolgenden Fehler (Upload/Download/Directory) sind Symptome dieses Problems.
-            
-            Empfehlung: Status-Seite des Cloud-Anbieters prüfen.
+          summary: "{{ $labels.service }} nicht erreichbar"
+          description: "{{ $labels.service }} ({{ $labels.exported_instance }}) antwortet mit Server-Fehlern ({{ $labels.error_type }})."
 
-      # Priority 3: Cloud-Dienst ist degradiert (hohe Fehlerrate, aber nicht komplett down)
-      - alert: CloudServiceDegraded
+      # Slow upload speed - performance issue
+      - alert: SlowUploadSpeed
+        expr: cloud_test_speed_mbytes_per_sec{type="upload"} < 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Langsame Upload-Geschwindigkeit bei {{ $labels.service }}"
+          description: "Upload-Speed {{ printf \"%.2f\" $value }} MB/s ist unter 1 MB/s Schwellwert bei {{ $labels.exported_instance }}."
+
+      # High error rate - reliability issue
+      - alert: HighErrorRate
         expr: |
           (
             sum by (service, exported_instance) (increase(cloud_test_errors_total[30m])) 
             / 
-            sum by (service, exported_instance) (increase(cloud_test_success[30m]) + increase(cloud_test_errors_total[30m]))
-          ) > 0.3
-          and
-          sum by (service, exported_instance) (increase(cloud_test_success[30m])) > 0
+            (sum by (service, exported_instance) (increase(cloud_test_success[30m])) + sum by (service, exported_instance) (increase(cloud_test_errors_total[30m])))
+          ) > 0.2
         for: 5m
         labels:
           severity: warning
-          category: availability
         annotations:
-          summary: "⚠️ Cloud-Dienst {{ $labels.service }} ist degradiert"
-          description: |
-            Der Cloud-Dienst {{ $labels.service }} ({{ $labels.exported_instance }}) hat eine hohe Fehlerrate von {{ $value | humanizePercentage }}.
-            Der Dienst ist erreichbar, aber instabil.
+          summary: "Hohe Fehlerrate bei {{ $labels.service }}"
+          description: "Fehlerrate bei {{ $labels.service }} ({{ $labels.exported_instance }}) ist über 20%."
 
-      # ==== PERFORMANCE ALERTS ====
-
-      - alert: SlowUploadSpeed
-        expr: cloud_test_speed_mbytes_per_sec{type="upload"} < 1
-        for: 5m
-        labels:
-          severity: warning
-          category: performance
-          error_code: "{{ $labels.error_code }}"
-        annotations:
-          summary: "Slow upload speed detected for {{ $labels.service }} - {{ $labels.exported_instance }}"
-          description: "Upload speed is {{ $value }} MB/s, below 1 MB/s threshold. Error code: {{ $labels.error_code }}"
-
-      # ==== ERROR RATE ALERTS ====
-      - alert: ServiceTestFailure
-        expr: |
-          (
-            cloud_test_success{error_code!="none"} == 0
-            and on(instance) up{job="nextcloud-monitor-agent"} == 1
-            and increase(cloud_test_success[5m]) > 0
-          ) or (
-            absent_over_time(cloud_test_success{error_code="none"}[20m])
-            and on(instance) up{job="nextcloud-monitor-agent"} == 1
-          )
-        for: 1m
-        labels:
-          severity: critical
-          category: reliability
-          error_code: "{{ $labels.error_code }}"
-        annotations:
-          summary: "Service test failure for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Test failed with error code: {{ $labels.error_code }} for service {{ $labels.service }} on {{ $labels.instance }}"
-
-      - alert: HighErrorRate
-        expr: rate(cloud_test_errors_total[30m]) > 0.1
-        for: 2m
-        labels:
-          severity: warning
-          category: reliability
-          error_type: "{{ $labels.error_type }}"
-        annotations:
-          summary: "High error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Error rate is {{ $value | humanizePercentage }} over the last 30 minutes. Error type: {{ $labels.error_type }}"
-
-      - alert: CriticalErrorRate
-        expr: rate(cloud_test_errors_total[30m]) > 0.5
-        for: 1m
-        labels:
-          severity: critical
-          category: reliability
-          error_type: "{{ $labels.error_type }}"
-        annotations:
-          summary: "Critical error rate detected for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Error rate is {{ $value | humanizePercentage }} over the last 30 minutes. Error type: {{ $labels.error_type }}"
-
-      # ==== RELIABILITY ALERTS ====
-      # Hinweis: Dieser Alert feuert nur wenn der Dienst erreichbar ist aber Directory-Erstellung fehlschlägt
-      # Bei 503/502/500 Fehlern wird stattdessen CloudServiceUnavailable gefeuert
-      - alert: DirectoryCreationFailed
-        expr: |
-          increase(cloud_test_errors_total{error_type="directory_creation"}[30m]) > 0
-          unless on(service, exported_instance) 
-          increase(cloud_test_errors_total{error_type=~"http_503_unavailable|http_502_bad_gateway|http_500_server_error"}[30m]) > 0
-        for: 1m
-        labels:
-          severity: warning
-          category: reliability
-          error_type: "directory_creation"
-        annotations:
-          summary: "Directory-Erstellung fehlgeschlagen für {{ $labels.service }} - {{ $labels.exported_instance }}"
-          description: |
-            Die Erstellung des Test-Verzeichnisses auf {{ $labels.service }} ({{ $labels.exported_instance }}) ist fehlgeschlagen.
-            Fehleranzahl in den letzten 30 Minuten: {{ $value }}
-            
-            Mögliche Ursachen:
-            - Berechtigungsproblem für den Test-Benutzer
-            - Quota/Speicherplatz erschöpft
-            - WebDAV-Konfiguration fehlerhaft
-            
-            Hinweis: Bei Server-Fehlern (503/502/500) wird stattdessen CloudServiceUnavailable Alert ausgelöst.
-
-      # ==== NETWORK ALERTS ====
-      - alert: HighNetworkLatency
-        expr: nextcloud_network_latency_ms > 100
-        for: 5m
-        labels:
-          severity: warning
-          category: network
-        annotations:
-          summary: "High network latency to {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Network latency is {{ $value }}ms, above 100ms threshold."
-
-      - alert: CriticalNetworkLatency
-        expr: nextcloud_network_latency_ms > 500
-        for: 2m
-        labels:
-          severity: critical
-          category: network
-        annotations:
-          summary: "Critical network latency to {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Network latency is {{ $value }}ms, above 500ms critical threshold."
-
-      - alert: ConnectionTimeouts
-        expr: rate(nextcloud_connection_timeouts_total[10m]) > 0.05
-        for: 3m
-        labels:
-          severity: warning
-          category: network
-        annotations:
-          summary: "Connection timeouts detected for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Connection timeout rate is {{ $value | humanizePercentage }} over the last 10 minutes."
-
-      # ==== CHUNK UPLOAD ALERTS ====
-      - alert: SlowChunkUploads
-        expr: avg_over_time(nextcloud_chunk_upload_duration_seconds[5m]) > 10
-        for: 3m
-        labels:
-          severity: warning
-          category: performance
-        annotations:
-          summary: "Slow chunk uploads detected for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Average chunk upload time is {{ $value }}s over the last 5 minutes."
-
-      - alert: HighChunkRetryRate
-        expr: rate(nextcloud_chunk_retries_total[10m]) / rate(nextcloud_chunks_uploaded_total[10m]) > 0.15
-        for: 5m
-        labels:
-          severity: warning
-          category: reliability
-        annotations:
-          summary: "High chunk retry rate for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Chunk retry rate is {{ $value | humanizePercentage }} over the last 10 minutes."
-
-      # ==== CIRCUIT BREAKER ALERTS ====
+      # Circuit breaker triggered - immediate action needed
       - alert: CircuitBreakerOpen
         expr: nextcloud_circuit_breaker_state > 0
         for: 0m
         labels:
           severity: critical
-          category: reliability
         annotations:
-          summary: "Circuit breaker open for {{ $labels.service }} - {{ $labels.instance }}"
-          description: "Circuit breaker state is {{ $value }} (0=closed, 1=open, 2=half-open)."
+          summary: "Circuit Breaker offen für {{ $labels.service }}"
+          description: "Circuit Breaker wurde für {{ $labels.service }} ({{ $labels.instance }}) ausgelöst. Service wird temporär nicht getestet."
 
-  - name: nextcloud_meta_alerts
-    rules:
-      # ==== META MONITORING ALERTS ====
-      - alert: TooManyAlerts
-        expr: count(ALERTS{alertstate="firing"}) > 5
-        for: 5m
-        labels:
-          severity: warning
-          category: meta
-        annotations:
-          summary: "Too many active alerts"
-          description: "{{ $value }} alerts are currently firing. This might indicate a widespread issue."
-
-      # ==== STORAGE ALERTS ====
+      # Prometheus storage running low
       - alert: PrometheusStorageNearFull
-        expr: |
-          (
-            prometheus_tsdb_storage_blocks_bytes / (100 * 1024 * 1024 * 1024)
-          ) > 0.8
-        for: 5m
+        expr: (prometheus_tsdb_storage_blocks_bytes / (100 * 1024 * 1024 * 1024)) > 0.8
+        for: 10m
         labels:
           severity: warning
-          category: storage
         annotations:
-          summary: "Prometheus storage is 80% full"
-          description: "Prometheus storage is at {{ $value | humanizePercentage }} of 100GB limit. Consider cleaning up old data or increasing retention.size."
-      
-      - alert: PrometheusStorageCritical
-        expr: |
-          (
-            prometheus_tsdb_storage_blocks_bytes / (100 * 1024 * 1024 * 1024)
-          ) > 0.95
-        for: 5m
-        labels:
-          severity: critical
-          category: storage
-        annotations:
-          summary: "Prometheus storage is 95% full - CRITICAL"
-          description: "Prometheus storage is at {{ $value | humanizePercentage }} of 100GB limit. Data loss may occur soon!"
+          summary: "Prometheus Speicher fast voll"
+          description: "Prometheus Speicher ist über 80% belegt. Alte Daten bereinigen oder Retention anpassen."
