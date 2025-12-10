@@ -13,33 +13,28 @@ Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Ü
 ### 🎯 **Core Monitoring**
 - **Multi-Instance Support**: Überwache beliebig viele Nextcloud-, HiDrive-, MagentaCLOUD- und Dropbox-Instanzen gleichzeitig
 - **Real Performance Testing**: Synthetische Upload/Download-Tests mit Chunked-Upload-Support
-- **Advanced Metrics**: 9+ detaillierte Metriken inkl. Chunk-Statistiken, Netzwerk-Latenz, Circuit Breaker
-- **Service Labeling**: Automatische Unterscheidung zwischen nextcloud/hidrive/magentacloud/dropbox Services
+- **Service Labeling**: Automatische Unterscheidung zwischen nextcloud/hidrive/magentacloud/hidrive_legacy/dropbox Services
 
-### 📈 **Complete Monitoring Stack**
-- **Prometheus**: Metriken-Sammlung mit umfassenden Alert-Regeln (15+ Alerts)
-- **Grafana**: Enhanced Dashboard mit 4 Monitoring-Bereichen und Service-Selector
-- **Alertmanager**: Intelligente Alert-Weiterleitung mit E-Mail-Benachrichtigungen
-- **Webhook Logger**: Alert-Testing und Debugging-Service
+### 📈 **Monitoring Stack**
+- **Prometheus**: Metriken-Sammlung mit 6 fokussierten Alert-Regeln
+- **Grafana**: 3 spezialisierte Dashboards (Daily, Monthly, Errors)
+- **Alertmanager**: E-Mail-Benachrichtigungen mit modernem HTML-Template
 
-### 🔔 **Intelligent Alerting**
-- **Email Notifications**: SMTP-basierte Benachrichtigungen mit Template-System
-- **Smart Routing**: Verschiedene Empfänger für Critical, Performance, Network und SLA Alerts
-- **Alert Suppression**: Intelligente Unterdrückung redundanter Alerts
-- **SLA Monitoring**: Service Level Agreement Überwachung und Violation Alerts
+### 🔔 **Alerting (6 Alerts)**
+| Alert | Severity | Beschreibung |
+|-------|----------|--------------|
+| `ServiceDown` | critical | Monitor Agent offline |
+| `CloudServiceUnavailable` | critical | Cloud-Service 5xx Fehler |
+| `SlowUploadSpeed` | warning | Upload <1 MB/s |
+| `HighErrorRate` | warning | Fehlerrate >20% |
+| `CircuitBreakerOpen` | critical | Circuit Breaker ausgelöst |
+| `PrometheusStorageNearFull` | warning | Speicher >80% voll |
 
-### 🔒 **Production-Ready Features**
-- **Health Checks**: Comprehensive health monitoring endpoints (/health, /health/live, /health/ready)
-- **Structured Logging**: JSON-based logging with configurable levels (DEBUG, INFO, WARN, ERROR)
-- **Graceful Shutdown**: Signal-based shutdown with proper cleanup and test cancellation
-- **Service Discovery**: Automatic service registration and health status tracking
-- **Docker Health Checks**: Built-in container health monitoring for all services
-
-### �🛠️ **Developer Experience**
-- **One-Command Deployment**: Kompletter Stack mit `docker compose up -d`
-- **Environment Configuration**: Flexible .env-basierte Konfiguration
-- **Comprehensive Documentation**: Vollständige Setup- und Konfigurationsanleitungen
-- **Makefile Automation**: 20+ Entwicklungskommandos für efizientes Arbeiten
+### 🔒 **Production-Ready**
+- **Health Checks**: /health, /health/live, /health/ready Endpoints
+- **Structured Logging**: JSON/Text-Format mit konfigurierbaren Levels
+- **Graceful Shutdown**: Signal-basierter Shutdown mit Cleanup
+- **Docker Health Checks**: Container-Monitoring für alle Services
 
 ## 🚀 Quick Start
 
@@ -157,7 +152,6 @@ Nach dem Start stehen folgende Interfaces zur Verfügung:
 ```bash
 # 🏗️ Building
 make build              # Alle Docker Images bauen
-make build-agent        # Nur Agent bauen
 
 # 🚀 Running  
 make run                # Stack starten
@@ -167,18 +161,14 @@ make status             # Service-Status anzeigen
 
 # 📊 Monitoring
 make dashboards         # Grafana öffnen
-make metrics            # Prometheus öffnen
-make alerts             # Alertmanager öffnen
 make logs               # Logs aller Services
 
 # 🧪 Testing
 make test               # Go Tests ausführen
 make test-alert         # Test-Alert senden
-make lint               # Code-Qualität prüfen
 
 # 🧹 Maintenance
 make clean              # Container und Volumes entfernen
-make clean-all          # Komplette Bereinigung
 ```
 
 ## API Endpoints
@@ -249,10 +239,9 @@ cloud_circuit_breaker_state{service="nextcloud|hidrive|magentacloud|hidrive_lega
 ```
 
 ### Alert Categories
-- **🚨 Critical Alerts**: Service outages, authentication failures
-- **⚠️ Performance Alerts**: Slow uploads/downloads, high latency
-- **🌐 Network Alerts**: Connection timeouts, DNS issues
-- **📊 SLA Alerts**: Service level agreement violations
+
+- **🚨 Critical**: ServiceDown, CloudServiceUnavailable, CircuitBreakerOpen
+- **⚠️ Warning**: SlowUploadSpeed, HighErrorRate, PrometheusStorageNearFull
 
 ## 🔒 Security Features
 
