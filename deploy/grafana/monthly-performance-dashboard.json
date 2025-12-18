@@ -30,7 +30,7 @@
         "y": 0
       },
       "id": 1,
-      "title": "📊 Monthly Performance Overview",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Monthly Performance Overview",
       "type": "row"
     },
     {
@@ -117,13 +117,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[$__range])",
-          "legendFormat": "{{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[$__range])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "📤 Monthly Average Upload Speed",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Monthly Average Upload Speed",
       "type": "timeseries"
     },
     {
@@ -210,13 +210,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[$__range])",
-          "legendFormat": "{{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[$__range])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "📥 Monthly Average Download Speed",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Monthly Average Download Speed",
       "type": "timeseries"
     },
     {
@@ -228,7 +228,7 @@
         "y": 9
       },
       "id": 4,
-      "title": "📈 Historical Trend Analysis",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€  Historical Trend Analysis",
       "type": "row"
     },
     {
@@ -315,8 +315,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[1d])",
-          "legendFormat": "Upload: {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[1d])",
+          "legendFormat": "Upload: {{exported_instance}}",
           "range": true,
           "refId": "A"
         },
@@ -326,13 +326,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[1d])",
-          "legendFormat": "Download: {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[1d])",
+          "legendFormat": "Download: {{exported_instance}}",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "📊 Daily Average Speed Trend (Upload & Download)",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Daily Average Speed Trend (Upload & Download)",
       "type": "timeseries"
     },
     {
@@ -344,7 +344,7 @@
         "y": 20
       },
       "id": 6,
-      "title": "🏆 Instance Comparison - Monthly Averages",
+      "title": "ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Â  Instance Comparison - Monthly Averages",
       "type": "row"
     },
     {
@@ -411,13 +411,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
-          "legendFormat": "{{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[30d])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "📤 Monthly Upload Speed Ranking",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Monthly Upload Speed Ranking",
       "type": "bargauge"
     },
     {
@@ -484,13 +484,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
-          "legendFormat": "{{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[30d])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "📥 Monthly Download Speed Ranking",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Monthly Download Speed Ranking",
       "type": "bargauge"
     },
     {
@@ -502,7 +502,7 @@
         "y": 29
       },
       "id": 9,
-      "title": "📅 Month-over-Month Comparison",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ Month-over-Month Comparison",
       "type": "row"
     },
     {
@@ -588,8 +588,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
-          "legendFormat": "Current: {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[30d])",
+          "legendFormat": "Current: {{exported_instance}}",
           "range": true,
           "refId": "A"
         },
@@ -599,13 +599,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d] offset 30d)",
-          "legendFormat": "Previous: {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[30d] offset 30d)",
+          "legendFormat": "Previous: {{exported_instance}}",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "📤 Upload: Current vs Previous Month",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Upload: Current vs Previous Month",
       "type": "barchart"
     },
     {
@@ -691,8 +691,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
-          "legendFormat": "Current: {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[30d])",
+          "legendFormat": "Current: {{exported_instance}}",
           "range": true,
           "refId": "A"
         },
@@ -702,13 +702,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d] offset 30d)",
-          "legendFormat": "Previous: {{instance}}",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[30d] offset 30d)",
+          "legendFormat": "Previous: {{exported_instance}}",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "📥 Download: Current vs Previous Month",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Download: Current vs Previous Month",
       "type": "barchart"
     },
     {
@@ -720,7 +720,7 @@
         "y": 38
       },
       "id": 12,
-      "title": "📉 Monthly Duration Analysis",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â° Monthly Duration Analysis",
       "type": "row"
     },
     {
@@ -815,13 +815,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[1d])",
-          "legendFormat": "{{instance}}",
+          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[1d])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "📤 Monthly Upload Duration Trend",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤ Monthly Upload Duration Trend",
       "type": "timeseries"
     },
     {
@@ -916,13 +916,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[1d])",
-          "legendFormat": "{{instance}}",
+          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[1d])",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "📥 Monthly Download Duration Trend",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¥ Monthly Download Duration Trend",
       "type": "timeseries"
     },
     {
@@ -934,7 +934,7 @@
         "y": 47
       },
       "id": 15,
-      "title": "✅ Monthly Reliability Statistics",
+      "title": "ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Monthly Reliability Statistics",
       "type": "row"
     },
     {
@@ -1000,13 +1000,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "(\n  sum by (service, instance) (sum_over_time(cloud_test_success{service=~\"$service\", instance=~\"$instance\", error_code=\"none\"}[30d]))\n  /\n  sum by (service, instance) (count_over_time(cloud_test_success{service=~\"$service\", instance=~\"$instance\"}[30d]))\n) * 100",
-          "legendFormat": "{{instance}}",
+          "expr": "(\n  sum by (service, instance) (sum_over_time(cloud_test_success{service=~\"$service\", exported_exported_instance=~\"$instance\", error_code=\"none\"}[30d]))\n  /\n  sum by (service, instance) (count_over_time(cloud_test_success{service=~\"$service\", exported_exported_instance=~\"$instance\"}[30d]))\n) * 100",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "✅ Monthly Success Rate",
+      "title": "ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Monthly Success Rate",
       "type": "gauge"
     },
     {
@@ -1063,13 +1063,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (instance) (count_over_time(cloud_test_duration_seconds{service=~\"$service\", instance=~\"$instance\"}[30d]))",
-          "legendFormat": "{{instance}}",
+          "expr": "sum by (instance) (count_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_exported_instance=~\"$instance\"}[30d]))",
+          "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "📊 Monthly Test Count",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Monthly Test Count",
       "type": "stat"
     },
     {
@@ -1134,13 +1134,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (instance, error_type) (increase(cloud_test_errors_total{service=~\"$service\", instance=~\"$instance\"}[30d]))",
-          "legendFormat": "{{instance}}: {{error_type}}",
+          "expr": "sum by (instance, error_type) (increase(cloud_test_errors_total{service=~\"$service\", exported_exported_instance=~\"$instance\"}[30d]))",
+          "legendFormat": "{{exported_instance}}: {{error_type}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "❌ Monthly Errors by Type",
+      "title": "ÃƒÂ¢Ã‚ÂÃ…â€™ Monthly Errors by Type",
       "type": "stat"
     },
     {
@@ -1152,7 +1152,7 @@
         "y": 54
       },
       "id": 19,
-      "title": "📊 Historical Data Table",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Historical Data Table",
       "type": "row"
     },
     {
@@ -1316,7 +1316,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"upload\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[30d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1330,7 +1330,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", instance=~\"$instance\", type=\"download\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[30d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1338,7 +1338,7 @@
           "refId": "Download"
         }
       ],
-      "title": "📋 Monthly Performance Summary Table",
+      "title": "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Monthly Performance Summary Table",
       "transformations": [
         {
           "id": "merge",
@@ -1350,14 +1350,14 @@
             "excludeByName": {
               "Time": true,
               "__name__": true,
-              "instance": true,
+              "exported_instance": true,
               "job": true,
               "type": true
             },
             "renameByName": {
               "Value #Upload": "Avg Upload (MB/s)",
               "Value #Download": "Avg Download (MB/s)",
-              "instance": "Instance",
+              "exported_instance": "Instance",
               "service": "Service"
             }
           }
