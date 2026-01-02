@@ -1409,7 +1409,7 @@
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
-        "definition": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, instance)",
+        "definition": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, exported_instance)",
         "hide": 0,
         "includeAll": true,
         "label": "Instance",
@@ -1418,7 +1418,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, instance)",
+          "query": "label_values(cloud_test_duration_seconds{service=~\"$service\"}, exported_instance)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
