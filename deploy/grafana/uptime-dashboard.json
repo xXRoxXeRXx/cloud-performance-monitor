@@ -96,7 +96,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_uptime_status",
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -198,7 +198,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_uptime_response_time_seconds",
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -267,8 +267,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "100 * (sum by (service, instance) (increase(cloud_uptime_checks_total{result=\"success\"}[1h])) / sum by (service, instance) (increase(cloud_uptime_checks_total[1h])))",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "100 * (sum by (service, exported_instance) (increase(cloud_uptime_checks_total{result=\"success\"}[1h])) / sum by (service, exported_instance) (increase(cloud_uptime_checks_total[1h])))",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -337,8 +337,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "100 * (sum by (service, instance) (increase(cloud_uptime_checks_total{result=\"success\"}[24h])) / sum by (service, instance) (increase(cloud_uptime_checks_total[24h])))",
-          "legendFormat": "{{service}} - {{instance}}",
+          "expr": "100 * (sum by (service, exported_instance) (increase(cloud_uptime_checks_total{result=\"success\"}[24h])) / sum by (service, exported_instance) (increase(cloud_uptime_checks_total[24h])))",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -446,7 +446,7 @@
           },
           "editorMode": "code",
           "expr": "cloud_uptime_status",
-          "legendFormat": "{{service}} - {{instance}}",
+          "legendFormat": "{{service}} - {{exported_instance}}",
           "range": true,
           "refId": "A"
         }
@@ -507,7 +507,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Instance"
+              "options": "Exported Instance"
             },
             "properties": [
               {
@@ -733,7 +733,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "100 * (sum by (service, instance) (increase(cloud_uptime_checks_total{result=\"success\"}[1h])) / sum by (service, instance) (increase(cloud_uptime_checks_total[1h])))",
+          "expr": "100 * (sum by (service, exported_instance) (increase(cloud_uptime_checks_total{result=\"success\"}[1h])) / sum by (service, exported_instance) (increase(cloud_uptime_checks_total[1h])))",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -815,4 +815,5 @@
   "version": 1,
   "weekStart": ""
 }
+
 
