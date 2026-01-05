@@ -121,7 +121,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[$__range])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"upload\"}[$__range])",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -218,7 +218,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[$__range])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"download\"}[$__range])",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -328,7 +328,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[1d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"upload\"}[1d])",
           "legendFormat": "Upload: {{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -339,7 +339,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[1d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"download\"}[1d])",
           "legendFormat": "Download: {{exported_instance}}",
           "range": true,
           "refId": "B"
@@ -426,7 +426,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"upload\"}[30d])",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -501,7 +501,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"download\"}[30d])",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -605,7 +605,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"upload\"}[30d])",
           "legendFormat": "Current: {{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -616,7 +616,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[30d] offset 30d)",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"upload\"}[30d] offset 30d)",
           "legendFormat": "Previous: {{exported_instance}}",
           "range": true,
           "refId": "B"
@@ -708,7 +708,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"download\"}[30d])",
           "legendFormat": "Current: {{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -719,7 +719,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[30d] offset 30d)",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"download\"}[30d] offset 30d)",
           "legendFormat": "Previous: {{exported_instance}}",
           "range": true,
           "refId": "B"
@@ -836,7 +836,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[1d])",
+          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$instance\", type=\"upload\"}[1d])",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -941,7 +941,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[1d])",
+          "expr": "avg_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$instance\", type=\"download\"}[1d])",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -1027,7 +1027,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "(\n  sum by (service, instance) (sum_over_time(cloud_test_success{service=~\"$service\", exported_exported_instance=~\"$instance\", error_code=\"none\"}[30d]))\n  /\n  sum by (service, instance) (count_over_time(cloud_test_success{service=~\"$service\", exported_exported_instance=~\"$instance\"}[30d]))\n) * 100",
+          "expr": "(\n  sum by (service, instance) (sum_over_time(cloud_test_success{service=~\"$service\", exported_instance=~\"$instance\", error_code=\"none\"}[30d]))\n  /\n  sum by (service, instance) (count_over_time(cloud_test_success{service=~\"$service\", exported_instance=~\"$instance\"}[30d]))\n) * 100",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -1092,7 +1092,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (instance) (count_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_exported_instance=~\"$instance\"}[30d]))",
+          "expr": "sum by (instance) (count_over_time(cloud_test_duration_seconds{service=~\"$service\", exported_instance=~\"$instance\"}[30d]))",
           "legendFormat": "{{exported_instance}}",
           "range": true,
           "refId": "A"
@@ -1165,7 +1165,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (instance, error_type) (increase(cloud_test_errors_total{service=~\"$service\", exported_exported_instance=~\"$instance\"}[30d]))",
+          "expr": "sum by (instance, error_type) (increase(cloud_test_errors_total{service=~\"$service\", exported_instance=~\"$instance\"}[30d]))",
           "legendFormat": "{{exported_instance}}: {{error_type}}",
           "range": true,
           "refId": "A"
@@ -1376,7 +1376,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"upload\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"upload\"}[30d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1390,7 +1390,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_exported_instance=~\"$instance\", type=\"download\"}[30d])",
+          "expr": "avg_over_time(cloud_test_speed_mbytes_per_sec{service=~\"$service\", exported_instance=~\"$instance\", type=\"download\"}[30d])",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
