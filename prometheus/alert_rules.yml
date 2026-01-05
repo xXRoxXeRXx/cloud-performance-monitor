@@ -68,7 +68,7 @@ groups:
           severity: warning
         annotations:
           summary: "Niedrige Verfügbarkeit bei {{ $labels.service }}"
-          description: "Service {{ $labels.service }} ({{ $labels.instance }}) hat eine Verfügbarkeit von {{ printf \"%.2f%%\" (mul $value 100) }} in der letzten Stunde (< 95% SLA)."
+          description: "Service {{ $labels.service }} ({{ $labels.instance }}) hat eine Verfügbarkeit von {{ printf \"%.1f\" $value }} (< 0.95 SLA) in der letzten Stunde."
 
       # Slow upload speed - performance issue
       - alert: SlowUploadSpeed
