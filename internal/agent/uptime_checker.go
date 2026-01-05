@@ -109,8 +109,8 @@ func (u *UptimeChecker) getCheckURL() string {
 		// Check status.php endpoint (no auth required)
 		return fmt.Sprintf("%s/status.php", u.config.URL)
 	case "hidrive_legacy":
-		// Check base API URL (no auth required for connectivity test)
-		return fmt.Sprintf("%s/2.1/", u.config.URL)
+		// Check HiDrive web interface (no auth required)
+		return "https://my.hidrive.com/"
 	case "dropbox":
 		// Check main Dropbox website (no auth needed for basic connectivity)
 		return "https://www.dropbox.com"

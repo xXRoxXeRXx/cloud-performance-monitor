@@ -67,10 +67,10 @@ func TestGetCheckURL(t *testing.T) {
 			expectedURL: "https://magentacloud.de/status.php",
 		},
 		{
-			name:        "HiDrive Legacy API",
+			name:        "HiDrive Legacy Website",
 			serviceType: "hidrive_legacy",
 			baseURL:     "https://api.hidrive.strato.com",
-			expectedURL: "https://api.hidrive.strato.com/2.1/",
+			expectedURL: "https://my.hidrive.com/",
 		},
 		{
 			name:        "Dropbox Website",
