@@ -1,22 +1,20 @@
 # Cloud Performance Monitor – AI Agent Instructions
 
-
-
-## Project Overview# Nextcloud & HiDrive Performance Monitor – AI Agent Instructions
-
-A containerized Go application that benchmarks cloud storage services (Nextcloud, HiDrive, MagentaCLOUD, Dropbox) via synthetic upload/download tests. Exports Prometheus metrics and provides Grafana dashboards.
-
 ## Project Overview
 
-## ArchitectureA containerized Go application that benchmarks Nextcloud, HiDrive, MagentaCLOUD, and Dropbox instances via synthetic WebDAV upload/download tests, exports Prometheus metrics (with service label), and provides a ready-to-use Grafana dashboard with service selector. Features comprehensive alerting via Alertmanager with email notifications and structured logging across all services.
+A containerized Go application that benchmarks Nextcloud, HiDrive, MagentaCLOUD, and Dropbox instances via synthetic WebDAV upload/download tests, exports Prometheus metrics (with service label), and provides a ready-to-use Grafana dashboard with service selector. Features comprehensive alerting via Alertmanager with email notifications, structured logging across all services, and HTTP uptime monitoring for all configured instances.
 
-- **Go Agent** (`cmd/agent/main.go`): Spawns goroutine per instance, runs periodic tests
+## Architecture
 
-- **WebDAV Clients** (`internal/nextcloud/`, `internal/hidrive/`, `internal/magentacloud/`): Chunked uploads/downloads- **Go Agent** (`cmd/agent/main.go`): Spawns a goroutine per instance (Nextcloud/HiDrive/MagentaCLOUD/HiDrive Legacy/Dropbox), runs periodic tests.
+- **Go Agent** (`cmd/agent/main.go`): Spawns a goroutine per instance (Nextcloud/HiDrive/MagentaCLOUD/HiDrive Legacy/Dropbox), runs periodic tests.
 
-- **OAuth2 Clients** (`internal/hidrive_legacy/`, `internal/dropbox/`): Token refresh handling- **WebDAV Clients** (`internal/nextcloud/client.go`, `internal/hidrive/client.go`, `internal/magentacloud/client.go`): Handle chunked file uploads/downloads, directory management, and cleanup.
+- **WebDAV Clients** (`internal/nextcloud/client.go`, `internal/hidrive/client.go`, `internal/magentacloud/client.go`): Handle chunked file uploads/downloads, directory management, and cleanup.
 
-- **Metrics** (`internal/agent/metrics.go`): Prometheus metrics with `service`, `instance`, `type` labels- **OAuth2 Clients** (`internal/hidrive_legacy/client.go`, `internal/dropbox/client.go`): Handle OAuth2 authentication, refresh tokens, and REST API operations.
+- **OAuth2 Clients** (`internal/hidrive_legacy/client.go`, `internal/dropbox/client.go`): Handle OAuth2 authentication, refresh tokens, and REST API operations.
+
+- **Uptime Monitoring** (`internal/agent/uptime_checker.go`): HTTP health checks every 60 seconds for all instances with status code validation (200-299).
+
+- **Metrics** (`internal/agent/metrics.go`): Prometheus metrics with `service`, `instance`, and `type` labels, including uptime metrics.
 
 - **Docker Compose**: Orchestrates agent, Prometheus, Alertmanager, Grafana- **Metrics** (`internal/agent/metrics.go`): Exposes Prometheus metrics (duration, speed, success) with `service`, `instance`, and `type` labels.
 
@@ -80,25 +78,26 @@ DROPBOX_INSTANCE_1_NAME=name	NC_INSTANCE_1_URL=https://cloud.company-a.com
 
 	NC_INSTANCE_1_PASS=super-secret-password-a
 
-## Alerts (6 Total)
+## Alerts (9 Total)
 
-| Alert | Severity | Trigger |	# HiDrive
-
-|-------|----------|---------|	HIDRIVE_INSTANCE_1_URL=https://storage.ionos.fr
-
-| ServiceDown | Critical | Agent not responding |	HIDRIVE_INSTANCE_1_USER=monitor_user_hidrive
-
-| CloudServiceUnavailable | Warning | No tests successful in 15min |	HIDRIVE_INSTANCE_1_PASS=super-secret-password-hidrive
-
+| Alert | Severity | Trigger |
+|-------|----------|---------|
+| ServiceDown | Critical | Agent not responding |
+| CloudServiceUnavailable | Warning | No tests successful in 15min |
+| ServiceUptimeDown | Critical | HTTP uptime check failing for 3min |
+| ServiceUptimeDegraded | Warning | HTTP response time >5s for 5min |
+| LowServiceAvailability | Warning | Service availability <95% over last hour |
 | SlowUploadSpeed | Warning | Upload < 1 MB/s |
+| HighErrorRate | Warning | > 20% errors in 1 hour |
+| CircuitBreakerOpen | Warning | Service protection active |
+| PrometheusStorageNearFull | Warning | Storage > 80% |
 
-| HighErrorRate | Warning | > 20% errors in 1 hour |	# MagentaCLOUD (WebDAV with ANID)
+## Dashboards (4 Total)
 
-| CircuitBreakerOpen | Warning | Service protection active |	MAGENTACLOUD_INSTANCE_1_URL=https://magentacloud.de
-
-| PrometheusStorageNearFull | Warning | Storage > 80% |	MAGENTACLOUD_INSTANCE_1_USER=user@t-online.de
-
-	MAGENTACLOUD_INSTANCE_1_ANID=120049010000000114279134
+- **Daily Performance** - 24-hour upload/download speeds
+- **Monthly Performance** - 30-day trends
+- **Errors** - Error tracking and analysis
+- **Uptime** - HTTP uptime status, response times, and availability statistics
 
 ## Dashboards (3 Total)	MAGENTACLOUD_INSTANCE_1_PASS=app-password
 
@@ -192,13 +191,17 @@ go test -v -cover ./...
 - **OAuth2 token expiry**: HiDrive Legacy and Dropbox clients automatically refresh tokens using refresh_token grants.
 
 ## Key Files/Dirs
-- `cmd/agent/main.go`: Agent entrypoint, goroutine orchestration.
+- `cmd/agent/main.go`: Agent entrypoint, goroutine orchestration, uptime checker initialization.
+- `internal/agent/uptime_checker.go`: HTTP uptime monitoring implementation with 60s check interval.
 - `internal/nextcloud/client.go`: WebDAV logic, chunked upload/download.
 - `internal/hidrive/client.go`: HiDrive WebDAV logic, chunked upload/download with optimized HTTP transport.
 - `internal/magentacloud/client.go`: MagentaCLOUD WebDAV client with Nextcloud Chunking v2 protocol implementation.
 - `internal/hidrive_legacy/client.go`: HiDrive Legacy OAuth2 REST API client with token refresh handling.
 - `internal/dropbox/client.go`: Dropbox OAuth2 client with automatic token refresh.
 - `internal/agent/*_tester.go`: Service-specific test implementations with error handling and timing logic.
+- `internal/agent/metrics.go`: Prometheus metric definitions including uptime metrics.
+- `deploy/grafana/uptime-dashboard.json`: Grafana uptime monitoring dashboard.
+
 - `internal/agent/metrics.go`: Prometheus metric definitions.
 - `deploy/grafana/dashboard.json`: Grafana dashboard definition (mit Service-Selector).
 - `.env.example`: Configuration template.

@@ -16,15 +16,19 @@ Ein professionelles, containerisiertes Monitoring-System zur kontinuierlichen Ü
 - **Service Labeling**: Automatische Unterscheidung zwischen nextcloud/hidrive/magentacloud/hidrive_legacy/dropbox Services
 
 ### 📈 **Monitoring Stack**
-- **Prometheus**: Metriken-Sammlung mit 6 fokussierten Alert-Regeln
-- **Grafana**: 3 spezialisierte Dashboards (Daily, Monthly, Errors)
+- **Prometheus**: Metriken-Sammlung mit 9 fokussierten Alert-Regeln
+- **Grafana**: 4 spezialisierte Dashboards (Daily, Monthly, Errors, Uptime)
 - **Alertmanager**: E-Mail-Benachrichtigungen mit modernem HTML-Template
+- **Uptime Monitoring**: HTTP Health Checks alle 60s für alle Instanzen
 
-### 🔔 **Alerting (6 Alerts)**
+### 🔔 **Alerting (9 Alerts)**
 | Alert | Severity | Beschreibung |
 |-------|----------|--------------|
 | `ServiceDown` | critical | Monitor Agent offline |
 | `CloudServiceUnavailable` | critical | Cloud-Service 5xx Fehler |
+| `ServiceUptimeDown` | critical | HTTP Uptime Check fehlgeschlagen |
+| `ServiceUptimeDegraded` | warning | HTTP Response Time >5s |
+| `LowServiceAvailability` | warning | Verfügbarkeit <95% |
 | `SlowUploadSpeed` | warning | Upload <1 MB/s |
 | `HighErrorRate` | warning | Fehlerrate >20% |
 | `CircuitBreakerOpen` | critical | Circuit Breaker ausgelöst |
@@ -135,6 +139,7 @@ Nach dem Start stehen folgende Interfaces zur Verfügung:
 - **Error Analysis**: Fehlerquoten und Service-Verfügbarkeit
 - **Chunk Statistics**: Detaillierte Upload-Chunk-Metriken
 - **Network Analysis**: Netzwerk-Performance und Verbindungsqualität
+- **Uptime Dashboard**: HTTP Uptime Status, Response Times und Verfügbarkeitsstatistiken für alle Services
 
 ## 🛠️ Development Commands
 

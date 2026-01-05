@@ -93,6 +93,20 @@ func main() {
 		}(cfg)
 	}
 	
+	// Start uptime monitoring for all instances
+	for _, cfg := range allConfigs {
+		wg.Add(1)
+		go func(config *agent.Config) {
+			defer wg.Done()
+			uptimeChecker := agent.NewUptimeChecker(config, agent.Logger)
+			uptimeChecker.Run(shutdownManager.Context())
+		}(cfg)
+	}
+	
+	agent.Logger.InfoWithFields("monitor-agent", "", 
+		fmt.Sprintf("Started %d uptime checkers", len(allConfigs)), "", "")
+
+	
 	// Wait for shutdown signal and perform graceful shutdown
 	if err := shutdownManager.WaitForShutdown(); err != nil {
 		agent.Logger.Error("Shutdown completed with errors", err)

@@ -187,4 +187,42 @@ var (
 		},
 		[]string{"service", "instance"},
 	)
+
+	// UPTIME MONITORING METRICS
+
+	// cloudUptimeStatus indicates if the service is up (1) or down (0).
+	cloudUptimeStatus = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cloud_uptime_status",
+			Help: "Indicates if the cloud service is up (1) or down (0).",
+		},
+		[]string{"service", "instance"},
+	)
+
+	// cloudUptimeResponseTime measures the HTTP response time in seconds.
+	cloudUptimeResponseTime = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cloud_uptime_response_time_seconds",
+			Help: "HTTP response time for uptime checks in seconds.",
+		},
+		[]string{"service", "instance"},
+	)
+
+	// cloudUptimeHTTPStatus records the last HTTP status code received.
+	cloudUptimeHTTPStatus = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cloud_uptime_http_status_code",
+			Help: "Last HTTP status code received during uptime check.",
+		},
+		[]string{"service", "instance"},
+	)
+
+	// cloudUptimeChecksTotal counts the total number of uptime checks performed.
+	cloudUptimeChecksTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "cloud_uptime_checks_total",
+			Help: "Total number of uptime checks performed.",
+		},
+		[]string{"service", "instance", "result"},
+	)
 )

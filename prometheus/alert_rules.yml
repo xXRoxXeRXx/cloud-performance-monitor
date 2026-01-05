@@ -1,13 +1,16 @@
 # Cloud Performance Monitor - Simplified Alert Rules
-# 6 essential alerts for non-enterprise monitoring
+# 9 essential alerts for non-enterprise monitoring
 #
 # Alerts:
 # 1. ServiceDown - Monitor agent offline
 # 2. CloudServiceUnavailable - Cloud service returning 5xx errors
-# 3. SlowUploadSpeed - Upload speed below threshold
-# 4. HighErrorRate - Test error rate too high
-# 5. CircuitBreakerOpen - Circuit breaker triggered
-# 6. PrometheusStorageNearFull - Storage running low
+# 3. ServiceUptimeDown - HTTP uptime check failing
+# 4. ServiceUptimeDegraded - HTTP uptime check slow
+# 5. LowServiceAvailability - Service availability below SLA
+# 6. SlowUploadSpeed - Upload speed below threshold
+# 7. HighErrorRate - Test error rate too high
+# 8. CircuitBreakerOpen - Circuit breaker triggered
+# 9. PrometheusStorageNearFull - Storage running low
 
 groups:
   - name: cloud_performance_alerts
@@ -31,6 +34,41 @@ groups:
         annotations:
           summary: "{{ $labels.service }} nicht erreichbar"
           description: "{{ $labels.service }} ({{ $labels.exported_instance }}) antwortet mit Server-Fehlern ({{ $labels.error_type }})."
+
+      # Service HTTP uptime check failing
+      - alert: ServiceUptimeDown
+        expr: cloud_uptime_status == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} HTTP Uptime Check fehlgeschlagen"
+          description: "HTTP Uptime Check für {{ $labels.service }} ({{ $labels.instance }}) schlägt seit 3 Minuten fehl. Letzte Response Time: {{ printf \"%.2f\" $value }}s."
+
+      # Service HTTP response time degraded
+      - alert: ServiceUptimeDegraded
+        expr: cloud_uptime_response_time_seconds > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} Response Time erhöht"
+          description: "HTTP Response Time für {{ $labels.service }} ({{ $labels.instance }}) ist über 5 Sekunden: {{ printf \"%.2f\" $value }}s."
+
+      # Low service availability (< 95% over last hour)
+      - alert: LowServiceAvailability
+        expr: |
+          (
+            sum by (service, instance) (increase(cloud_uptime_checks_total{result="success"}[1h])) 
+            / 
+            sum by (service, instance) (increase(cloud_uptime_checks_total[1h]))
+          ) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Niedrige Verfügbarkeit bei {{ $labels.service }}"
+          description: "Service {{ $labels.service }} ({{ $labels.instance }}) hat eine Verfügbarkeit von {{ printf \"%.2f%%\" (mul $value 100) }} in der letzten Stunde (< 95% SLA)."
 
       # Slow upload speed - performance issue
       - alert: SlowUploadSpeed
