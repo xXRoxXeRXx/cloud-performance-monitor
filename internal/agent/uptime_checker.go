@@ -53,7 +53,8 @@ func (u *UptimeChecker) Check(ctx context.Context) {
 		fmt.Sprintf("Starting uptime check for URL: %s", checkURL))
 
 	// Create HTTP request with context
-	req, err := http.NewRequestWithContext(ctx, "HEAD", checkURL, nil)
+	// Use GET instead of HEAD because status.php endpoints typically require GET
+	req, err := http.NewRequestWithContext(ctx, "GET", checkURL, nil)
 	if err != nil {
 		u.logger.LogOperation(ERROR, u.config.ServiceType, u.config.InstanceName,
 			"uptime_check", "request_creation", "Failed to create uptime check request", 
@@ -99,20 +100,20 @@ func (u *UptimeChecker) Check(ctx context.Context) {
 func (u *UptimeChecker) getCheckURL() string {
 	switch u.config.ServiceType {
 	case "nextcloud":
-		// Check WebDAV endpoint
-		return fmt.Sprintf("%s/remote.php/dav/", u.config.URL)
+		// Check status.php endpoint (no auth required)
+		return fmt.Sprintf("%s/status.php", u.config.URL)
 	case "hidrive":
-		// Check WebDAV endpoint
-		return fmt.Sprintf("%s/remote.php/dav/", u.config.URL)
+		// Check status.php endpoint (no auth required)
+		return fmt.Sprintf("%s/status.php", u.config.URL)
 	case "magentacloud":
-		// Check WebDAV endpoint
-		return fmt.Sprintf("%s/remote.php/dav/", u.config.URL)
+		// Check status.php endpoint (no auth required)
+		return fmt.Sprintf("%s/status.php", u.config.URL)
 	case "hidrive_legacy":
-		// Check API endpoint
-		return fmt.Sprintf("%s/2.1/user/me", u.config.URL)
+		// Check base API URL (no auth required for connectivity test)
+		return fmt.Sprintf("%s/2.1/", u.config.URL)
 	case "dropbox":
-		// Check API endpoint (no auth needed for basic connectivity)
-		return "https://api.dropboxapi.com/2/check/user"
+		// Check main Dropbox website (no auth needed for basic connectivity)
+		return "https://www.dropbox.com"
 	default:
 		// Fallback to base URL
 		return u.config.URL

@@ -49,34 +49,34 @@ func TestGetCheckURL(t *testing.T) {
 		expectedURL string
 	}{
 		{
-			name:        "Nextcloud WebDAV",
+			name:        "Nextcloud status.php",
 			serviceType: "nextcloud",
 			baseURL:     "https://cloud.example.com",
-			expectedURL: "https://cloud.example.com/remote.php/dav/",
+			expectedURL: "https://cloud.example.com/status.php",
 		},
 		{
-			name:        "HiDrive WebDAV",
+			name:        "HiDrive status.php",
 			serviceType: "hidrive",
 			baseURL:     "https://storage.ionos.fr",
-			expectedURL: "https://storage.ionos.fr/remote.php/dav/",
+			expectedURL: "https://storage.ionos.fr/status.php",
 		},
 		{
-			name:        "MagentaCLOUD WebDAV",
+			name:        "MagentaCLOUD status.php",
 			serviceType: "magentacloud",
 			baseURL:     "https://magentacloud.de",
-			expectedURL: "https://magentacloud.de/remote.php/dav/",
+			expectedURL: "https://magentacloud.de/status.php",
 		},
 		{
 			name:        "HiDrive Legacy API",
 			serviceType: "hidrive_legacy",
 			baseURL:     "https://api.hidrive.strato.com",
-			expectedURL: "https://api.hidrive.strato.com/2.1/user/me",
+			expectedURL: "https://api.hidrive.strato.com/2.1/",
 		},
 		{
-			name:        "Dropbox API",
+			name:        "Dropbox Website",
 			serviceType: "dropbox",
 			baseURL:     "https://api.dropboxapi.com",
-			expectedURL: "https://api.dropboxapi.com/2/check/user",
+			expectedURL: "https://www.dropbox.com",
 		},
 		{
 			name:        "Unknown Service",
@@ -107,8 +107,8 @@ func TestGetCheckURL(t *testing.T) {
 func TestUptimeCheck_Success(t *testing.T) {
 	// Create a test HTTP server that returns 200 OK
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "HEAD" {
-			t.Errorf("Expected HEAD request, got %s", r.Method)
+		if r.Method != "GET" {
+			t.Errorf("Expected GET request, got %s", r.Method)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
