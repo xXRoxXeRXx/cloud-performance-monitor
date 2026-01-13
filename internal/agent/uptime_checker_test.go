@@ -52,19 +52,19 @@ func TestGetCheckURL(t *testing.T) {
 			name:        "Nextcloud status.php",
 			serviceType: "nextcloud",
 			baseURL:     "https://cloud.example.com",
-			expectedURL: "https://cloud.example.com/status.php",
+			expectedURL: "https://cloud.example.com/",
 		},
 		{
 			name:        "HiDrive status.php",
 			serviceType: "hidrive",
 			baseURL:     "https://storage.ionos.fr",
-			expectedURL: "https://storage.ionos.fr/status.php",
+			expectedURL: "https://storage.ionos.fr/",
 		},
 		{
 			name:        "MagentaCLOUD status.php",
 			serviceType: "magentacloud",
 			baseURL:     "https://magentacloud.de",
-			expectedURL: "https://magentacloud.de/status.php",
+			expectedURL: "https://magentacloud.de/",
 		},
 		{
 			name:        "HiDrive Legacy Website",

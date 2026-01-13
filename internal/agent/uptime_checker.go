@@ -101,19 +101,19 @@ func (u *UptimeChecker) getCheckURL() string {
 	switch u.config.ServiceType {
 	case "nextcloud":
 		// Check status.php endpoint (no auth required)
-		return fmt.Sprintf("%s/status.php", u.config.URL)
+		return fmt.Sprintf("%s/", u.config.URL)
 	case "hidrive":
 		// Check status.php endpoint (no auth required)
-		return fmt.Sprintf("%s/status.php", u.config.URL)
+		return fmt.Sprintf("%s/", u.config.URL)
 	case "magentacloud":
 		// Check status.php endpoint (no auth required)
-		return fmt.Sprintf("%s/status.php", u.config.URL)
+		return fmt.Sprintf("%s/", u.config.URL)
 	case "hidrive_legacy":
 		// Check HiDrive web interface (no auth required)
 		return "https://my.hidrive.com/"
 	case "dropbox":
 		// Check main Dropbox website (no auth needed for basic connectivity)
-		return "https://www.dropbox.com"
+		return "https://www.dropbox.com/login"
 	default:
 		// Fallback to base URL
 		return u.config.URL
